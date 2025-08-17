@@ -28,11 +28,18 @@ const SubmissionsList = lazy(() => import('./pages/judge/SubmissionsList'));
 
 function App() {
   return (
-    <AuthProvider>
-      <SocketProvider>
-        <Router>
+    <Router>
+      <AuthProvider>
+        <SocketProvider>
           <div className="min-h-screen bg-gradient">
-            <Suspense fallback={<LoadingSpinner />}>
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                  <LoadingSpinner size="lg" />
+                  <p className="mt-4 text-neutral-600">Loading Haxcode...</p>
+                </div>
+              </div>
+            }>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<HomePage />} />
@@ -84,14 +91,26 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
+                {/* Admin routes (if needed in the future) */}
+                <Route path="/admin" element={
+                  <ProtectedRoute requiredRoles={['admin', 'super_admin']}>
+                    <Layout>
+                      <div className="text-center py-12">
+                        <h1 className="text-2xl font-bold text-neutral-900">Admin Dashboard</h1>
+                        <p className="text-neutral-600 mt-2">Admin features coming soon...</p>
+                      </div>
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                
                 {/* Catch all route */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
           </div>
-        </Router>
-      </SocketProvider>
-    </AuthProvider>
+        </SocketProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
