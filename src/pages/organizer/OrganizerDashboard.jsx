@@ -9,11 +9,21 @@ import {
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { mockEvents, mockSubmissions } from '../../utils/mockData';
+import { mockParticipants, mockAnnouncements, mockEventStats } from '../../utils/organizerMockData';
+import ParticipantsList from '../../components/organizer/ParticipantsList';
+import ParticipantDetailsModal from '../../components/organizer/ParticipantDetailsModal';
+import AnnouncementsList from '../../components/organizer/AnnouncementsList';
+import EnhancedEventCard from '../../components/organizer/EnhancedEventCard';
+import AnalyticsCharts from '../../components/organizer/AnalyticsCharts';
 
 const OrganizerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showEventModal, setShowEventModal] = useState(false);
   const [events, setEvents] = useState(mockEvents);
+  const [participants, setParticipants] = useState(mockParticipants);
+  const [announcements, setAnnouncements] = useState(mockAnnouncements);
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
+  const [showParticipantModal, setShowParticipantModal] = useState(false);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -27,6 +37,43 @@ const OrganizerDashboard = () => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       setEvents(prev => prev.filter(event => event.id !== eventId));
     }
+  };
+
+  const handleViewParticipantDetails = (participant) => {
+    setSelectedParticipant(participant);
+    setShowParticipantModal(true);
+  };
+
+  const handleCreateAnnouncement = (announcementData) => {
+    const newAnnouncement = {
+      ...announcementData,
+      id: Date.now()
+    };
+    setAnnouncements(prev => [...prev, newAnnouncement]);
+  };
+
+  const handleEditAnnouncement = (announcementId, updatedData) => {
+    setAnnouncements(prev => prev.map(ann => 
+      ann.id === announcementId ? { ...ann, ...updatedData } : ann
+    ));
+  };
+
+  const handleDeleteAnnouncement = (announcementId) => {
+    setAnnouncements(prev => prev.filter(ann => ann.id !== announcementId));
+  };
+
+  const handleViewParticipants = (eventId) => {
+    setActiveTab('participants');
+  };
+
+  const handleSendMessage = (eventId) => {
+    // TODO: Implement message functionality
+    console.log('Send message for event:', eventId);
+  };
+
+  const handleViewSubmissions = (eventId) => {
+    // TODO: Implement submissions view
+    console.log('View submissions for event:', eventId);
   };
 
   const getStatusColor = (status) => {
@@ -151,30 +198,8 @@ const OrganizerDashboard = () => {
                 </div>
               </div>
 
-              {/* Recent Activity */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Events</h3>
-                <div className="space-y-3">
-                  {events.slice(0, 3).map((event) => (
-                    <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <h4 className="font-medium text-gray-900">{event.title}</h4>
-                        <p className="text-sm text-gray-500">
-                          {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                          {event.status}
-                        </span>
-                        <span className="text-sm text-gray-600">
-                          {event.currentParticipants}/{event.maxParticipants} participants
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Analytics Charts */}
+              <AnalyticsCharts eventStats={mockEventStats} />
             </div>
           )}
 
@@ -191,40 +216,17 @@ const OrganizerDashboard = () => {
                 </button>
               </div>
               
-              {/* Events List */}
-              <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul className="divide-y divide-gray-200">
-                  {events.map((event) => (
-                    <li key={event.id}>
-                      <div className="px-4 py-4 sm:px-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-medium text-gray-900">{event.title}</h3>
-                            <p className="text-sm text-gray-500">{event.description}</p>
-                            <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
-                              <span>{new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}</span>
-                              <span>{event.currentParticipants}/{event.maxParticipants} participants</span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                                {event.status}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <button className="p-2 text-gray-400 hover:text-gray-600">
-                              <PencilIcon className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteEvent(event.id)}
-                              className="p-2 text-red-400 hover:text-red-600"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+              {/* Events Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {events.map((event) => (
+                  <EnhancedEventCard
+                    key={event.id}
+                    event={event}
+                    onViewParticipants={handleViewParticipants}
+                    onSendMessage={handleSendMessage}
+                    onViewSubmissions={handleViewSubmissions}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -232,22 +234,21 @@ const OrganizerDashboard = () => {
           {activeTab === 'participants' && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900">Participant Management</h2>
-              <div className="bg-white rounded-lg shadow p-6 text-center">
-                <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Participants</h3>
-                <p className="text-gray-500">Participant management features will be implemented here</p>
-              </div>
+              <ParticipantsList 
+                participants={participants}
+                onViewDetails={handleViewParticipantDetails}
+              />
             </div>
           )}
 
           {activeTab === 'announcements' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900">Announcements</h2>
-              <div className="bg-white rounded-lg shadow p-6 text-center">
-                <BellIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Announcements</h3>
-                <p className="text-gray-500">Announcement management features will be implemented here</p>
-              </div>
+              <AnnouncementsList
+                announcements={announcements}
+                onCreateNew={handleCreateAnnouncement}
+                onEdit={handleEditAnnouncement}
+                onDelete={handleDeleteAnnouncement}
+              />
             </div>
           )}
         </div>
@@ -270,6 +271,16 @@ const OrganizerDashboard = () => {
           }}
         />
       )}
+
+      {/* Participant Details Modal */}
+      <ParticipantDetailsModal
+        participant={selectedParticipant}
+        isOpen={showParticipantModal}
+        onClose={() => {
+          setShowParticipantModal(false);
+          setSelectedParticipant(null);
+        }}
+      />
     </div>
   );
 };
