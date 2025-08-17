@@ -25,22 +25,40 @@ const Layout = ({ children }) => {
     navigate('/');
   };
 
+  const getDashboardHref = () => {
+    if (hasRole('participant')) return '/participant';
+    if (hasRole('organizer')) return '/organizer';
+    if (hasRole('judge')) return '/judge';
+    return '/dashboard';
+  };
+
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { 
+      name: 'Dashboard', 
+      href: getDashboardHref(),
+      icon: Home 
+    },
     ...(hasRole('participant') ? [
       { name: 'Hackathons', href: '/participant/hackathons', icon: Calendar },
       { name: 'My Submissions', href: '/participant/submissions', icon: Trophy },
+      { name: 'My Teams', href: '/participant', icon: Users },
     ] : []),
     ...(hasRole('organizer') ? [
       { name: 'My Hackathons', href: '/organizer', icon: Calendar },
       { name: 'Create Hackathon', href: '/organizer/create', icon: Calendar },
+      { name: 'Participants', href: '/organizer', icon: Users },
     ] : []),
     ...(hasRole('judge') ? [
       { name: 'Submissions', href: '/judge/submissions', icon: Trophy },
       { name: 'Judging', href: '/judge', icon: Users },
+      { name: 'Leaderboard', href: '/judge', icon: Trophy },
     ] : []),
     { name: 'Profile', href: '/profile', icon: User },
     { name: 'Settings', href: '/settings', icon: Settings },
+  ];
+
+  const additionalLinks = [
+    { name: 'Home', href: '/', icon: Home },
   ];
 
   const isActive = (href) => {
@@ -78,6 +96,26 @@ const Layout = ({ children }) => {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Divider */}
+            <div className="border-t border-neutral-200 my-4"></div>
+            
+            {/* Additional Links */}
+            {additionalLinks.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg mb-2 transition-colors ${
+                  isActive(item.href)
+                    ? 'bg-neutral-50 text-neutral-700 border border-neutral-200'
+                    : 'text-neutral-600 hover:bg-neutral-100'
+                }`}
+              >
+                <item.icon size={20} className="mr-3" />
+                {item.name}
+              </Link>
+            ))}
           </nav>
         </div>
       </div>
@@ -100,6 +138,30 @@ const Layout = ({ children }) => {
                           isActive(item.href)
                             ? 'bg-primary-50 text-primary-700 border border-primary-200'
                             : 'text-neutral-700 hover:bg-neutral-100'
+                        }`}
+                      >
+                        <item.icon size={20} className="mr-3" />
+                        {item.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+              
+              {/* Divider */}
+              <li className="border-t border-neutral-200 my-4"></li>
+              
+              {/* Additional Links */}
+              <li>
+                <ul role="list" className="-mx-2 space-y-1">
+                  {additionalLinks.map((item) => (
+                    <li key={item.name}>
+                      <Link
+                        to={item.href}
+                        className={`flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          isActive(item.href)
+                            ? 'bg-neutral-50 text-neutral-700 border border-neutral-200'
+                            : 'text-neutral-600 hover:bg-neutral-100'
                         }`}
                       >
                         <item.icon size={20} className="mr-3" />

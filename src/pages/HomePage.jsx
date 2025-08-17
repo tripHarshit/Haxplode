@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Code, 
@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 
 const HomePage = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, getRedirectPath } = useAuth();
+  const navigate = useNavigate();
 
   const features = [
     {
@@ -46,6 +47,15 @@ const HomePage = () => {
     { label: 'Countries', value: '50+' },
   ];
 
+  const handleDashboardNavigation = () => {
+    if (user && user.roles) {
+      const dashboardPath = getRedirectPath(user);
+      navigate(dashboardPath);
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient">
       {/* Navigation */}
@@ -59,12 +69,12 @@ const HomePage = () => {
               {isAuthenticated ? (
                 <>
                   <span className="text-neutral-600">Welcome, {user?.name}!</span>
-                  <Link
-                    to="/dashboard"
+                  <button
+                    onClick={handleDashboardNavigation}
                     className="btn-primary"
                   >
                     Go to Dashboard
-                  </Link>
+                  </button>
                 </>
               ) : (
                 <>
@@ -113,12 +123,21 @@ const HomePage = () => {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               )}
-              <Link
-                to="/hackathons"
-                className="btn-outline text-lg px-8 py-3"
-              >
-                Browse Hackathons
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  to="/participant/hackathons"
+                  className="btn-outline text-lg px-8 py-3"
+                >
+                  Browse Hackathons
+                </Link>
+              ) : (
+                <Link
+                  to="/hackathons"
+                  className="btn-outline text-lg px-8 py-3"
+                >
+                  Browse Hackathons
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -175,6 +194,108 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* Dashboard Options Section */}
+      {isAuthenticated && (
+        <section className="py-20 bg-white">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+                Your Dashboard
+              </h2>
+              <p className="mt-4 text-lg text-neutral-600">
+                Access your personalized dashboard and start building amazing projects.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Participant Dashboard */}
+              {user?.roles?.includes('participant') && (
+                <div className="card-hover text-center p-6 border border-gray-200 rounded-xl">
+                  <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-lg bg-blue-100 mb-4">
+                    <Users className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                    Participant Dashboard
+                  </h3>
+                  <p className="text-neutral-600 mb-4">
+                    Manage your hackathon participation, teams, and project submissions.
+                  </p>
+                  <button
+                    onClick={handleDashboardNavigation}
+                    className="btn-primary w-full"
+                  >
+                    Go to Dashboard
+                  </button>
+                </div>
+              )}
+              
+              {/* Organizer Dashboard */}
+              {user?.roles?.includes('organizer') && (
+                <div className="card-hover text-center p-6 border border-gray-200 rounded-xl">
+                  <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-lg bg-green-100 mb-4">
+                    <Calendar className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                    Organizer Dashboard
+                  </h3>
+                  <p className="text-neutral-600 mb-4">
+                    Create and manage hackathons, review submissions, and engage participants.
+                  </p>
+                  <button
+                    onClick={handleDashboardNavigation}
+                    className="btn-primary w-full"
+                  >
+                    Go to Dashboard
+                  </button>
+                </div>
+              )}
+              
+              {/* Judge Dashboard */}
+              {user?.roles?.includes('judge') && (
+                <div className="card-hover text-center p-6 border border-gray-200 rounded-xl">
+                  <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-lg bg-purple-100 mb-4">
+                    <Trophy className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                    Judge Dashboard
+                  </h3>
+                  <p className="text-neutral-600 mb-4">
+                    Review and evaluate project submissions with detailed scoring.
+                  </p>
+                  <button
+                    onClick={handleDashboardNavigation}
+                    className="btn-primary w-full"
+                  >
+                    Go to Dashboard
+                  </button>
+                </div>
+              )}
+              
+              {/* General Dashboard (for users without specific roles) */}
+              {(!user?.roles || user.roles.length === 0) && (
+                <div className="card-hover text-center p-6 border border-gray-200 rounded-xl">
+                  <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-lg bg-gray-100 mb-4">
+                    <Target className="h-6 w-6 text-gray-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                    General Dashboard
+                  </h3>
+                  <p className="text-neutral-600 mb-4">
+                    Access your account overview and manage your profile settings.
+                  </p>
+                  <button
+                    onClick={handleDashboardNavigation}
+                    className="btn-primary w-full"
+                  >
+                    Go to Dashboard
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* CTA Section */}
       <section className="py-20 bg-primary-600">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
@@ -194,13 +315,13 @@ const HomePage = () => {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             ) : (
-              <Link
-                to="/dashboard"
+              <button
+                onClick={handleDashboardNavigation}
                 className="btn-secondary text-lg px-8 py-3"
               >
                 Go to Dashboard
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+              </button>
             )}
           </div>
         </div>
@@ -224,8 +345,28 @@ const HomePage = () => {
             <div>
               <h4 className="text-sm font-semibold text-neutral-200 mb-4">Platform</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-neutral-400 hover:text-white">Hackathons</a></li>
-                <li><a href="#" className="text-neutral-400 hover:text-white">Projects</a></li>
+                {isAuthenticated ? (
+                  <>
+                    <li>
+                      <button
+                        onClick={handleDashboardNavigation}
+                        className="text-neutral-400 hover:text-white text-left"
+                      >
+                        My Dashboard
+                      </button>
+                    </li>
+                    <li>
+                      <Link to="/participant/hackathons" className="text-neutral-400 hover:text-white">
+                        Browse Hackathons
+                      </Link>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li><a href="#" className="text-neutral-400 hover:text-white">Hackathons</a></li>
+                    <li><a href="#" className="text-neutral-400 hover:text-white">Projects</a></li>
+                  </>
+                )}
                 <li><a href="#" className="text-neutral-400 hover:text-white">Leaderboard</a></li>
               </ul>
             </div>
