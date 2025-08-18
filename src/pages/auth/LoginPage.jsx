@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../components/ui/Toast';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { isValidEmail } from '../../utils/helpers';
+import { useTheme } from '../../context/ThemeContext';
 
 const LoginPage = () => {
+  const { setLightModeForced } = useTheme();
+
+  useEffect(() => {
+    setLightModeForced(true);
+    return () => setLightModeForced(false);
+  }, [setLightModeForced]);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -17,6 +25,7 @@ const LoginPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   
   const { login, loginWithGoogle, error: authError, clearError } = useAuth();
+  const { success, error: showError } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -89,9 +98,11 @@ const LoginPage = () => {
       const result = await login(formData);
       if (result.success) {
         setSuccessMessage('Login successful! Redirecting...');
+        success('Welcome Back!', 'You have successfully logged in.');
         // Navigation is handled by the AuthContext
       } else {
         setErrors({ general: result.error });
+        showError('Login Failed', result.error);
         if (window.navigationTester) {
           window.navigationTester.logAuthEvent('login_attempt', false, { email: formData.email, error: result.error });
         }
@@ -155,7 +166,7 @@ const LoginPage = () => {
         {/* Header */}
         <div className="text-center">
           <Link to="/" className="inline-block">
-            <h1 className="text-3xl font-bold text-gradient">Haxcode</h1>
+            <h1 className="text-3xl font-bold text-gradient">Haxplode</h1>
           </Link>
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-neutral-900">
             Welcome back

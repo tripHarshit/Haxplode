@@ -18,6 +18,7 @@ import AssignedSubmissions from '../../components/judge/AssignedSubmissions';
 import ScoringForm from '../../components/judge/ScoringForm';
 import JudgeAnalytics from '../../components/judge/JudgeAnalytics';
 import RecentActivity from '../../components/judge/RecentActivity';
+import Leaderboard from '../../components/common/Leaderboard';
 
 const JudgeDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -141,7 +142,8 @@ const JudgeDashboard = () => {
               {[
                 { id: 'overview', label: 'Overview', icon: ChartBarIcon },
                 { id: 'submissions', label: 'Assigned Submissions', icon: ClipboardDocumentListIcon },
-                { id: 'analytics', label: 'Analytics', icon: ChartBarIcon }
+                { id: 'analytics', label: 'Analytics', icon: ChartBarIcon },
+                { id: 'leaderboard', label: 'Leaderboard', icon: BarChart3 }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -257,6 +259,12 @@ const JudgeDashboard = () => {
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900">Judge Analytics</h2>
               <JudgeAnalytics analytics={mockJudgeAnalytics} />
+            </div>
+          )}
+
+          {activeTab === 'leaderboard' && (
+            <div className="space-y-6">
+              <Leaderboard />
             </div>
           )}
         </div>

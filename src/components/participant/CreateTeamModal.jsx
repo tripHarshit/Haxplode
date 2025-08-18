@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { XMarkIcon, UserGroupIcon } from '@heroicons/react/24/outline';
-import { mockEvents } from '../../utils/mockData';
+import { mockEvents, dataService } from '../../utils/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 
-const CreateTeamModal = ({ isOpen, onClose }) => {
+const CreateTeamModal = ({ isOpen, onClose, onTeamCreated }) => {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useNotifications();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -60,13 +64,21 @@ const CreateTeamModal = ({ isOpen, onClose }) => {
       return;
     }
     
+    if (!user) {
+      showError('Please log in to create a team');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const teamData = {
+        ...formData,
+        creatorId: user.id,
+        creatorName: user.name,
+        creatorAvatar: user.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face&${Date.now()}`
+      };
       
-      // In real app: await participantService.createTeam(formData);
-      console.log('Team created:', formData);
+      await dataService.createTeam(teamData);
       
       // Reset form and close modal
       setFormData({
@@ -78,12 +90,15 @@ const CreateTeamModal = ({ isOpen, onClose }) => {
       setErrors({});
       onClose();
       
-      // Show success message (in real app, use a toast notification)
-      alert('Team created successfully!');
+      showSuccess('Team created successfully!');
+      
+      if (onTeamCreated) {
+        onTeamCreated();
+      }
       
     } catch (error) {
       console.error('Failed to create team:', error);
-      setErrors({ submit: 'Failed to create team. Please try again.' });
+      setErrors({ submit: error.message || 'Failed to create team. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }

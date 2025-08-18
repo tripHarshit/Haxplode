@@ -67,7 +67,7 @@ const DashboardPage = () => {
     
     return {
       title: 'Dashboard',
-      description: 'Welcome to Haxcode! Choose your role to get started.',
+      description: 'Welcome to Haxplode! Choose your role to get started.',
       stats: [],
       actions: [
         { label: 'Browse Hackathons', href: '/hackathons', icon: Calendar },

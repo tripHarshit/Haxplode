@@ -3,8 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, Calendar, ArrowRight, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { isValidEmail, isValidPassword } from '../../utils/helpers';
+import { useTheme } from '../../context/ThemeContext';
 
 const RegisterPage = () => {
+  const { setLightModeForced } = useTheme();
+
+  useEffect(() => {
+    setLightModeForced(true);
+    return () => setLightModeForced(false);
+  }, [setLightModeForced]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -189,7 +196,7 @@ const RegisterPage = () => {
         {/* Header */}
         <div className="text-center">
           <Link to="/" className="inline-block">
-            <h1 className="text-3xl font-bold text-gradient">Haxcode</h1>
+            <h1 className="text-3xl font-bold text-gradient">Haxplode</h1>
           </Link>
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-neutral-900">
             Create your account

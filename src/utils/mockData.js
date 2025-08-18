@@ -407,3 +407,267 @@ export const mockPrizeRanges = [
   "$15,000 - $25,000",
   "$25,000+"
 ];
+
+// Helper functions for localStorage persistence
+const getStoredData = (key, defaultValue) => {
+  try {
+    const stored = localStorage.getItem(`haxcode_${key}`);
+    return stored ? JSON.parse(stored) : defaultValue;
+  } catch (error) {
+    console.error(`Error loading ${key} from localStorage:`, error);
+    return defaultValue;
+  }
+};
+
+const setStoredData = (key, data) => {
+  try {
+    localStorage.setItem(`haxcode_${key}`, JSON.stringify(data));
+  } catch (error) {
+    console.error(`Error saving ${key} to localStorage:`, error);
+  }
+};
+
+// Initialize data with localStorage persistence
+const storedEvents = getStoredData('events', [
+  {
+    id: 1,
+    title: 'AI Innovation Hackathon',
+    description: 'Build the next generation of AI-powered applications. Focus on machine learning, natural language processing, and computer vision.',
+    category: 'Artificial Intelligence',
+    startDate: '2024-03-15T09:00:00Z',
+    endDate: '2024-03-17T18:00:00Z',
+    registrationDeadline: '2024-03-10T23:59:59Z',
+    maxParticipants: 200,
+    currentParticipants: 45,
+    prize: '$25,000',
+    location: 'San Francisco, CA',
+    isOnline: false,
+    status: 'upcoming',
+    isRegistered: false,
+    registeredUsers: []
+  },
+  {
+    id: 2,
+    title: 'Web3 Revolution',
+    description: 'Create decentralized applications that will shape the future of the internet. Blockchain, DeFi, and NFT projects welcome.',
+    category: 'Blockchain',
+    startDate: '2024-04-20T10:00:00Z',
+    endDate: '2024-04-22T20:00:00Z',
+    registrationDeadline: '2024-04-15T23:59:59Z',
+    maxParticipants: 150,
+    currentParticipants: 78,
+    prize: '$15,000',
+    location: 'Online',
+    isOnline: true,
+    status: 'upcoming',
+    isRegistered: false,
+    registeredUsers: []
+  },
+  {
+    id: 3,
+    title: 'Green Tech Solutions',
+    description: 'Develop sustainable technology solutions to address climate change and environmental challenges.',
+    category: 'Sustainability',
+    startDate: '2024-05-10T08:00:00Z',
+    endDate: '2024-05-12T17:00:00Z',
+    registrationDeadline: '2024-05-05T23:59:59Z',
+    maxParticipants: 100,
+    currentParticipants: 92,
+    prize: '$10,000',
+    location: 'Austin, TX',
+    isOnline: false,
+    status: 'upcoming',
+    isRegistered: false,
+    registeredUsers: []
+  }
+]);
+
+// Initialize mutable data for localStorage persistence
+let mutableEvents = [...mockEvents];
+let mutableTeams = [...mockTeams];
+let mutableSubmissions = [...mockSubmissions];
+
+// Initialize with stored data if available
+try {
+  const storedEvents = getStoredData('events');
+  if (storedEvents) {
+    mutableEvents = storedEvents;
+  }
+  
+  const storedTeams = getStoredData('teams');
+  if (storedTeams) {
+    mutableTeams = storedTeams;
+  }
+  
+  const storedSubmissions = getStoredData('submissions');
+  if (storedSubmissions) {
+    mutableSubmissions = storedSubmissions;
+  }
+} catch (error) {
+  console.warn('Error loading stored data:', error);
+}
+
+// Data management functions
+export const dataService = {
+  // Event management
+  getEvents: () => mutableEvents,
+  
+  registerForEvent: (eventId, userId, userName) => {
+    const event = mutableEvents.find(e => e.id === eventId);
+    if (!event) throw new Error('Event not found');
+    
+    if (event.registeredUsers.includes(userId)) {
+      throw new Error('Already registered for this event');
+    }
+    
+    if (event.currentParticipants >= event.maxParticipants) {
+      throw new Error('Event is full');
+    }
+    
+    event.currentParticipants += 1;
+    event.registeredUsers.push(userId);
+    event.isRegistered = true;
+    
+    setStoredData('events', mutableEvents);
+    return event;
+  },
+  
+  unregisterFromEvent: (eventId, userId) => {
+    const event = mutableEvents.find(e => e.id === eventId);
+    if (!event) throw new Error('Event not found');
+    
+    const userIndex = event.registeredUsers.indexOf(userId);
+    if (userIndex === -1) {
+      throw new Error('Not registered for this event');
+    }
+    
+    event.currentParticipants -= 1;
+    event.registeredUsers.splice(userIndex, 1);
+    event.isRegistered = false;
+    
+    setStoredData('events', mutableEvents);
+    return event;
+  },
+  
+  // Team management
+  getTeams: () => mutableTeams,
+  
+  createTeam: (teamData) => {
+    const newTeam = {
+      id: Date.now(),
+      ...teamData,
+      members: [{
+        id: teamData.creatorId,
+        name: teamData.creatorName,
+        role: 'Team Lead',
+        avatar: teamData.creatorAvatar
+      }],
+      createdAt: new Date().toISOString(),
+      progress: {
+        completion: 0,
+        projectName: ''
+      },
+      messages: []
+    };
+    
+    mutableTeams.push(newTeam);
+    setStoredData('teams', mutableTeams);
+    return newTeam;
+  },
+  
+  joinTeam: (teamId, userId, userName, userAvatar) => {
+    const team = mutableTeams.find(t => t.id === teamId);
+    if (!team) throw new Error('Team not found');
+    
+    if (team.members.length >= team.maxMembers) {
+      throw new Error('Team is full');
+    }
+    
+    if (team.members.some(m => m.id === userId)) {
+      throw new Error('Already a member of this team');
+    }
+    
+    team.members.push({
+      id: userId,
+      name: userName,
+      role: 'Member',
+      avatar: userAvatar
+    });
+    
+    setStoredData('teams', mutableTeams);
+    return team;
+  },
+  
+  deleteTeam: (teamId, userId) => {
+    const teamIndex = mutableTeams.findIndex(t => t.id === teamId);
+    if (teamIndex === -1) throw new Error('Team not found');
+    
+    const team = mutableTeams[teamIndex];
+    const isTeamLead = team.members.some(m => m.id === userId && m.role === 'Team Lead');
+    
+    if (!isTeamLead) {
+      throw new Error('Only team lead can delete the team');
+    }
+    
+    mutableTeams.splice(teamIndex, 1);
+    setStoredData('teams', mutableTeams);
+    return true;
+  },
+  
+  addTeamMessage: (teamId, senderId, senderName, message) => {
+    const team = mutableTeams.find(t => t.id === teamId);
+    if (!team) throw new Error('Team not found');
+    
+    const newMessage = {
+      id: Date.now(),
+      senderId,
+      senderName,
+      message,
+      timestamp: new Date().toISOString()
+    };
+    
+    team.messages.push(newMessage);
+    setStoredData('teams', mutableTeams);
+    return newMessage;
+  },
+  
+  // Submission management
+  getSubmissions: () => mutableSubmissions,
+  
+  createSubmission: (submissionData) => {
+    const newSubmission = {
+      id: Date.now(),
+      ...submissionData,
+      status: 'submitted',
+      submittedAt: new Date().toISOString(),
+      canEdit: false
+    };
+    
+    mutableSubmissions.push(newSubmission);
+    setStoredData('submissions', mutableSubmissions);
+    return newSubmission;
+  },
+  
+  updateSubmission: (submissionId, updates) => {
+    const submissionIndex = mutableSubmissions.findIndex(s => s.id === submissionId);
+    if (submissionIndex === -1) throw new Error('Submission not found');
+    
+    mutableSubmissions[submissionIndex] = {
+      ...mutableSubmissions[submissionIndex],
+      ...updates,
+      submittedAt: new Date().toISOString()
+    };
+    
+    setStoredData('submissions', mutableSubmissions);
+    return mutableSubmissions[submissionIndex];
+  },
+  
+  deleteSubmission: (submissionId) => {
+    const submissionIndex = mutableSubmissions.findIndex(s => s.id === submissionId);
+    if (submissionIndex === -1) throw new Error('Submission not found');
+    
+    mutableSubmissions.splice(submissionIndex, 1);
+    setStoredData('submissions', mutableSubmissions);
+    return true;
+  }
+};

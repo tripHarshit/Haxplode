@@ -13,6 +13,7 @@ import {
   User,
   Bell
 } from 'lucide-react';
+import ThemeToggle from '../ui/ThemeToggle';
 
 const Layout = ({ children }) => {
   const { user, logout, hasRole } = useAuth();
@@ -73,16 +74,16 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-neutral-900/80" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl">
-          <div className="flex h-16 items-center justify-between px-6 border-b border-neutral-200">
-            <h1 className="text-xl font-bold text-gradient">Haxcode</h1>
+        <div className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-xl transition-colors duration-300">
+          <div className="flex h-16 items-center justify-between px-6 border-b border-neutral-200 dark:border-gray-700">
+            <h1 className="text-xl font-bold text-gradient">Haxplode</h1>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="text-neutral-500 hover:text-neutral-700"
+              className="text-neutral-500 hover:text-neutral-700 dark:text-gray-400 dark:hover:text-gray-200"
             >
               <X size={24} />
             </button>
@@ -102,8 +103,8 @@ const Layout = ({ children }) => {
                 }}
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg mb-2 transition-colors ${
                   isActive(item.href)
-                    ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                    : 'text-neutral-700 hover:bg-neutral-100'
+                    ? 'bg-primary-50 text-primary-700 border border-primary-200 dark:bg-primary-900 dark:text-primary-300 dark:border-primary-700'
+                    : 'text-neutral-700 hover:bg-neutral-100 dark:text-gray-300 dark:hover:bg-gray-700'
                 }`}
               >
                 <item.icon size={20} className="mr-3" />
@@ -112,7 +113,7 @@ const Layout = ({ children }) => {
             ))}
             
             {/* Divider */}
-            <div className="border-t border-neutral-200 my-4"></div>
+            <div className="border-t border-neutral-200 dark:border-gray-700 my-4"></div>
             
             {/* Additional Links */}
             {additionalLinks.map((item) => (
@@ -122,8 +123,8 @@ const Layout = ({ children }) => {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg mb-2 transition-colors ${
                   isActive(item.href)
-                    ? 'bg-neutral-50 text-neutral-700 border border-neutral-200'
-                    : 'text-neutral-600 hover:bg-neutral-100'
+                    ? 'bg-neutral-50 text-neutral-700 border border-neutral-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
+                    : 'text-neutral-600 hover:bg-neutral-100 dark:text-gray-400 dark:hover:bg-gray-700'
                 }`}
               >
                 <item.icon size={20} className="mr-3" />
@@ -136,9 +137,9 @@ const Layout = ({ children }) => {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-neutral-200 bg-white px-6 pb-4">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-neutral-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 pb-4 transition-colors duration-300">
           <div className="flex h-16 shrink-0 items-center">
-            <h1 className="text-xl font-bold text-gradient">Haxcode</h1>
+            <h1 className="text-xl font-bold text-gradient">Haxplode</h1>
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -157,8 +158,8 @@ const Layout = ({ children }) => {
                         }}
                         className={`flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
                           isActive(item.href)
-                            ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                            : 'text-neutral-700 hover:bg-neutral-100'
+                            ? 'bg-primary-50 text-primary-700 border border-primary-200 dark:bg-primary-900 dark:text-primary-300 dark:border-primary-700'
+                            : 'text-neutral-700 hover:bg-neutral-100 dark:text-gray-300 dark:hover:bg-gray-700'
                         }`}
                       >
                         <item.icon size={20} className="mr-3" />
@@ -170,7 +171,7 @@ const Layout = ({ children }) => {
               </li>
               
               {/* Divider */}
-              <li className="border-t border-neutral-200 my-4"></li>
+              <li className="border-t border-neutral-200 dark:border-gray-700 my-4"></li>
               
               {/* Additional Links */}
               <li>
@@ -181,8 +182,8 @@ const Layout = ({ children }) => {
                         to={item.href}
                         className={`flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
                           isActive(item.href)
-                            ? 'bg-neutral-50 text-neutral-700 border border-neutral-200'
-                            : 'text-neutral-600 hover:bg-neutral-100'
+                            ? 'bg-neutral-50 text-neutral-700 border border-neutral-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
+                            : 'text-neutral-600 hover:bg-neutral-100 dark:text-gray-400 dark:hover:bg-gray-700'
                         }`}
                       >
                         <item.icon size={20} className="mr-3" />
@@ -200,44 +201,50 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-neutral-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-          <button
-            type="button"
-            className="-m-2.5 p-2.5 text-neutral-700 lg:hidden"
-            onClick={() => {
-              setSidebarOpen(true);
-              // Log navigation test
-              if (window.navigationTester) {
-                window.navigationTester.logButtonClick('Hamburger Menu', 'mobile_header');
-                window.navigationTester.logModalInteraction('Mobile Sidebar', 'open');
-              }
-            }}
-          >
-            <Menu size={24} />
-          </button>
+        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-neutral-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8 transition-colors duration-300">
+                      <button
+              type="button"
+              className="-m-2.5 p-2.5 text-neutral-700 dark:text-gray-300 lg:hidden"
+              onClick={() => {
+                setSidebarOpen(true);
+                // Log navigation test
+                if (window.navigationTester) {
+                  window.navigationTester.logButtonClick('Hamburger Menu', 'mobile_header');
+                  window.navigationTester.logModalInteraction('Mobile Sidebar', 'open');
+                }
+              }}
+            >
+              <Menu size={24} />
+            </button>
 
-          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            <div className="flex flex-1"></div>
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
-              {/* Notifications */}
-              <button className="p-2 text-neutral-400 hover:text-neutral-500">
-                <Bell size={20} />
-              </button>
+                      <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+              <div className="flex flex-1"></div>
+              <div className="flex items-center gap-x-4 lg:gap-x-6">
+                {/* Theme Toggle */}
+                <ThemeToggle />
+                
+                {/* Notifications */}
+                <Link
+                  to="/notifications"
+                  className="p-2 text-neutral-400 hover:text-neutral-500 dark:text-gray-500 dark:hover:text-gray-300"
+                >
+                  <Bell size={20} />
+                </Link>
 
               {/* User menu */}
               <div className="flex items-center gap-x-4">
                 <div className="hidden sm:flex sm:flex-col sm:items-end">
-                  <p className="text-sm font-medium text-neutral-900">{user?.name}</p>
-                  <p className="text-xs text-neutral-500">{user?.email}</p>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-gray-100">{user?.name}</p>
+                  <p className="text-xs text-neutral-500 dark:text-gray-400">{user?.email}</p>
                 </div>
-                <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-sm font-medium text-primary-700">
+                <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+                  <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
                     {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                   </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="p-2 text-neutral-400 hover:text-neutral-500"
+                  className="p-2 text-neutral-400 hover:text-neutral-500 dark:text-gray-500 dark:hover:text-gray-300"
                   title="Logout"
                 >
                   <LogOut size={20} />

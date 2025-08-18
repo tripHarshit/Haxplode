@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { 
   CalendarIcon, 
   UserGroupIcon, 
@@ -18,7 +19,8 @@ import {
   mockDeadlines,
   mockEvents,
   mockTeams,
-  mockSubmissions
+  mockSubmissions,
+  dataService
 } from '../../utils/mockData';
 import StatsCard from '../../components/participant/StatsCard';
 import ActivityTimeline from '../../components/participant/ActivityTimeline';
@@ -27,9 +29,11 @@ import QuickActions from '../../components/participant/QuickActions';
 import EventsGrid from '../../components/participant/EventsGrid';
 import TeamsList from '../../components/participant/TeamsList';
 import SubmissionsList from '../../components/participant/SubmissionsList';
+import Certificates from '../../components/participant/Certificates';
 
 const ParticipantDashboard = () => {
   const { user } = useAuth();
+  const { showError } = useNotifications();
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState({
@@ -46,6 +50,7 @@ const ParticipantDashboard = () => {
     { id: 'events', name: 'Events', icon: CalendarIcon },
     { id: 'teams', name: 'Teams', icon: UserGroupIcon },
     { id: 'submissions', name: 'Submissions', icon: TrophyIcon },
+    { id: 'certificates', name: 'Certificates', icon: TrophyIcon },
   ];
 
   useEffect(() => {
@@ -77,6 +82,45 @@ const ParticipantDashboard = () => {
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
+  };
+
+  const handleQuickAction = async (action) => {
+    switch (action) {
+      case 'browse-events':
+        setActiveTab('events');
+        break;
+      case 'create-team':
+        setActiveTab('teams');
+        // Could open team creation modal here
+        break;
+      case 'join-team':
+        setActiveTab('teams');
+        // Could open team join modal here
+        break;
+      case 'submit-project':
+        setActiveTab('submissions');
+        // Could open submission form here
+        break;
+      case 'view-schedule':
+        setActiveTab('overview');
+        break;
+      case 'manage-submissions':
+        setActiveTab('submissions');
+        break;
+      default:
+        showError('Action not implemented yet');
+    }
+  };
+
+  const refreshDashboardData = () => {
+    setDashboardData({
+      stats: mockDashboardStats,
+      activities: mockActivities,
+      deadlines: mockDeadlines,
+      events: dataService.getEvents(),
+      teams: dataService.getTeams(),
+      submissions: dataService.getSubmissions()
+    });
   };
 
   if (isLoading) {
@@ -192,7 +236,7 @@ const ParticipantDashboard = () => {
             </div>
 
             {/* Quick Actions */}
-            <QuickActions />
+            <QuickActions onActionClick={handleQuickAction} />
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -235,6 +279,10 @@ const ParticipantDashboard = () => {
 
         {activeTab === 'submissions' && (
           <SubmissionsList submissions={dashboardData.submissions} />
+        )}
+
+        {activeTab === 'certificates' && (
+          <Certificates />
         )}
       </div>
     </div>

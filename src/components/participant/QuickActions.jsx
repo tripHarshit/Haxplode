@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon, 
@@ -7,8 +7,14 @@ import {
   CalendarIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 
-const QuickActions = () => {
+const QuickActions = ({ onActionClick }) => {
+  const { user } = useAuth();
+  const { showError } = useNotifications();
+  const [isLoading, setIsLoading] = useState(false);
+
   const actions = [
     {
       id: 'browse-events',
@@ -16,7 +22,7 @@ const QuickActions = () => {
       description: 'Discover new hackathons and challenges',
       icon: MagnifyingGlassIcon,
       color: 'bg-blue-500 hover:bg-blue-600',
-      href: '#events'
+      action: 'browse-events'
     },
     {
       id: 'create-team',
@@ -24,7 +30,7 @@ const QuickActions = () => {
       description: 'Form a new team for upcoming events',
       icon: UserGroupIcon,
       color: 'bg-green-500 hover:bg-green-600',
-      href: '#teams'
+      action: 'create-team'
     },
     {
       id: 'join-team',
@@ -32,7 +38,7 @@ const QuickActions = () => {
       description: 'Join an existing team with invitation code',
       icon: PlusIcon,
       color: 'bg-purple-500 hover:bg-purple-600',
-      href: '#teams'
+      action: 'join-team'
     },
     {
       id: 'submit-project',
@@ -40,7 +46,7 @@ const QuickActions = () => {
       description: 'Submit your project for active events',
       icon: RocketLaunchIcon,
       color: 'bg-orange-500 hover:bg-orange-600',
-      href: '#submissions'
+      action: 'submit-project'
     },
     {
       id: 'view-schedule',
@@ -48,7 +54,7 @@ const QuickActions = () => {
       description: 'Check your upcoming event schedule',
       icon: CalendarIcon,
       color: 'bg-indigo-500 hover:bg-indigo-600',
-      href: '#schedule'
+      action: 'view-schedule'
     },
     {
       id: 'manage-submissions',
@@ -56,26 +62,33 @@ const QuickActions = () => {
       description: 'View and edit your project submissions',
       icon: DocumentTextIcon,
       color: 'bg-pink-500 hover:bg-pink-600',
-      href: '#submissions'
+      action: 'manage-submissions'
     }
   ];
 
-  const handleActionClick = (action) => {
-    // Log navigation test
-    if (window.navigationTester) {
-      window.navigationTester.logButtonClick(action.title, 'quick_actions');
-      window.navigationTester.logNavigation('participant_dashboard', action.href, 'quick_action_click');
+  const handleActionClick = async (action) => {
+    if (!user) {
+      showError('Please log in to perform this action');
+      return;
     }
-    
-    // In a real app, this would navigate to the appropriate section or open modals
-    console.log(`Action clicked: ${action.title}`);
-    
-    // For demo purposes, scroll to the appropriate tab
-    if (action.href) {
-      const element = document.querySelector(action.href);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+
+    if (isLoading) return;
+
+    setIsLoading(true);
+    try {
+      // Log navigation test
+      if (window.navigationTester) {
+        window.navigationTester.logButtonClick(action.title, 'quick_actions');
       }
+      
+      // Call the parent handler with the action
+      if (onActionClick) {
+        await onActionClick(action.action);
+      }
+    } catch (error) {
+      showError('Failed to perform action. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -93,7 +106,8 @@ const QuickActions = () => {
             <button
               key={action.id}
               onClick={() => handleActionClick(action)}
-              className={`${action.color} text-white p-4 rounded-lg text-left transition-all duration-200 transform hover:scale-105 hover:shadow-lg group`}
+              disabled={isLoading}
+              className={`${action.color} text-white p-4 rounded-lg text-left transition-all duration-200 transform hover:scale-105 hover:shadow-lg group disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">

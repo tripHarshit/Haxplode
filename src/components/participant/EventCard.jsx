@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   MapPinIcon, 
   CalendarIcon, 
@@ -8,11 +8,40 @@ import {
   ComputerDesktopIcon 
 } from '@heroicons/react/24/outline';
 import { format, formatDistanceToNow } from 'date-fns';
+import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
+import { dataService } from '../../utils/mockData';
 
-const EventCard = ({ event, viewMode, statusBadge, onClick }) => {
+const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate }) => {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useNotifications();
+  const [isRegistering, setIsRegistering] = useState(false);
+
   const isRegistrationOpen = () => {
     if (event.isRegistered || event.status === 'full') return false;
     return new Date(event.registrationDeadline) > new Date();
+  };
+
+  const handleRegister = async (e) => {
+    e.stopPropagation();
+    
+    if (!user) {
+      showError('Please log in to register for events');
+      return;
+    }
+
+    setIsRegistering(true);
+    try {
+      await dataService.registerForEvent(event.id, user.id, user.name);
+      showSuccess(`Successfully registered for ${event.title}!`);
+      if (onEventUpdate) {
+        onEventUpdate();
+      }
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const getLocationIcon = () => {
@@ -82,16 +111,11 @@ const EventCard = ({ event, viewMode, statusBadge, onClick }) => {
               
               {isRegistrationOpen() && (
                 <button 
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Log navigation test
-                    if (window.navigationTester) {
-                      window.navigationTester.logButtonClick('Register Now', 'event_card');
-                    }
-                  }}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleRegister}
+                  disabled={isRegistering}
                 >
-                  Register Now
+                  {isRegistering ? 'Registering...' : 'Register Now'}
                 </button>
               )}
             </div>
@@ -161,16 +185,11 @@ const EventCard = ({ event, viewMode, statusBadge, onClick }) => {
             
             {isRegistrationOpen() && (
               <button 
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Log navigation test
-                  if (window.navigationTester) {
-                    window.navigationTester.logButtonClick('Register', 'event_card');
-                  }
-                }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleRegister}
+                disabled={isRegistering}
               >
-                Register
+                {isRegistering ? 'Registering...' : 'Register'}
               </button>
             )}
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   PlusIcon, 
   UserGroupIcon, 
@@ -13,12 +13,51 @@ import { format } from 'date-fns';
 import CreateTeamModal from './CreateTeamModal';
 import JoinTeamModal from './JoinTeamModal';
 import TeamDetailsModal from './TeamDetailsModal';
+import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
+import { dataService } from '../../utils/mockData';
 
 const TeamsList = ({ teams }) => {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useNotifications();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [showTeamDetails, setShowTeamDetails] = useState(false);
+  const [currentTeams, setCurrentTeams] = useState(teams);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    setCurrentTeams(teams);
+  }, [teams]);
+
+  const handleTeamUpdate = () => {
+    setCurrentTeams(dataService.getTeams());
+  };
+
+  const handleDeleteTeam = async (teamId, e) => {
+    e.stopPropagation();
+    
+    if (!user) {
+      showError('Please log in to delete teams');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await dataService.deleteTeam(teamId, user.id);
+      showSuccess('Team deleted successfully');
+      handleTeamUpdate();
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleTeamClick = (team) => {
     setSelectedTeam(team);
@@ -65,9 +104,9 @@ const TeamsList = ({ teams }) => {
       </div>
 
       {/* Teams Grid */}
-      {teams.length > 0 ? (
+      {currentTeams.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {teams.map((team) => (
+                      {currentTeams.map((team) => (
             <div
               key={team.id}
               className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
@@ -155,10 +194,20 @@ const TeamsList = ({ teams }) => {
                   </div>
                   
                   <div className="flex space-x-2">
-                    <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
+                    <button 
+                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTeamClick(team);
+                      }}
+                    >
                       <ChatBubbleLeftRightIcon className="h-4 w-4" />
                     </button>
-                    <button className="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                    <button 
+                      className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                      onClick={(e) => handleDeleteTeam(team.id, e)}
+                      disabled={isDeleting}
+                    >
                       <TrashIcon className="h-4 w-4" />
                     </button>
                   </div>
@@ -195,11 +244,13 @@ const TeamsList = ({ teams }) => {
       <CreateTeamModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+        onTeamCreated={handleTeamUpdate}
       />
       
       <JoinTeamModal
         isOpen={showJoinModal}
         onClose={() => setShowJoinModal(false)}
+        onTeamJoined={handleTeamUpdate}
       />
       
       {selectedTeam && (

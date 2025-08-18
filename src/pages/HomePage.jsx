@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -14,6 +15,12 @@ import {
 } from 'lucide-react';
 
 const HomePage = () => {
+  const { setLightModeForced } = useTheme();
+
+  useEffect(() => {
+    setLightModeForced(true);
+    return () => setLightModeForced(false);
+  }, [setLightModeForced]);
   const { isAuthenticated, user, getRedirectPath } = useAuth();
   const navigate = useNavigate();
 
@@ -63,7 +70,7 @@ const HomePage = () => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gradient">Haxcode</h1>
+              <h1 className="text-2xl font-bold text-gradient">Haxplode</h1>
             </div>
             <div className="flex items-center space-x-4">
               {isAuthenticated ? (
@@ -332,7 +339,7 @@ const HomePage = () => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <h3 className="text-xl font-bold text-gradient mb-4">Haxcode</h3>
+              <h3 className="text-xl font-bold text-gradient mb-4">Haxplode</h3>
               <p className="text-neutral-400 mb-4">
                 The ultimate platform for hackathons, innovation, and collaboration.
               </p>
@@ -381,7 +388,7 @@ const HomePage = () => {
           </div>
           <div className="mt-8 pt-8 border-t border-neutral-800 text-center">
             <p className="text-neutral-400">
-              © 2024 Haxcode. All rights reserved.
+              © 2024 Haxplode. All rights reserved.
             </p>
           </div>
         </div>

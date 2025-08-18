@@ -1,6 +1,6 @@
-# Haxcode - Hackathon Hosting Platform
+# Haxplode - Hackathon Hosting Platform
 
-A modern, full-stack hackathon hosting platform built with React, Vite, and TailwindCSS. Haxcode provides a comprehensive solution for organizing, participating in, and judging hackathons with real-time collaboration features.
+A modern, full-stack hackathon hosting platform built with React, Vite, and TailwindCSS. Haxplode provides a comprehensive solution for organizing, participating in, and judging hackathons with real-time collaboration features.
 
 ## 🚀 Features
 
@@ -85,7 +85,7 @@ src/
    ```env
    VITE_API_URL=http://localhost:3001/api
    VITE_SOCKET_URL=http://localhost:3001
-   VITE_APP_NAME=Haxcode
+   VITE_APP_NAME=Haxplode
    VITE_APP_VERSION=1.0.0
    ```
 
@@ -187,7 +187,7 @@ npm run build
 ```env
 VITE_API_URL=https://your-api-domain.com/api
 VITE_SOCKET_URL=https://your-api-domain.com
-VITE_APP_NAME=Haxcode
+VITE_APP_NAME=Haxplode
 VITE_APP_VERSION=1.0.0
 ```
 
@@ -228,4 +228,4 @@ For support and questions:
 
 ---
 
-Built with ❤️ by the Haxcode Team
+Built with ❤️ by the Haxplode Team

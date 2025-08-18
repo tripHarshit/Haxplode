@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   PlusIcon, 
   DocumentTextIcon, 
@@ -11,11 +11,21 @@ import {
 } from '@heroicons/react/24/outline';
 import { format, formatDistanceToNow } from 'date-fns';
 import SubmissionFormModal from './SubmissionFormModal';
+import { dataService } from '../../utils/mockData';
 
 const SubmissionsList = ({ submissions }) => {
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [editingSubmission, setEditingSubmission] = useState(null);
+  const [currentSubmissions, setCurrentSubmissions] = useState(submissions);
+
+  useEffect(() => {
+    setCurrentSubmissions(submissions);
+  }, [submissions]);
+
+  const handleSubmissionUpdate = () => {
+    setCurrentSubmissions(dataService.getSubmissions());
+  };
 
   const handleCreateSubmission = () => {
     setEditingSubmission(null);
@@ -115,9 +125,9 @@ const SubmissionsList = ({ submissions }) => {
       </div>
 
       {/* Submissions List */}
-      {submissions.length > 0 ? (
+      {currentSubmissions.length > 0 ? (
         <div className="space-y-4">
-          {submissions.map((submission) => {
+                      {currentSubmissions.map((submission) => {
             const deadlineStatus = getDeadlineStatus(submission.deadline);
             return (
               <div
@@ -294,6 +304,7 @@ const SubmissionsList = ({ submissions }) => {
         isOpen={showSubmissionForm}
         onClose={() => setShowSubmissionForm(false)}
         submission={editingSubmission}
+        onSubmissionCreated={handleSubmissionUpdate}
       />
     </div>
   );

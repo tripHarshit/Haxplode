@@ -284,6 +284,25 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const updateProfile = async (userData) => {
+    try {
+      const updatedUser = await authService.updateProfile(userData);
+      dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+      return updatedUser;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const changePassword = async (passwordData) => {
+    try {
+      const result = await authService.changePassword(passwordData);
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const clearError = useCallback(() => {
     dispatch({ type: 'CLEAR_ERROR' });
   }, []);
@@ -318,6 +337,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateUser,
+    updateProfile,
+    changePassword,
     clearError,
     hasRole,
     hasAnyRole,

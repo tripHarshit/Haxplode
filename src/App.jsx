@@ -2,9 +2,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Suspense, lazy, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { ToastProvider } from './components/ui/Toast';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout from './components/common/Layout';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import NavigationTester from './utils/navigationTest';
 import TestRunner from './utils/testRunner';
 import SimpleTestRunner from './utils/simpleTestRunner';
@@ -15,6 +19,9 @@ const HomePage = lazy(() => import('./pages/HomePage'));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 
 // Participant pages
 const ParticipantDashboard = lazy(() => import('./pages/participant/ParticipantDashboard'));
@@ -53,24 +60,51 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <AuthProvider>
-        <SocketProvider>
-          <div className="min-h-screen bg-gradient">
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                  <LoadingSpinner size="lg" />
-                  <p className="mt-4 text-neutral-600">Loading Haxcode...</p>
-                </div>
-              </div>
-            }>
-              <Routes>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <SocketProvider>
+            <ThemeProvider>
+              <NotificationProvider>
+                <ToastProvider>
+                  <div className="min-h-screen bg-gradient dark:bg-gradient-dark transition-colors duration-300">
+                    <Suspense fallback={
+                      <div className="min-h-screen flex items-center justify-center">
+                        <div className="text-center">
+                          <LoadingSpinner size="lg" />
+                          <p className="mt-4 text-neutral-600">Loading Haxplode...</p>
+                        </div>
+                      </div>
+                    }>
+                      <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/hackathons" element={<HackathonList />} />
+                
+                {/* Profile and Settings routes */}
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ProfilePage />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <SettingsPage />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/notifications" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <NotificationsPage />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
                 
                 {/* Protected routes with role-based access */}
                 <Route path="/dashboard" element={
@@ -80,7 +114,7 @@ function App() {
                 } />
                 
                 {/* Participant routes */}
-                <Route path="/participant" element={
+                <Route path="/participant/*" element={
                   <ProtectedRoute requiredRole="participant">
                     <Layout>
                       <Routes>
@@ -93,7 +127,7 @@ function App() {
                 } />
                 
                 {/* Organizer routes */}
-                <Route path="/organizer" element={
+                <Route path="/organizer/*" element={
                   <ProtectedRoute requiredRole="organizer">
                     <Layout>
                       <Routes>
@@ -106,7 +140,7 @@ function App() {
                 } />
                 
                 {/* Judge routes */}
-                <Route path="/judge" element={
+                <Route path="/judge/*" element={
                   <ProtectedRoute requiredRole="judge">
                     <Layout>
                       <Routes>
@@ -134,9 +168,13 @@ function App() {
               </Routes>
             </Suspense>
           </div>
-        </SocketProvider>
-      </AuthProvider>
-    </Router>
+        </ToastProvider>
+      </NotificationProvider>
+    </ThemeProvider>
+  </SocketProvider>
+</AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

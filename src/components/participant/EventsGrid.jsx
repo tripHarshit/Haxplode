@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   MagnifyingGlassIcon, 
   FunnelIcon, 
@@ -14,7 +14,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import EventCard from './EventCard';
 import EventDetailsModal from './EventDetailsModal';
-import { mockCategories, mockPrizeRanges } from '../../utils/mockData';
+import { mockCategories, mockPrizeRanges, dataService } from '../../utils/mockData';
 
 const EventsGrid = ({ events }) => {
   const [viewMode, setViewMode] = useState('grid');
@@ -24,9 +24,19 @@ const EventsGrid = ({ events }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentEvents, setCurrentEvents] = useState(events);
+
+  useEffect(() => {
+    setCurrentEvents(events);
+  }, [events]);
+
+  const handleEventUpdate = () => {
+    // Refresh events from data service
+    setCurrentEvents(dataService.getEvents());
+  };
 
   const filteredEvents = useMemo(() => {
-    return events.filter(event => {
+    return currentEvents.filter(event => {
       const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           event.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -156,7 +166,7 @@ const EventsGrid = ({ events }) => {
             </button>
             
             <span className="text-sm text-gray-500">
-              {filteredEvents.length} of {events.length} events
+              {filteredEvents.length} of {currentEvents.length} events
             </span>
           </div>
 
@@ -211,6 +221,7 @@ const EventsGrid = ({ events }) => {
               viewMode={viewMode}
               statusBadge={getStatusBadge(event)}
               onClick={() => handleEventClick(event)}
+              onEventUpdate={handleEventUpdate}
             />
           ))}
         </div>

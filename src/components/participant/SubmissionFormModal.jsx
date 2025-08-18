@@ -9,9 +9,13 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon
 } from '@heroicons/react/24/outline';
-import { mockEvents, mockTeams } from '../../utils/mockData';
+import { mockEvents, mockTeams, dataService } from '../../utils/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 
-const SubmissionFormModal = ({ isOpen, onClose, submission }) => {
+const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated }) => {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useNotifications();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     projectName: submission?.projectName || '',
@@ -142,17 +146,26 @@ const SubmissionFormModal = ({ isOpen, onClose, submission }) => {
       return;
     }
     
+    if (!user) {
+      showError('Please log in to submit a project');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
       if (submission) {
-        // In real app: await participantService.updateSubmission(submission.hackathonId, submission.id, formData);
-        console.log('Updating submission:', formData);
+        // Update existing submission
+        await dataService.updateSubmission(submission.id, formData);
+        showSuccess('Submission updated successfully!');
       } else {
-        // In real app: await participantService.submitProject(formData.hackathonId, formData);
-        console.log('Creating submission:', formData);
+        // Create new submission
+        const submissionData = {
+          ...formData,
+          userId: user.id,
+          userName: user.name
+        };
+        await dataService.createSubmission(submissionData);
+        showSuccess('Project submitted successfully!');
       }
       
       // Reset form and close modal
@@ -171,12 +184,13 @@ const SubmissionFormModal = ({ isOpen, onClose, submission }) => {
       setCurrentStep(1);
       onClose();
       
-      // Show success message
-      alert(submission ? 'Submission updated successfully!' : 'Project submitted successfully!');
+      if (onSubmissionCreated) {
+        onSubmissionCreated();
+      }
       
     } catch (error) {
       console.error('Failed to submit project:', error);
-      setErrors({ submit: 'Failed to submit project. Please try again.' });
+      setErrors({ submit: error.message || 'Failed to submit project. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }

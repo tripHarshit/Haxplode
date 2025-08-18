@@ -8,6 +8,7 @@ import {
   PencilIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
+import { Crown } from 'lucide-react';
 import { mockEvents, mockSubmissions } from '../../utils/mockData';
 import { mockParticipants, mockAnnouncements, mockEventStats } from '../../utils/organizerMockData';
 import ParticipantsList from '../../components/organizer/ParticipantsList';
@@ -15,6 +16,7 @@ import ParticipantDetailsModal from '../../components/organizer/ParticipantDetai
 import AnnouncementsList from '../../components/organizer/AnnouncementsList';
 import EnhancedEventCard from '../../components/organizer/EnhancedEventCard';
 import AnalyticsCharts from '../../components/organizer/AnalyticsCharts';
+import SponsorShowcase from '../../components/organizer/SponsorShowcase';
 
 const OrganizerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -117,7 +119,8 @@ const OrganizerDashboard = () => {
                 { id: 'overview', label: 'Overview', icon: ChartBarIcon },
                 { id: 'events', label: 'Events', icon: CalendarIcon },
                 { id: 'participants', label: 'Participants', icon: UsersIcon },
-                { id: 'announcements', label: 'Announcements', icon: BellIcon }
+                { id: 'announcements', label: 'Announcements', icon: BellIcon },
+                { id: 'sponsors', label: 'Sponsors', icon: Crown }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -258,6 +261,12 @@ const OrganizerDashboard = () => {
                 onEdit={handleEditAnnouncement}
                 onDelete={handleDeleteAnnouncement}
               />
+            </div>
+          )}
+
+          {activeTab === 'sponsors' && (
+            <div className="space-y-6">
+              <SponsorShowcase />
             </div>
           )}
         </div>
