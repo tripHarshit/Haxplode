@@ -143,7 +143,7 @@ const JudgeDashboard = () => {
                 { id: 'overview', label: 'Overview', icon: ChartBarIcon },
                 { id: 'submissions', label: 'Assigned Submissions', icon: ClipboardDocumentListIcon },
                 { id: 'analytics', label: 'Analytics', icon: ChartBarIcon },
-                { id: 'leaderboard', label: 'Leaderboard', icon: BarChart3 }
+                { id: 'leaderboard', label: 'Leaderboard', icon: ChartBarIcon }
               ].map((tab) => (
                 <button
                   key={tab.id}

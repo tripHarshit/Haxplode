@@ -58,7 +58,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           ###### Repository/Build Configurations ######
-          app_location: "/frontend"          # Root contains package.json and Vite config
+          app_location: "frontend"    # App moved under frontend/
           api_location: ""           # not using Azure Functions
           output_location: "dist"    # Vite outputs here
           ###### End of Repository/Build Configurations ######
