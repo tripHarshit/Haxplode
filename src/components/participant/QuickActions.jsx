@@ -61,6 +61,12 @@ const QuickActions = () => {
   ];
 
   const handleActionClick = (action) => {
+    // Log navigation test
+    if (window.navigationTester) {
+      window.navigationTester.logButtonClick(action.title, 'quick_actions');
+      window.navigationTester.logNavigation('participant_dashboard', action.href, 'quick_action_click');
+    }
+    
     // In a real app, this would navigate to the appropriate section or open modals
     console.log(`Action clicked: ${action.title}`);
     

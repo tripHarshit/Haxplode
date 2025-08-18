@@ -377,3 +377,4 @@ const SubmissionTable = ({ submissions, onViewSubmission, onStartReview, getStat
 };
 
 export default AssignedSubmissions;
+

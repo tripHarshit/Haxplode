@@ -21,6 +21,13 @@ const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
+    // Log navigation test
+    if (window.navigationTester) {
+      window.navigationTester.logAuthEvent('logout', true);
+      window.navigationTester.logButtonClick('Logout', 'top_bar');
+      window.navigationTester.logNavigation(location.pathname, '/', 'logout');
+    }
+    
     logout();
     navigate('/');
   };
@@ -85,7 +92,14 @@ const Layout = ({ children }) => {
               <Link
                 key={item.name}
                 to={item.href}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => {
+                  setSidebarOpen(false);
+                  // Log navigation test
+                  if (window.navigationTester) {
+                    window.navigationTester.logNavigation(location.pathname, item.href, 'mobile_menu_click');
+                    window.navigationTester.logButtonClick(item.name, 'mobile_sidebar_menu');
+                  }
+                }}
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg mb-2 transition-colors ${
                   isActive(item.href)
                     ? 'bg-primary-50 text-primary-700 border border-primary-200'
@@ -134,6 +148,13 @@ const Layout = ({ children }) => {
                     <li key={item.name}>
                       <Link
                         to={item.href}
+                        onClick={() => {
+                          // Log navigation test
+                          if (window.navigationTester) {
+                            window.navigationTester.logNavigation(location.pathname, item.href, 'desktop_menu_click');
+                            window.navigationTester.logButtonClick(item.name, 'desktop_sidebar_menu');
+                          }
+                        }}
                         className={`flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
                           isActive(item.href)
                             ? 'bg-primary-50 text-primary-700 border border-primary-200'
@@ -183,7 +204,14 @@ const Layout = ({ children }) => {
           <button
             type="button"
             className="-m-2.5 p-2.5 text-neutral-700 lg:hidden"
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => {
+              setSidebarOpen(true);
+              // Log navigation test
+              if (window.navigationTester) {
+                window.navigationTester.logButtonClick('Hamburger Menu', 'mobile_header');
+                window.navigationTester.logModalInteraction('Mobile Sidebar', 'open');
+              }
+            }}
           >
             <Menu size={24} />
           </button>

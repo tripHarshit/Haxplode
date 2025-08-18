@@ -48,12 +48,24 @@ const JudgeDashboard = () => {
   };
 
   const handleStartReview = (submission) => {
+    // Log navigation test
+    if (window.navigationTester) {
+      window.navigationTester.logButtonClick('Start Review', 'judge_dashboard');
+      window.navigationTester.logModalInteraction('Scoring Form Modal', 'open');
+    }
     setReviewingSubmission(submission);
     setShowScoringForm(true);
   };
 
   const handleSubmitReview = async (reviewData) => {
     try {
+      // Log navigation test
+      if (window.navigationTester) {
+        window.navigationTester.logButtonClick('Submit Review', 'judge_dashboard');
+        window.navigationTester.logFormSubmission('Scoring Form', true);
+        window.navigationTester.logModalInteraction('Scoring Form Modal', 'submit');
+      }
+      
       // Update submission status
       setSubmissions(prev => prev.map(sub => 
         sub.id === reviewData.submissionId 
@@ -68,11 +80,20 @@ const JudgeDashboard = () => {
       setReviewingSubmission(null);
     } catch (error) {
       console.error('Error submitting review:', error);
+      if (window.navigationTester) {
+        window.navigationTester.logError(error, 'Submit Review');
+      }
     }
   };
 
   const handleSaveDraft = async (draftData) => {
     try {
+      // Log navigation test
+      if (window.navigationTester) {
+        window.navigationTester.logButtonClick('Save Draft', 'judge_dashboard');
+        window.navigationTester.logFormSubmission('Scoring Form Draft', true);
+      }
+      
       // Update submission with draft data
       setSubmissions(prev => prev.map(sub => 
         sub.id === draftData.submissionId 
@@ -84,6 +105,9 @@ const JudgeDashboard = () => {
       console.log('Draft saved:', draftData);
     } catch (error) {
       console.error('Error saving draft:', error);
+      if (window.navigationTester) {
+        window.navigationTester.logError(error, 'Save Draft');
+      }
     }
   };
 

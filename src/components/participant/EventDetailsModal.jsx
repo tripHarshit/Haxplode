@@ -21,12 +21,21 @@ const EventDetailsModal = ({ event, isOpen, onClose }) => {
   const handleRegistration = async () => {
     setIsRegistering(true);
     try {
+      // Log navigation test
+      if (window.navigationTester) {
+        window.navigationTester.logButtonClick('Register Now', 'event_details_modal');
+        window.navigationTester.logFormSubmission('Event Registration Form', true);
+      }
+      
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
       setRegistrationSuccess(true);
       // In real app: await participantService.registerForEvent(event.id);
     } catch (error) {
       console.error('Registration failed:', error);
+      if (window.navigationTester) {
+        window.navigationTester.logError(error, 'Event Registration');
+      }
     } finally {
       setIsRegistering(false);
     }
@@ -55,7 +64,13 @@ const EventDetailsModal = ({ event, isOpen, onClose }) => {
         {/* Background overlay */}
         <div 
           className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          onClick={onClose}
+          onClick={() => {
+            // Log navigation test
+            if (window.navigationTester) {
+              window.navigationTester.logModalInteraction('Event Details Modal', 'close_backdrop');
+            }
+            onClose();
+          }}
         ></div>
 
         {/* Modal panel */}
@@ -65,7 +80,14 @@ const EventDetailsModal = ({ event, isOpen, onClose }) => {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">{event.title}</h3>
               <button
-                onClick={onClose}
+                onClick={() => {
+                  // Log navigation test
+                  if (window.navigationTester) {
+                    window.navigationTester.logButtonClick('Close Modal', 'event_details_modal');
+                    window.navigationTester.logModalInteraction('Event Details Modal', 'close');
+                  }
+                  onClose();
+                }}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <XMarkIcon className="h-6 w-6" />

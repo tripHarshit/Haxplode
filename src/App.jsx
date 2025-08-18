@@ -1,10 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout from './components/common/Layout';
+import NavigationTester from './utils/navigationTest';
+import TestRunner from './utils/testRunner';
+import SimpleTestRunner from './utils/simpleTestRunner';
+import quickTest from './utils/quickTest';
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -27,6 +31,27 @@ const JudgeDashboard = lazy(() => import('./pages/judge/JudgeDashboard'));
 const SubmissionsList = lazy(() => import('./pages/judge/SubmissionsList'));
 
 function App() {
+  useEffect(() => {
+    // Initialize navigation tester for development
+    if (import.meta.env.DEV) {
+      console.log('🧪 Navigation testing enabled for development');
+      // Make navigation tester available globally for testing
+      window.navigationTester = new NavigationTester();
+      window.testRunner = new TestRunner();
+      window.simpleTestRunner = new SimpleTestRunner();
+      
+      // Add console commands for testing
+      console.log('💡 Available test commands:');
+      console.log('  - quickTest() - Run immediate quick test (fastest)');
+      console.log('  - simpleTestRunner.runBasicTests() - Run basic functionality tests (recommended)');
+      console.log('  - testRunner.runAllTests() - Run comprehensive navigation tests');
+      console.log('  - navigationTester.runAllTests() - Run basic navigation tests');
+      console.log('  - localStorage.getItem("haxcodeQuickTestResults") - View quick test results');
+      console.log('  - localStorage.getItem("haxcodeBasicTestReport") - View basic test results');
+      console.log('  - localStorage.getItem("haxcodeTestReport") - View comprehensive test results');
+    }
+  }, []);
+
   return (
     <Router>
       <AuthProvider>

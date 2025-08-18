@@ -81,15 +81,26 @@ const LoginPage = () => {
     setErrors({});
     
     try {
+      // Log navigation test
+      if (window.navigationTester) {
+        window.navigationTester.logAuthEvent('login_attempt', true, { email: formData.email });
+      }
+      
       const result = await login(formData);
       if (result.success) {
         setSuccessMessage('Login successful! Redirecting...');
         // Navigation is handled by the AuthContext
       } else {
         setErrors({ general: result.error });
+        if (window.navigationTester) {
+          window.navigationTester.logAuthEvent('login_attempt', false, { email: formData.email, error: result.error });
+        }
       }
     } catch (error) {
       setErrors({ general: error.message });
+      if (window.navigationTester) {
+        window.navigationTester.logError(error, 'Login Form Submission');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -100,6 +111,12 @@ const LoginPage = () => {
     setErrors({});
     
     try {
+      // Log navigation test
+      if (window.navigationTester) {
+        window.navigationTester.logAuthEvent('google_oauth_attempt', true);
+        window.navigationTester.logButtonClick('Continue with Google', 'login_page');
+      }
+      
       // Mock Google OAuth flow for development
       // In production, this would integrate with Google OAuth
       const mockGoogleToken = 'mock.google.token.' + Date.now();
@@ -110,9 +127,15 @@ const LoginPage = () => {
         // Navigation is handled by the AuthContext
       } else {
         setErrors({ general: result.error });
+        if (window.navigationTester) {
+          window.navigationTester.logAuthEvent('google_oauth_attempt', false, { error: result.error });
+        }
       }
     } catch (error) {
       setErrors({ general: error.message });
+      if (window.navigationTester) {
+        window.navigationTester.logError(error, 'Google OAuth Login');
+      }
     } finally {
       setIsGoogleLoading(false);
     }

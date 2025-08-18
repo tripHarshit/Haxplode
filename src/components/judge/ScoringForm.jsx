@@ -99,6 +99,12 @@ const ScoringForm = ({
   const handleSaveDraft = async () => {
     setIsSaving(true);
     try {
+      // Log navigation test
+      if (window.navigationTester) {
+        window.navigationTester.logButtonClick('Save Draft', 'scoring_form');
+        window.navigationTester.logFormSubmission('Scoring Form Draft', true);
+      }
+      
       const draftData = {
         submissionId: submission.id,
         scores,
@@ -112,6 +118,9 @@ const ScoringForm = ({
       // Don't close modal, just save
     } catch (error) {
       console.error('Error saving draft:', error);
+      if (window.navigationTester) {
+        window.navigationTester.logError(error, 'Save Draft');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -122,6 +131,13 @@ const ScoringForm = ({
     
     setIsSubmitting(true);
     try {
+      // Log navigation test
+      if (window.navigationTester) {
+        window.navigationTester.logButtonClick('Submit Review', 'scoring_form');
+        window.navigationTester.logFormSubmission('Scoring Form', true);
+        window.navigationTester.logModalInteraction('Scoring Form Modal', 'submit');
+      }
+      
       const { totalScore, maxScore } = calculateTotalScore();
       
       const reviewData = {
@@ -139,6 +155,9 @@ const ScoringForm = ({
       onClose();
     } catch (error) {
       console.error('Error submitting review:', error);
+      if (window.navigationTester) {
+        window.navigationTester.logError(error, 'Submit Review');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -174,7 +193,14 @@ const ScoringForm = ({
             <p className="text-sm text-gray-600">{submission.projectTitle} - {submission.teamName}</p>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => {
+              // Log navigation test
+              if (window.navigationTester) {
+                window.navigationTester.logButtonClick('Close Modal', 'scoring_form');
+                window.navigationTester.logModalInteraction('Scoring Form Modal', 'close');
+              }
+              onClose();
+            }}
             className="text-gray-400 hover:text-gray-600"
           >
             <XMarkIcon className="h-6 w-6" />

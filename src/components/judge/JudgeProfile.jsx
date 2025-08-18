@@ -133,3 +133,4 @@ const JudgeProfile = ({ profile, assignments }) => {
 };
 
 export default JudgeProfile;
+

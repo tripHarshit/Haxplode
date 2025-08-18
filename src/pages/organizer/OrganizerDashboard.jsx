@@ -30,11 +30,20 @@ const OrganizerDashboard = () => {
   };
 
   const handleCreateEvent = () => {
+    // Log navigation test
+    if (window.navigationTester) {
+      window.navigationTester.logButtonClick('Create New Event', 'organizer_dashboard');
+      window.navigationTester.logModalInteraction('Event Creation Modal', 'open');
+    }
     setShowEventModal(true);
   };
 
   const handleDeleteEvent = (eventId) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
+      // Log navigation test
+      if (window.navigationTester) {
+        window.navigationTester.logButtonClick('Delete Event', 'organizer_dashboard');
+      }
       setEvents(prev => prev.filter(event => event.id !== eventId));
     }
   };

@@ -88,3 +88,4 @@ const RecentActivity = ({ activities }) => {
 };
 
 export default RecentActivity;
+

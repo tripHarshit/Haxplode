@@ -360,3 +360,4 @@ export const mockRecentActivity = [
     color: "purple"
   }
 ];
+

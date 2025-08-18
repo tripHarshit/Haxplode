@@ -31,7 +31,14 @@ const EventCard = ({ event, viewMode, statusBadge, onClick }) => {
     return (
       <div 
         className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
-        onClick={onClick}
+        onClick={() => {
+          // Log navigation test
+          if (window.navigationTester) {
+            window.navigationTester.logButtonClick('Event Card', 'events_grid');
+            window.navigationTester.logModalInteraction('Event Details Modal', 'open');
+          }
+          onClick();
+        }}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
@@ -74,7 +81,16 @@ const EventCard = ({ event, viewMode, statusBadge, onClick }) => {
               </span>
               
               {isRegistrationOpen() && (
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <button 
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Log navigation test
+                    if (window.navigationTester) {
+                      window.navigationTester.logButtonClick('Register Now', 'event_card');
+                    }
+                  }}
+                >
                   Register Now
                 </button>
               )}
@@ -89,7 +105,14 @@ const EventCard = ({ event, viewMode, statusBadge, onClick }) => {
   return (
     <div 
       className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
-      onClick={onClick}
+      onClick={() => {
+        // Log navigation test
+        if (window.navigationTester) {
+          window.navigationTester.logButtonClick('Event Card', 'events_grid');
+          window.navigationTester.logModalInteraction('Event Details Modal', 'open');
+        }
+        onClick();
+      }}
     >
       <div className="space-y-4">
         {/* Header */}
@@ -137,7 +160,16 @@ const EventCard = ({ event, viewMode, statusBadge, onClick }) => {
             </span>
             
             {isRegistrationOpen() && (
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">
+              <button 
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Log navigation test
+                  if (window.navigationTester) {
+                    window.navigationTester.logButtonClick('Register', 'event_card');
+                  }
+                }}
+              >
                 Register
               </button>
             )}
