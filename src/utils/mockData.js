@@ -427,85 +427,10 @@ const setStoredData = (key, data) => {
   }
 };
 
-// Initialize data with localStorage persistence
-const storedEvents = getStoredData('events', [
-  {
-    id: 1,
-    title: 'AI Innovation Hackathon',
-    description: 'Build the next generation of AI-powered applications. Focus on machine learning, natural language processing, and computer vision.',
-    category: 'Artificial Intelligence',
-    startDate: '2024-03-15T09:00:00Z',
-    endDate: '2024-03-17T18:00:00Z',
-    registrationDeadline: '2024-03-10T23:59:59Z',
-    maxParticipants: 200,
-    currentParticipants: 45,
-    prize: '$25,000',
-    location: 'San Francisco, CA',
-    isOnline: false,
-    status: 'upcoming',
-    isRegistered: false,
-    registeredUsers: []
-  },
-  {
-    id: 2,
-    title: 'Web3 Revolution',
-    description: 'Create decentralized applications that will shape the future of the internet. Blockchain, DeFi, and NFT projects welcome.',
-    category: 'Blockchain',
-    startDate: '2024-04-20T10:00:00Z',
-    endDate: '2024-04-22T20:00:00Z',
-    registrationDeadline: '2024-04-15T23:59:59Z',
-    maxParticipants: 150,
-    currentParticipants: 78,
-    prize: '$15,000',
-    location: 'Online',
-    isOnline: true,
-    status: 'upcoming',
-    isRegistered: false,
-    registeredUsers: []
-  },
-  {
-    id: 3,
-    title: 'Green Tech Solutions',
-    description: 'Develop sustainable technology solutions to address climate change and environmental challenges.',
-    category: 'Sustainability',
-    startDate: '2024-05-10T08:00:00Z',
-    endDate: '2024-05-12T17:00:00Z',
-    registrationDeadline: '2024-05-05T23:59:59Z',
-    maxParticipants: 100,
-    currentParticipants: 92,
-    prize: '$10,000',
-    location: 'Austin, TX',
-    isOnline: false,
-    status: 'upcoming',
-    isRegistered: false,
-    registeredUsers: []
-  }
-]);
-
-// Initialize mutable data for localStorage persistence
-let mutableEvents = [...mockEvents];
-let mutableTeams = [...mockTeams];
-let mutableSubmissions = [...mockSubmissions];
-
-// Initialize with stored data if available
-try {
-  const storedEvents = getStoredData('events');
-  if (storedEvents) {
-    mutableEvents = storedEvents;
-  }
-  
-  const storedTeams = getStoredData('teams');
-  if (storedTeams) {
-    mutableTeams = storedTeams;
-  }
-  
-  const storedSubmissions = getStoredData('submissions');
-  if (storedSubmissions) {
-    mutableSubmissions = storedSubmissions;
-  }
-} catch (error) {
-  console.warn('Error loading stored data:', error);
-}
+// Initialize mutable data with localStorage persistence (using defaults when absent)
+let mutableEvents = getStoredData('events', mockEvents);
+let mutableTeams = getStoredData('teams', mockTeams);
+let mutableSubmissions = getStoredData('submissions', mockSubmissions);
 
 // Data management functions
 export const dataService = {
