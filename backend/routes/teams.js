@@ -1,0 +1,37 @@
+const express = require('express');
+const router = express.Router();
+
+const {
+  createTeam,
+  getTeamsByEvent,
+  getTeamById,
+  addTeamMember,
+  removeTeamMember,
+  updateTeam,
+  getUserTeams,
+} = require('../controllers/teamController');
+
+const {
+  authMiddleware,
+  authorizeParticipant,
+} = require('../middleware/authMiddleware');
+
+const {
+  validateInput,
+  teamSchemas,
+} = require('../middleware/validateInput');
+
+// Public routes
+router.get('/event/:eventId', getTeamsByEvent);
+router.get('/:id', getTeamById);
+
+// Protected routes
+router.get('/user/teams', authMiddleware, getUserTeams);
+
+// Participant only routes
+router.post('/', authMiddleware, authorizeParticipant, validateInput(teamSchemas.create), createTeam);
+router.put('/:id', authMiddleware, authorizeParticipant, updateTeam);
+router.post('/:teamId/members', authMiddleware, authorizeParticipant, addTeamMember);
+router.delete('/:teamId/members/:userId', authMiddleware, authorizeParticipant, removeTeamMember);
+
+module.exports = router;
