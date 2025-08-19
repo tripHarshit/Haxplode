@@ -1,6 +1,5 @@
-const Event = require('../models/sql/Event');
-const User = require('../models/sql/User');
-const { Team, TeamMember } = require('../models/sql/Team');
+// Import via centralized index to ensure associations are registered
+const { Event, User, Team, TeamMember } = require('../models/sql');
 const { Registration } = require('../models/mongo');
 const { Op } = require('sequelize');
 
@@ -306,9 +305,15 @@ const deleteEvent = async (req, res) => {
 // Get events by user (created by or participating in)
 const getEventsByUser = async (req, res) => {
   try {
+    console.log('=== GET EVENTS BY USER START ===');
     const userId = req.currentUser.id;
     const { page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
+    console.log('Requester userId:', userId, 'page:', page, 'limit:', limit);
+    try {
+      console.log('Event associations:', Object.keys(Event.associations || {}));
+      console.log('Team associations:', Object.keys(Team.associations || {}));
+    } catch {}
 
     // Get events created by user
     const createdEvents = await Event.findAndCountAll({
@@ -318,23 +323,33 @@ const getEventsByUser = async (req, res) => {
       offset: parseInt(offset),
     });
 
-    // Get events where user is a team member
-    const participatingEvents = await Event.findAll({
-      include: [
-        {
-          model: Team,
-          as: 'teams',
+    let participatingEvents = [];
+    if (req.currentUser.role !== 'Organizer') {
+      try {
+        // Only compute participating list for non-organizers to reduce query complexity
+        participatingEvents = await Event.findAll({
           include: [
             {
-              model: TeamMember,
-              as: 'members',
-              where: { userId },
+              model: Team,
+              as: 'teams',
+              include: [
+                {
+                  model: TeamMember,
+                  as: 'members',
+                  where: { userId },
+                },
+              ],
             },
           ],
-        },
-      ],
-      order: [['createdAt', 'DESC']],
-    });
+          order: [['createdAt', 'DESC']],
+        });
+      } catch (assocErr) {
+        console.warn('Participating events query skipped due to association error:', assocErr?.message);
+        participatingEvents = [];
+      }
+    }
+
+    console.log('Created events count:', createdEvents.count, 'Participating events:', participatingEvents.length);
 
     res.status(200).json({
       success: true,
@@ -351,6 +366,7 @@ const getEventsByUser = async (req, res) => {
         participatingEvents,
       },
     });
+    console.log('=== GET EVENTS BY USER END ===');
   } catch (error) {
     console.error('Get events by user error:', error);
     res.status(500).json({

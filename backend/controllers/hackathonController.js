@@ -71,6 +71,11 @@ async function getHackathon(req, res) {
 // POST /hackathons
 async function createHackathon(req, res) {
 	try {
+		console.log('=== HACKATHON CREATION STARTED ===');
+		console.log('Request body:', JSON.stringify(req.body, null, 2));
+		console.log('Current user ID:', req.currentUser.id);
+		console.log('Current user role:', req.currentUser.role);
+		
 		const creatorId = req.currentUser.id;
 		const {
 			title,
@@ -83,42 +88,89 @@ async function createHackathon(req, res) {
 			isOnline,
 			location,
 			rules = [],
-			timeline = [],
-			prize,
+			timeline = {},
+			prizes = [],
 			sponsors = [],
 			rounds = [],
 			customCriteria = [],
 			tags = [],
 			settings = {},
 		} = req.body;
+		
+		console.log('Extracted hackathon data:');
+		console.log('- Title:', title);
+		console.log('- Category:', category);
+		console.log('- Description length:', description ? description.length : 'NULL');
+		console.log('- Start date:', startDate);
+		console.log('- End date:', endDate);
+		console.log('- Max participants:', maxParticipants);
+		console.log('- Is online:', isOnline);
+		console.log('- Location:', location);
 
+		console.log('About to create hackathon in database...');
+		console.log('Event data to be created:');
+		console.log('- Name:', title);
+		console.log('- Theme:', category || 'General');
+		console.log('- Description:', description);
+		console.log('- Max team size:', settings.teamSizeMax || 4);
+		console.log('- Max teams:', Math.ceil((maxParticipants || 100) / (settings.teamSizeMax || 4)));
+		console.log('- Is public:', true);
+		console.log('- Location:', location);
+		console.log('- Is virtual:', !!isOnline);
+		console.log('- Created by:', creatorId);
+		
+		// Prepare timeline data with proper validation
+		const timelineData = timeline.startDate && timeline.endDate && timeline.registrationDeadline ? timeline : {
+			startDate: startDate || new Date(),
+			endDate: endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+			registrationDeadline: registrationDeadline || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
+		};
+		
+		// Prepare prizes array (Event model requires non-empty array)
+		const prizesArray = prizes && prizes.length > 0 ? prizes : ['TBD'];
+		
+		console.log('Timeline data:', timelineData);
+		console.log('Prizes array:', prizesArray);
+		
 		const event = await Event.create({
 			name: title,
 			theme: category || 'General',
-			description,
-			rules: rules.join('\n'),
-			timeline: { startDate, endDate, registrationDeadline },
-			prizes: prize ? [prize] : [],
-			sponsors,
+			description: description || 'No description provided',
+			rules: rules.length > 0 ? rules.join('\n') : 'Standard hackathon rules apply',
+			timeline: timelineData,
+			prizes: prizesArray,
+			sponsors: sponsors || [],
 			tracks: req.body.tracks || [],
 			rounds: rounds || [],
 			customCriteria: customCriteria || [],
-			settings,
+			settings: settings || {},
 			maxTeamSize: settings.teamSizeMax || 4,
 			maxTeams: Math.ceil((maxParticipants || 100) / (settings.teamSizeMax || 4)),
 			isPublic: true,
-			tags,
-			coverImage: req.body.bannerUrl,
-			location,
+			status: 'Draft',
+			tags: tags || [],
+			coverImage: req.body.bannerUrl || null,
+			location: location || 'TBD',
 			isVirtual: !!isOnline,
 			createdBy: creatorId,
 		});
 
+		console.log('Hackathon created successfully in database:');
+		console.log('- Event ID:', event.id);
+		console.log('- Event name:', event.name);
+		console.log('- Created at:', event.createdAt);
+		console.log('- Status:', event.status);
+		
 		audit(creatorId, 'event_created', { eventId: event.id });
 		emitToRoom(`event:${event.id}`, 'event_announcement', { eventId: event.id, type: 'announcement', message: 'Event created', timestamp: new Date().toISOString() });
+		
+		console.log('Sending success response...');
 		return res.status(201).json({ event });
 	} catch (err) {
-		console.error('Create hackathon error:', err);
+		console.error('=== HACKATHON CREATION FAILED ===');
+		console.error('Error details:', err);
+		console.error('Error message:', err.message);
+		console.error('Error stack:', err.stack);
 		return res.status(500).json({ message: 'Failed to create hackathon' });
 	}
 }
@@ -138,7 +190,7 @@ async function updateHackathon(req, res) {
 			description: payload.description ?? event.description,
 			rules: payload.rules ? payload.rules.join('\n') : event.rules,
 			timeline: payload.timeline || event.timeline,
-			prizes: payload.prize ? [payload.prize] : (payload.prizes || event.prizes),
+			prizes: payload.prizes || event.prizes,
 			sponsors: payload.sponsors ?? event.sponsors,
 			tracks: payload.tracks ?? event.tracks,
 			rounds: payload.rounds ?? event.rounds,
@@ -215,7 +267,15 @@ async function getParticipants(req, res) {
 		const regs = await Registration.find({ eventId, status: { $in: ['pending', 'confirmed'] } });
 		const userIds = regs.map(r => r.userId);
 		const users = await User.findAll({ where: { id: userIds }, attributes: ['id', 'fullName', 'email'] });
-		return res.json({ participants: users });
+		const regByUserId = new Map(regs.map(r => [r.userId, r]));
+		const participants = users.map(u => ({
+			id: u.id,
+			fullName: u.fullName,
+			email: u.email,
+			registrationDate: regByUserId.get(u.id)?.registeredAt || null,
+			status: regByUserId.get(u.id)?.status || 'confirmed',
+		}));
+		return res.json({ participants });
 	} catch (err) {
 		console.error('Get participants error:', err);
 		return res.status(500).json({ message: 'Failed to fetch participants' });

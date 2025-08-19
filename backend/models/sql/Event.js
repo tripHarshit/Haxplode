@@ -35,7 +35,19 @@ const Event = sequelize.define('Event', {
     allowNull: false,
     validate: {
       isValidTimeline(value) {
-        if (!value.startDate || !value.endDate || !value.registrationDeadline) {
+        // value can be either an object or a JSON string
+        let timelineObj;
+        if (typeof value === 'string') {
+          try {
+            timelineObj = JSON.parse(value);
+          } catch (parseError) {
+            throw new Error('Timeline must be valid JSON with startDate, endDate, and registrationDeadline');
+          }
+        } else {
+          timelineObj = value;
+        }
+        
+        if (!timelineObj || !timelineObj.startDate || !timelineObj.endDate || !timelineObj.registrationDeadline) {
           throw new Error('Timeline must include startDate, endDate, and registrationDeadline');
         }
       },
@@ -53,7 +65,19 @@ const Event = sequelize.define('Event', {
     allowNull: false,
     validate: {
       isValidPrizes(value) {
-        if (!Array.isArray(value) || value.length === 0) {
+        // value can be either an array or a JSON string
+        let prizesArray;
+        if (typeof value === 'string') {
+          try {
+            prizesArray = JSON.parse(value);
+          } catch (parseError) {
+            throw new Error('Prizes must be valid JSON array');
+          }
+        } else {
+          prizesArray = value;
+        }
+        
+        if (!Array.isArray(prizesArray) || prizesArray.length === 0) {
           throw new Error('Prizes must be a non-empty array');
         }
       },

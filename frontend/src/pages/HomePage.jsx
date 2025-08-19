@@ -21,6 +21,12 @@ const HomePage = () => {
     setLightModeForced(true);
     return () => setLightModeForced(false);
   }, [setLightModeForced]);
+  
+  // Preload auth pages to avoid blank screen on first navigation in some environments
+  useEffect(() => {
+    import('./auth/LoginPage').catch(() => {});
+    import('./auth/RegisterPage').catch(() => {});
+  }, []);
   const { isAuthenticated, user, getRedirectPath } = useAuth();
   const navigate = useNavigate();
 

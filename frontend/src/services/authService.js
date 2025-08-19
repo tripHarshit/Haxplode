@@ -36,8 +36,11 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           const refreshResponse = await api.post('/auth/refresh', { refreshToken });
-          const { token } = refreshResponse.data;
+          const { token, refreshToken: newRefreshToken } = refreshResponse.data.data;
           localStorage.setItem('token', token);
+          if (newRefreshToken) {
+            localStorage.setItem('refreshToken', newRefreshToken);
+          }
           
           // Retry original request
           const originalRequest = error.config;
@@ -192,12 +195,15 @@ export const authService = {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       const response = await api.post('/auth/refresh', { refreshToken });
-      const { token } = response.data;
+      const { token, refreshToken: newRefreshToken } = response.data.data;
       
       localStorage.setItem('token', token);
+      if (newRefreshToken) {
+        localStorage.setItem('refreshToken', newRefreshToken);
+      }
       
       console.log('Token refreshed successfully');
-      return { token };
+      return { token, refreshToken: newRefreshToken };
     } catch (error) {
       console.error('Token refresh failed:', error.message);
       throw new Error(error.response?.data?.message || 'Token refresh failed');

@@ -11,6 +11,7 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
+import { hackathonService } from '../../services/hackathonService';
 
 const EventDetailsModal = ({ event, isOpen, onClose }) => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -27,10 +28,8 @@ const EventDetailsModal = ({ event, isOpen, onClose }) => {
         window.navigationTester.logFormSubmission('Event Registration Form', true);
       }
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await hackathonService.registerForHackathon(event.id);
       setRegistrationSuccess(true);
-      // In real app: await participantService.registerForEvent(event.id);
     } catch (error) {
       console.error('Registration failed:', error);
       if (window.navigationTester) {
@@ -54,8 +53,11 @@ const EventDetailsModal = ({ event, isOpen, onClose }) => {
   };
 
   const isRegistrationOpen = () => {
-    if (event.isRegistered || event.status === 'full') return false;
-    return new Date(event.registrationDeadline) > new Date();
+    if (event.isRegistered) return false;
+    const normalized = String(event.status || '').toLowerCase();
+    if (['completed', 'cancelled', 'registration closed', 'closed', 'full'].includes(normalized)) return false;
+    const deadline = new Date(event.registrationDeadline);
+    return !isNaN(deadline.getTime()) ? deadline > new Date() : true;
   };
 
   return (
@@ -138,7 +140,12 @@ const EventDetailsModal = ({ event, isOpen, onClose }) => {
                   <div className="flex items-center space-x-3">
                     <ClockIcon className="h-5 w-5 text-gray-500" />
                     <span className="text-gray-700">
-                      Registration closes {format(new Date(event.registrationDeadline), 'MMM dd, yyyy')}
+                      {(() => {
+                        const d = new Date(event.registrationDeadline);
+                        return !isNaN(d.getTime())
+                          ? `Registration closes ${format(d, 'MMM dd, yyyy')}`
+                          : 'Registration deadline TBA';
+                      })()}
                     </span>
                   </div>
                   {event.isRegistered && (

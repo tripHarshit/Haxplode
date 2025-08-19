@@ -58,7 +58,8 @@ const signup = async (req, res) => {
           role: user.role,
           emailVerified: user.emailVerified,
         },
-        tokens,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       },
     });
   } catch (error) {
@@ -142,7 +143,8 @@ const login = async (req, res) => {
           emailVerified: user.emailVerified,
           lastLoginAt: user.lastLoginAt,
         },
-        tokens: rememberMe ? tokens : { accessToken: tokens.accessToken },
+        token: tokens.accessToken,
+        refreshToken: rememberMe ? tokens.refreshToken : undefined,
       },
     });
   } catch (error) {
@@ -193,7 +195,8 @@ const refreshToken = async (req, res) => {
       success: true,
       message: 'Token refreshed successfully',
       data: {
-        tokens,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       },
     });
   } catch (error) {
@@ -443,7 +446,8 @@ async function loginWithGoogle(req, res) {
       message: 'Login successful',
       data: {
         user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
-        tokens,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       },
     });
   } catch (error) {
