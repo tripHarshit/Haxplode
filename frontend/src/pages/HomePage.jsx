@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useForceLightMode } from '../context/ThemeContext';
 import { 
   Code, 
   Users, 
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 const HomePage = () => {
+  useForceLightMode();
   const { isAuthenticated, user, getRedirectPath } = useAuth();
   const navigate = useNavigate();
 

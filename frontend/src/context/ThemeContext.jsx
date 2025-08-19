@@ -48,8 +48,30 @@ export const ThemeProvider = ({ children }) => {
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
+  // Be resilient if used outside provider (e.g., during route-level mounting)
   if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    return {
+      isDarkMode: false,
+      theme: 'light',
+      toggleTheme: () => {},
+      setTheme: () => {},
+    };
   }
   return context;
+};
+
+// Force light mode for specific screens without changing saved preference
+export const useForceLightMode = () => {
+  const { isDarkMode } = useTheme();
+  useEffect(() => {
+    const wasDark = document.documentElement.classList.contains('dark');
+    // Ensure light mode styles
+    document.documentElement.classList.remove('dark');
+    // Restore previous state on unmount if it was dark and user preference is dark
+    return () => {
+      if (wasDark && isDarkMode) {
+        document.documentElement.classList.add('dark');
+      }
+    };
+  }, [isDarkMode]);
 };

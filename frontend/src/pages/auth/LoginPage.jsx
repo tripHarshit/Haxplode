@@ -4,8 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { isValidEmail } from '../../utils/helpers';
+import { useForceLightMode } from '../../context/ThemeContext';
 
 const LoginPage = () => {
+  useForceLightMode();
   const [formData, setFormData] = useState({
     email: '',
     password: '',

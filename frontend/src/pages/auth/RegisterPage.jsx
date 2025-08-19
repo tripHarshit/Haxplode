@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, Calendar, ArrowRight, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { isValidEmail, isValidPassword } from '../../utils/helpers';
+import { useForceLightMode } from '../../context/ThemeContext';
 
 const RegisterPage = () => {
+  useForceLightMode();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
