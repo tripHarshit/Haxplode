@@ -20,6 +20,15 @@ api.interceptors.request.use((config) => {
 });
 
 export const teamService = {
+  // Get teams by event (includes members)
+  async getTeamsByEvent(eventId, params = {}) {
+    try {
+      const response = await api.get(`/teams/event/${eventId}`, { params });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch teams by event');
+    }
+  },
   // Get all teams
   async getTeams(filters = {}) {
     try {

@@ -161,13 +161,18 @@ const EventDetailsModal = ({ event, isOpen, onClose }) => {
               <div>
                 <h4 className="text-lg font-medium text-gray-900 mb-3">Event Timeline</h4>
                 <div className="space-y-3">
-                  {event.timeline.map((item, index) => (
-                    <div key={index} className="flex items-center space-x-3">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <span className="text-gray-700 font-medium">{item.date}:</span>
-                      <span className="text-gray-600">{item.event}</span>
-                    </div>
-                  ))}
+                  {(Array.isArray(event.timeline) ? event.timeline : [])
+                    .map((item, index) => {
+                      const label = item?.event || item?.label || 'Milestone';
+                      const date = item?.date || item?.when || item?.deadline || '';
+                      return (
+                        <div key={index} className="flex items-center space-x-3">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <span className="text-gray-700 font-medium">{String(date)}:</span>
+                          <span className="text-gray-600">{label}</span>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
 

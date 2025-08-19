@@ -54,7 +54,7 @@ const Layout = ({ children }) => {
       { name: 'My Teams', href: '/participant', icon: Users },
     ] : []),
     ...(hasRole('organizer') ? [
-      { name: 'My Hackathons', href: '/organizer', icon: Calendar },
+      { name: 'My Hackathons', href: '/organizer?tab=events', icon: Calendar },
       { name: 'Create Hackathon', href: '/organizer/create', icon: Calendar },
       { name: 'Participants', href: '/organizer', icon: Users },
     ] : []),
