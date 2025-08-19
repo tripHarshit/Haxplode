@@ -68,7 +68,7 @@ const HomePage = () => {
             <div className="flex items-center space-x-4">
               {isAuthenticated ? (
                 <>
-                  <span className="text-neutral-600">Welcome, {user?.name}!</span>
+                  <span className="text-neutral-600">Welcome, {user?.fullName || user?.name}!</span>
                   <button
                     onClick={handleDashboardNavigation}
                     className="btn-primary"

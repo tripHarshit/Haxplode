@@ -62,16 +62,35 @@ api.interceptors.response.use(
 );
 
 export const authService = {
+  // normalize backend user shape to the UI shape expected across the app
+  _normalizeUser(raw) {
+    if (!raw) return null;
+    const name = raw.fullName || raw.name || '';
+    const role = raw.role || (Array.isArray(raw.roles) && raw.roles[0]) || undefined;
+    const roles = raw.roles || (role ? [role] : []);
+    return {
+      id: raw.id,
+      name,
+      fullName: name,
+      email: raw.email,
+      role,
+      roles,
+      profilePicture: raw.profilePicture,
+      emailVerified: raw.emailVerified,
+      lastLoginAt: raw.lastLoginAt,
+    };
+  },
   async login(credentials) {
     try {
       console.log('Login attempt for:', credentials.email);
       
       const response = await api.post('/auth/login', credentials);
       const { user, token, refreshToken } = response.data.data;
+      const normalizedUser = authService._normalizeUser(user);
       
       console.log('Login successful for user:', user.fullName);
       
-      return { user, token, refreshToken };
+      return { user: normalizedUser, token, refreshToken };
     } catch (error) {
       console.error('Login failed:', error.message);
       throw new Error(error.response?.data?.message || 'Login failed');
@@ -87,17 +106,19 @@ export const authService = {
       role: 'Participant' // Default role, can be made configurable later
     });
 
-    const { user, tokens } = response.data.data;
+    // Endpoint may return either { token, refreshToken } or { tokens: { accessToken, refreshToken } }
+    const data = response.data.data || {};
+    const accessToken = data.token || data.accessToken || data.tokens?.accessToken;
+    const refreshToken = data.refreshToken || data.tokens?.refreshToken;
+    const normalizedUser = authService._normalizeUser(data.user);
 
     // Store tokens
-    localStorage.setItem('token', tokens.accessToken);
-    if (tokens.refreshToken) {
-      localStorage.setItem('refreshToken', tokens.refreshToken);
-    }
+    if (accessToken) localStorage.setItem('token', accessToken);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
 
-    console.log('Google login successful for user:', user.fullName);
+    console.log('Google login successful for user:', normalizedUser?.fullName || normalizedUser?.name);
 
-    return { user, token: tokens.accessToken, refreshToken: tokens.refreshToken };
+    return { user: normalizedUser, token: accessToken, refreshToken };
   } catch (error) {
     console.error('Google login failed:', error.message);
     throw new Error(error.response?.data?.message || 'Google login failed');
@@ -110,10 +131,11 @@ export const authService = {
       
       const response = await api.post('/auth/register', userData);
       const { user, token, refreshToken } = response.data.data;
+      const normalizedUser = authService._normalizeUser(user);
       
       console.log('Registration successful for user:', user.fullName);
       
-      return { user, token, refreshToken };
+      return { user: normalizedUser, token, refreshToken };
     } catch (error) {
       console.error('Registration failed:', error.message);
       throw new Error(error.response?.data?.message || 'Registration failed');
@@ -125,10 +147,11 @@ export const authService = {
       console.log('Fetching current user');
       
       const response = await api.get('/auth/me');
-      const user = response.data;
+      const user = response.data?.data?.user || response.data?.user || response.data;
+      const normalizedUser = authService._normalizeUser(user);
       
-      console.log('Current user fetched:', user.fullName);
-      return user;
+      console.log('Current user fetched:', normalizedUser?.fullName || normalizedUser?.name);
+      return normalizedUser;
     } catch (error) {
       console.error('Failed to get current user:', error.message);
       throw new Error(error.response?.data?.message || 'Failed to get current user');
@@ -140,10 +163,11 @@ export const authService = {
       console.log('Updating user profile');
       
       const response = await api.put('/auth/profile', userData);
-      const user = response.data;
+      const user = response.data?.data?.user || response.data?.user || response.data;
+      const normalizedUser = authService._normalizeUser(user);
       
       console.log('Profile updated successfully');
-      return user;
+      return normalizedUser;
     } catch (error) {
       console.error('Profile update failed:', error.message);
       throw new Error(error.response?.data?.message || 'Profile update failed');
