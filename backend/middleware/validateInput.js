@@ -104,6 +104,13 @@ const authSchemas = {
       }),
     rememberMe: Joi.boolean().default(false),
   }),
+
+  googleAuth: Joi.object({
+    idToken: Joi.string().required().messages({
+      'any.required': 'Google ID token is required',
+    }),
+    role: Joi.string().valid('Participant', 'Organizer', 'Judge').default('Participant'),
+  }),
 };
 
 const eventSchemas = {

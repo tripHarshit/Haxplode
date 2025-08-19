@@ -59,6 +59,17 @@ const User = sequelize.define('User', {
   profilePicture: {
     type: DataTypes.STRING(500),
   },
+  socialLogin: {
+    type: DataTypes.TEXT,
+    defaultValue: '{}',
+    get() {
+      const rawValue = this.getDataValue('socialLogin');
+      return rawValue ? JSON.parse(rawValue) : {};
+    },
+    set(value) {
+      this.setDataValue('socialLogin', JSON.stringify(value));
+    },
+  },
   bio: {
     type: DataTypes.TEXT,
   },

@@ -135,33 +135,38 @@ export const authService = {
     }
   },
 
-  async loginWithGoogle(googleToken) {
+  async loginWithGoogle(idToken) {
     try {
       console.log('Google OAuth login attempt');
       
-      // Simulate API call
-      await simulateDelay(1200);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/google`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idToken,
+          role: 'Participant' // Default role, can be made configurable
+        })
+      });
+
+      const data = await response.json();
       
-      // Mock Google user data
-      const mockGoogleUser = {
-        id: 4,
-        name: 'Google User',
-        email: 'google@example.com',
-        roles: ['participant'],
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
-        createdAt: new Date().toISOString()
-      };
-      
-      const token = generateMockToken(mockGoogleUser);
-      const refreshToken = 'google.refresh.token.' + Date.now();
+      if (!data.success) {
+        throw new Error(data.message || 'Google authentication failed');
+      }
+
+      const { user, tokens } = data.data;
       
       // Store tokens
-      localStorage.setItem('token', token);
-      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('token', tokens.accessToken);
+      if (tokens.refreshToken) {
+        localStorage.setItem('refreshToken', tokens.refreshToken);
+      }
       
-      console.log('Google login successful for user:', mockGoogleUser.name);
+      console.log('Google login successful for user:', user.fullName);
       
-      return { user: mockGoogleUser, token, refreshToken };
+      return { user, token: tokens.accessToken, refreshToken: tokens.refreshToken };
     } catch (error) {
       console.error('Google login failed:', error.message);
       throw error;
