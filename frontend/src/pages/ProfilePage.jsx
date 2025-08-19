@@ -8,9 +8,12 @@ import {
   PencilIcon,
   CheckIcon,
   XMarkIcon,
-  AcademicCapIcon,
+  BuildingOfficeIcon,
   LinkIcon,
-  CodeBracketIcon
+  CodeBracketIcon,
+  TrophyIcon,
+  UsersIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 
 const ProfilePage = () => {
@@ -24,11 +27,17 @@ const ProfilePage = () => {
     name: '',
     email: '',
     bio: '',
-    university: '',
-    graduationYear: '',
+    organization: '',
+    organizationRole: '',
+    industry: '',
+    experienceYears: '',
     skills: [],
     linkedinProfile: '',
-    githubProfile: ''
+    githubProfile: '',
+    website: '',
+    hackathonsOrganized: '',
+    teamSize: '',
+    specialties: []
   });
 
   // Initialize form data when user data changes
@@ -38,11 +47,17 @@ const ProfilePage = () => {
         name: user.name || '',
         email: user.email || '',
         bio: user.bio || '',
-        university: user.university || '',
-        graduationYear: user.graduationYear || '',
+        organization: user.organization || '',
+        organizationRole: user.organizationRole || '',
+        industry: user.industry || '',
+        experienceYears: user.experienceYears || '',
         skills: user.skills || [],
         linkedinProfile: user.linkedinProfile || '',
-        githubProfile: user.githubProfile || ''
+        githubProfile: user.githubProfile || '',
+        website: user.website || '',
+        hackathonsOrganized: user.hackathonsOrganized || '',
+        teamSize: user.teamSize || '',
+        specialties: user.specialties || []
       });
     }
   }, [user]);
@@ -65,6 +80,19 @@ const ProfilePage = () => {
     setFormData(prev => ({
       ...prev,
       skills: skillsArray
+    }));
+  };
+
+  const handleSpecialtiesChange = (e) => {
+    const specialtiesString = e.target.value;
+    const specialtiesArray = specialtiesString
+      .split(',')
+      .map(specialty => specialty.trim())
+      .filter(specialty => specialty.length > 0);
+    
+    setFormData(prev => ({
+      ...prev,
+      specialties: specialtiesArray
     }));
   };
 
@@ -92,11 +120,17 @@ const ProfilePage = () => {
         name: user.name || '',
         email: user.email || '',
         bio: user.bio || '',
-        university: user.university || '',
-        graduationYear: user.graduationYear || '',
+        organization: user.organization || '',
+        organizationRole: user.organizationRole || '',
+        industry: user.industry || '',
+        experienceYears: user.experienceYears || '',
         skills: user.skills || [],
         linkedinProfile: user.linkedinProfile || '',
-        githubProfile: user.githubProfile || ''
+        githubProfile: user.githubProfile || '',
+        website: user.website || '',
+        hackathonsOrganized: user.hackathonsOrganized || '',
+        teamSize: user.teamSize || '',
+        specialties: user.specialties || []
       });
     }
     setIsEditing(false);
@@ -125,6 +159,9 @@ const ProfilePage = () => {
     );
   }
 
+  // Check if user is an organizer
+  const isOrganizer = user.roles?.includes('organizer');
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -132,7 +169,10 @@ const ProfilePage = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Profile</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Manage your personal information and preferences
+            {isOrganizer 
+              ? 'Manage your organizer profile and professional information'
+              : 'Manage your personal information and preferences'
+            }
           </p>
         </div>
 
@@ -149,12 +189,21 @@ const ProfilePage = () => {
                     {user.roles?.map((role, index) => (
                       <span
                         key={index}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          role === 'organizer' 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                        }`}
                       >
-                        {role}
+                        {role === 'organizer' ? '🎯 Organizer' : role}
                       </span>
                     ))}
                   </div>
+                  {isOrganizer && user.organization && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {user.organizationRole} at {user.organization}
+                    </p>
+                  )}
                 </div>
               </div>
               
@@ -223,6 +272,22 @@ const ProfilePage = () => {
                         {user.roles?.join(', ') || 'N/A'}
                       </span>
                     </div>
+                    {isOrganizer && (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Hackathons</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {user.hackathonsOrganized || '0'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Experience</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {user.experienceYears || '0'} years
+                          </span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Skills</span>
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -231,6 +296,26 @@ const ProfilePage = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Organizer-specific Quick Actions */}
+                {isOrganizer && (
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+                    <h3 className="text-sm font-medium text-green-800 dark:text-green-300 mb-3 uppercase tracking-wide">
+                      Organizer Tools
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="text-xs text-green-700 dark:text-green-400">
+                        • Create new hackathons
+                      </div>
+                      <div className="text-xs text-green-700 dark:text-green-400">
+                        • Manage participants
+                      </div>
+                      <div className="text-xs text-green-700 dark:text-green-400">
+                        • Review submissions
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Right Column - Profile Details */}
@@ -289,66 +374,165 @@ const ProfilePage = () => {
                       onChange={handleInputChange}
                       rows={4}
                       className="input resize-none"
-                      placeholder="Tell us about yourself, your interests, and what you're passionate about..."
+                      placeholder={isOrganizer 
+                        ? "Tell us about your experience organizing events, your vision for hackathons, and what drives you..."
+                        : "Tell us about yourself, your interests, and what you're passionate about..."
+                      }
                     />
                   ) : (
                     <div className="py-3 px-4 bg-gray-50 dark:bg-gray-700 rounded-lg min-h-[4rem]">
                       <p className="text-gray-900 dark:text-gray-100">
-                        {user.bio || 'No bio added yet. Click edit to add your bio.'}
+                        {user.bio || (isOrganizer 
+                          ? 'No bio added yet. Tell us about your hackathon organizing experience!'
+                          : 'No bio added yet. Click edit to add your bio.'
+                        )}
                       </p>
                     </div>
                   )}
                 </div>
 
-                {/* Education */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                    <AcademicCapIcon className="h-5 w-5 mr-2 text-blue-600" />
-                    Education
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        University/Institution
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          name="university"
-                          value={formData.university}
-                          onChange={handleInputChange}
-                          className="input"
-                          placeholder="Enter your university or institution"
-                        />
-                      ) : (
-                        <p className="text-gray-900 dark:text-gray-100 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          {user.university || 'Not specified'}
-                        </p>
-                      )}
+                {/* Organization Information - Organizer Specific */}
+                {isOrganizer && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                      <BuildingOfficeIcon className="h-5 w-5 mr-2 text-green-600" />
+                      Organization Details
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Organization/Company
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="organization"
+                            value={formData.organization}
+                            onChange={handleInputChange}
+                            className="input"
+                            placeholder="Enter your organization name"
+                          />
+                        ) : (
+                          <p className="text-gray-900 dark:text-gray-100 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            {user.organization || 'Not specified'}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Your Role
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="organizationRole"
+                            value={formData.organizationRole}
+                            onChange={handleInputChange}
+                            className="input"
+                            placeholder="e.g., Event Manager, Director"
+                          />
+                        ) : (
+                          <p className="text-gray-900 dark:text-gray-100 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            {user.organizationRole || 'Not specified'}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Graduation Year
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="number"
-                          name="graduationYear"
-                          value={formData.graduationYear}
-                          onChange={handleInputChange}
-                          min="2020"
-                          max="2030"
-                          className="input"
-                          placeholder="2024"
-                        />
-                      ) : (
-                        <p className="text-gray-900 dark:text-gray-100 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          {user.graduationYear || 'Not specified'}
-                        </p>
-                      )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Industry
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="industry"
+                            value={formData.industry}
+                            onChange={handleInputChange}
+                            className="input"
+                            placeholder="e.g., Technology, Education, Finance"
+                          />
+                        ) : (
+                          <p className="text-gray-900 dark:text-gray-100 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            {user.industry || 'Not specified'}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Years of Experience
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            name="experienceYears"
+                            value={formData.experienceYears}
+                            onChange={handleInputChange}
+                            min="0"
+                            max="50"
+                            className="input"
+                            placeholder="5"
+                          />
+                        ) : (
+                          <p className="text-gray-900 dark:text-gray-100 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            {user.experienceYears ? `${user.experienceYears} years` : 'Not specified'}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Hackathon Experience - Organizer Specific */}
+                {isOrganizer && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                      <TrophyIcon className="h-5 w-5 mr-2 text-green-600" />
+                      Hackathon Experience
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Hackathons Organized
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            name="hackathonsOrganized"
+                            value={formData.hackathonsOrganized}
+                            onChange={handleInputChange}
+                            min="0"
+                            className="input"
+                            placeholder="10"
+                          />
+                        ) : (
+                          <p className="text-gray-900 dark:text-gray-100 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            {user.hackathonsOrganized || '0'}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Typical Team Size
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="teamSize"
+                            value={formData.teamSize}
+                            onChange={handleInputChange}
+                            className="input"
+                            placeholder="e.g., 3-5 members"
+                          />
+                        ) : (
+                          <p className="text-gray-900 dark:text-gray-100 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            {user.teamSize || 'Not specified'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Social Profiles */}
                 <div className="space-y-4">
@@ -424,6 +608,41 @@ const ProfilePage = () => {
                       )}
                     </div>
                   </div>
+                  {isOrganizer && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Website
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="url"
+                          name="website"
+                          value={formData.website}
+                          onChange={handleInputChange}
+                          className="input"
+                          placeholder="https://yourwebsite.com"
+                        />
+                      ) : (
+                        <div className="py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          {user.website ? (
+                            <a 
+                              href={user.website} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center space-x-2"
+                            >
+                              <span>Visit Website</span>
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                          ) : (
+                            <span className="text-gray-500">Not specified</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Skills */}
@@ -440,10 +659,10 @@ const ProfilePage = () => {
                         value={formData.skills.join(', ')}
                         onChange={handleSkillsChange}
                         className="input"
-                        placeholder="React, Node.js, Python, etc. (separate with commas)"
+                        placeholder="Event Management, Project Planning, Team Leadership, etc. (separate with commas)"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Separate skills with commas. Example: React, Node.js, Python
+                        Separate skills with commas. Example: Event Management, Project Planning, Team Leadership
                       </p>
                     </div>
                   ) : (
@@ -465,6 +684,48 @@ const ProfilePage = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Specialties - Organizer Specific */}
+                {isOrganizer && (
+                  <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                      <UsersIcon className="h-5 w-5 mr-2 text-green-600" />
+                      Event Specialties
+                    </label>
+                    {isEditing ? (
+                      <div>
+                        <input
+                          type="text"
+                          name="specialties"
+                          value={formData.specialties.join(', ')}
+                          onChange={handleSpecialtiesChange}
+                          className="input"
+                          placeholder="AI/ML, Web Development, Mobile Apps, etc. (separate with commas)"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          What types of hackathons do you specialize in? Separate with commas.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="py-3 px-4 bg-gray-50 dark:bg-gray-700 rounded-lg min-h-[3rem]">
+                        {user.specialties && user.specialties.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {user.specialties.map((specialty, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                              >
+                                {specialty}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500">No specialties added yet. Click edit to add your event specialties.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Account Information */}
                 <div className="space-y-4">
@@ -493,9 +754,13 @@ const ProfilePage = () => {
                         {user.roles?.map((role, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 mr-2"
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${
+                              role === 'organizer' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                            }`}
                           >
-                            {role}
+                            {role === 'organizer' ? '🎯 Organizer' : role}
                           </span>
                         ))}
                       </div>
