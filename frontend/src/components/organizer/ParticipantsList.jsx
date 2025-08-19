@@ -8,7 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 
-const ParticipantsList = ({ participants, onViewDetails }) => {
+const ParticipantsList = ({ participants, onViewDetails, asCards = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [teamStatusFilter, setTeamStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
@@ -129,7 +129,27 @@ const ParticipantsList = ({ participants, onViewDetails }) => {
                         <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                           <UsersIcon className="h-5 w-5 text-blue-600" />
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-medium text-gray-900 truncate">
+                            {participant.name}
+                          </h3>
+                          <p className="text-sm text-gray-500 truncate">
+                            {participant.email}
+                          </p>
+                        </div>
                       </div>
+                      
+                      <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                        <span>Registered: {format(new Date(participant.registrationDate), 'MMM dd, yyyy')}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTeamStatusColor(participant.teamStatus)}`}>
+                          {participant.teamStatus}
+                        </span>
+                        {participant.teamName && (
+                          <span className="text-blue-600">Team: {participant.teamName}</span>
+                        )}
+                        <span>Submissions: {participant.submissions}</span>
+                      </div>
+                      
                       <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
                           {participant.name}
@@ -180,11 +200,11 @@ const ParticipantsList = ({ participants, onViewDetails }) => {
                     </button>
                   </div>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {filteredParticipants.length === 0 && (
         <div className="text-center py-12">

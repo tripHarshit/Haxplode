@@ -78,6 +78,18 @@ export const hackathonService = {
       throw new Error(error.response?.data?.message || 'Failed to load your events');
     }
   },
+
+  // Get both created and participating events for current user
+  async getUserEvents({ page = 1, limit = 100 } = {}) {
+    try {
+      const response = await api.get('/events/user/events', { params: { page, limit } });
+      const createdEvents = response.data?.data?.createdEvents?.events || [];
+      const participatingEvents = response.data?.data?.participatingEvents || [];
+      return { createdEvents, participatingEvents };
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to load user events');
+    }
+  },
   // Get all hackathons
   async getHackathons(filters = {}) {
     try {
@@ -205,6 +217,16 @@ export const hackathonService = {
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch leaderboard');
+    }
+  },
+
+  // Get hackathon stats (participants, teams, submissions, averageScore, totalReviews)
+  async getHackathonStats(hackathonId) {
+    try {
+      const response = await api.get(`/hackathons/${hackathonId}/stats`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch stats');
     }
   },
 };

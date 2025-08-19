@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   CalendarIcon, 
   UsersIcon, 
@@ -9,9 +9,9 @@ import {
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { Crown } from 'lucide-react';
-import { mockSubmissions } from '../../utils/mockData';
-import { mockParticipants, mockAnnouncements, mockEventStats } from '../../utils/organizerMockData';
+// Remove mock usage; load real data
 import ParticipantsList from '../../components/organizer/ParticipantsList';
+import { teamService } from '../../services/teamService';
 import ParticipantDetailsModal from '../../components/organizer/ParticipantDetailsModal';
 import AnnouncementsList from '../../components/organizer/AnnouncementsList';
 import EnhancedEventCard from '../../components/organizer/EnhancedEventCard';
@@ -19,6 +19,7 @@ import AnalyticsCharts from '../../components/organizer/AnalyticsCharts';
 import SponsorShowcase from '../../components/organizer/SponsorShowcase';
 import EventCreationWizard from '../../components/organizer/EventCreationWizard';
 import { hackathonService } from '../../services/hackathonService';
+import { announcementService } from '../../services/announcementService';
 import { useAuth } from '../../context/AuthContext';
 
 const OrganizerDashboard = () => {
@@ -27,11 +28,13 @@ const OrganizerDashboard = () => {
   const [events, setEvents] = useState([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const { user } = useAuth();
-  const [participants, setParticipants] = useState(mockParticipants);
-  const [announcements, setAnnouncements] = useState(mockAnnouncements);
+  const [participants, setParticipants] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [showParticipantModal, setShowParticipantModal] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState(null);
+  const [eventStatsMap, setEventStatsMap] = useState({});
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -62,6 +65,13 @@ const OrganizerDashboard = () => {
           isRegistered: false
         }));
         setEvents(mapped);
+        // Select first event by default and load its announcements
+        if (mapped.length > 0) {
+          const firstId = mapped[0].id;
+          setSelectedEventId(firstId);
+          await loadAnnouncements(firstId);
+          await loadStatsForEvents(mapped);
+        }
         console.log('OrganizerDashboard: Events mapped and set in state');
       } catch (error) {
         console.error('OrganizerDashboard: Failed to load events:', error);
@@ -71,6 +81,94 @@ const OrganizerDashboard = () => {
     };
     loadEvents();
   }, []);
+
+  // Read ?tab= from URL to deep-link into specific dashboard tab
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && ['overview','events','participants','announcements','sponsors'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, []);
+
+  const buildRegistrationTrend = (participants) => {
+    // Group by day from registrationDate, normalize to YYYY-MM-DD
+    const counts = new Map();
+    for (const p of participants || []) {
+      const d = p.registrationDate ? new Date(p.registrationDate) : null;
+      if (!d || Number.isNaN(d.getTime())) continue;
+      const key = d.toISOString().slice(0, 10);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    // Sort by date asc
+    const entries = Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    return entries.map(([date, count]) => ({ date, count }));
+  };
+
+  const loadStatsForEvents = async (evts = events) => {
+    if (!Array.isArray(evts) || evts.length === 0) return;
+    setIsLoadingStats(true);
+    try {
+      const results = await Promise.all(evts.map(async (ev) => {
+        try {
+          const [statsResp, participantsResp] = await Promise.all([
+            hackathonService.getHackathonStats(ev.id),
+            hackathonService.getHackathonParticipants(ev.id),
+          ]);
+          const stats = statsResp?.participants !== undefined ? statsResp : statsResp?.data || {};
+          const participants = participantsResp?.participants || participantsResp?.data?.participants || [];
+          const registrationTrend = buildRegistrationTrend(participants);
+          return { ev, stats, registrationTrend };
+        } catch (e) {
+          console.error('Stats load failed for event', ev.id, e);
+          return { ev, stats: { participants: 0, teams: 0, submissions: 0, averageScore: 0, totalReviews: 0 }, registrationTrend: [] };
+        }
+      }));
+
+      // Update events with _stats
+      setEvents(prev => prev.map(p => {
+        const found = results.find(r => r.ev.id === p.id);
+        return found ? { ...p, _stats: found.stats } : p;
+      }));
+
+      // Build map for AnalyticsCharts
+      const map = {};
+      for (const r of results) {
+        const title = r.ev.title || `Event ${r.ev.id}`;
+        map[title] = {
+          totalParticipants: r.stats.participants || 0,
+          maxParticipants: r.ev.maxParticipants || 0,
+          teamsFormed: r.stats.teams || 0,
+          submissionsReceived: r.stats.submissions || 0,
+          registrationTrend: r.registrationTrend,
+        };
+      }
+      setEventStatsMap(map);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+
+  const loadAnnouncements = async (eventId) => {
+    try {
+      const resp = await announcementService.getEventAnnouncements(eventId, { limit: 50 });
+      const list = resp?.data?.announcements || [];
+      const mapped = list.map(a => ({
+        id: a._id,
+        title: a.title,
+        content: a.message,
+        targetAudience: Array.isArray(a.targetAudience) ? a.targetAudience[0] || 'All' : (a.targetAudience || 'All'),
+        isUrgent: String(a.type).toLowerCase() === 'urgent' || String(a.priority).toLowerCase() === 'critical',
+        isImportant: String(a.priority).toLowerCase() === 'high' || String(a.priority).toLowerCase() === 'critical',
+        date: a.createdAt,
+        createdBy: 'You',
+      }));
+      setAnnouncements(mapped);
+    } catch (e) {
+      console.error('Failed to load announcements:', e);
+      setAnnouncements([]);
+    }
+  };
 
   const handleCreateEvent = () => {
     // Log navigation test
@@ -121,41 +219,80 @@ const OrganizerDashboard = () => {
     setShowParticipantModal(true);
   };
 
-  const handleCreateAnnouncement = (announcementData) => {
-    const newAnnouncement = {
-      ...announcementData,
-      id: Date.now()
-    };
-    setAnnouncements(prev => [...prev, newAnnouncement]);
+  const handleCreateAnnouncement = async (announcementData) => {
+    if (!selectedEventId) return;
+    try {
+      const payload = {
+        eventId: selectedEventId,
+        title: announcementData.title,
+        message: announcementData.content,
+        type: announcementData.isUrgent ? 'Urgent' : 'General',
+        priority: announcementData.isUrgent ? 'Critical' : (announcementData.isImportant ? 'High' : 'Medium'),
+        isPinned: !!announcementData.isImportant,
+        isPublic: true,
+        targetAudience: [announcementData.targetAudience || 'All'],
+      };
+      await announcementService.createAnnouncement(payload);
+      await loadAnnouncements(selectedEventId);
+    } catch (e) {
+      console.error('Create announcement failed:', e);
+    }
   };
 
-  const handleEditAnnouncement = (announcementId, updatedData) => {
-    setAnnouncements(prev => prev.map(ann => 
-      ann.id === announcementId ? { ...ann, ...updatedData } : ann
-    ));
+  const handleEditAnnouncement = async (announcementId, updatedData) => {
+    try {
+      await announcementService.updateAnnouncement(announcementId, {
+        title: updatedData.title,
+        message: updatedData.content,
+        isPinned: !!updatedData.isImportant,
+      });
+      if (selectedEventId) await loadAnnouncements(selectedEventId);
+    } catch (e) {
+      console.error('Update announcement failed:', e);
+    }
   };
 
-  const handleDeleteAnnouncement = (announcementId) => {
-    setAnnouncements(prev => prev.filter(ann => ann.id !== announcementId));
+  const handleDeleteAnnouncement = async (announcementId) => {
+    try {
+      await announcementService.deleteAnnouncement(announcementId);
+      if (selectedEventId) await loadAnnouncements(selectedEventId);
+    } catch (e) {
+      console.error('Delete announcement failed:', e);
+    }
   };
 
   const handleViewParticipants = async (eventId) => {
     setActiveTab('participants');
     setSelectedEventId(eventId);
     try {
-      const resp = await hackathonService.getHackathonParticipants(eventId);
-      const raw = resp?.participants || [];
-      const mapped = raw.map(u => ({
-        id: u.id,
-        name: u.fullName || u.name || 'Unknown',
-        email: u.email,
-        registrationDate: u.registrationDate || new Date().toISOString(),
-        teamStatus: 'No Team',
-        teamName: null,
-        hackathonTitle: events.find(e => e.id === eventId)?.title || '',
-        skills: [],
-        submissions: 0,
-      }));
+      const [participantsResp, teamsResp] = await Promise.all([
+        hackathonService.getHackathonParticipants(eventId),
+        teamService.getTeamsByEvent(eventId, { limit: 1000 }),
+      ]);
+      const raw = participantsResp?.participants || [];
+      const teams = teamsResp?.data?.teams || teamsResp?.teams || [];
+      const teamByUserId = new Map();
+      teams.forEach((t) => {
+        (t.members || []).forEach((m) => {
+          if (m?.userId) teamByUserId.set(m.userId, t);
+          if (m?.user?.id) teamByUserId.set(m.user.id, t);
+        });
+      });
+      const mapped = raw.map((u) => {
+        const team = teamByUserId.get(u.id);
+        return {
+          id: u.id,
+          name: u.fullName || u.name || 'Unknown',
+          email: u.email,
+          registrationDate: u.registrationDate || new Date().toISOString(),
+          teamStatus: team ? 'In Team' : 'No Team',
+          teamName: team?.teamName || team?.name || null,
+          teamMembers: (team?.members || []).map(m => ({ id: m.user?.id || m.userId, fullName: m.user?.fullName || m.fullName || 'Member' })),
+          hackathonTitle: events.find(e => e.id === eventId)?.title || '',
+          skills: [],
+          submissions: 0,
+        };
+      });
       setParticipants(mapped);
     } catch (e) {
       console.error('Failed to load participants:', e);
@@ -231,7 +368,7 @@ const OrganizerDashboard = () => {
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h2>
               
-              {/* Stats Cards */}
+              {/* Stats Cards (aggregated live) */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                   <div className="flex items-center">
@@ -296,8 +433,54 @@ const OrganizerDashboard = () => {
                 </div>
               </div>
 
-              {/* Analytics Charts */}
-              <AnalyticsCharts eventStats={mockEventStats} />
+              {/* Per-event Live Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {events.map((ev) => (
+                  <div key={ev.id} className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{ev.title}</h3>
+                        <p className="text-sm text-gray-500">{ev.category} • {ev.isOnline ? 'Online' : (ev.location || 'Onsite')}</p>
+                      </div>
+                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(ev.status)}`}>{ev.status}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Participants</p>
+                        <p className="text-xl font-semibold">{ev._stats?.participants ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Teams</p>
+                        <p className="text-xl font-semibold">{ev._stats?.teams ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Submissions</p>
+                        <p className="text-xl font-semibold">{ev._stats?.submissions ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Avg. Score</p>
+                        <p className="text-xl font-semibold">{ev._stats?.averageScore ?? '—'}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between text-sm">
+                      <button
+                        onClick={() => loadStatsForEvents([ev])}
+                        className="text-blue-600 hover:text-blue-700"
+                      >Refresh stats</button>
+                      <span className="text-gray-500">Max: {ev.maxParticipants || 0}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Analytics Charts with real data */}
+              <div className="mt-8">
+                {isLoadingStats ? (
+                  <div className="text-gray-500">Loading charts...</div>
+                ) : (
+                  <AnalyticsCharts eventStats={eventStatsMap} />
+                )}
+              </div>
             </div>
           )}
 
@@ -329,6 +512,30 @@ const OrganizerDashboard = () => {
                     onViewParticipants={handleViewParticipants}
                     onSendMessage={handleSendMessage}
                     onViewSubmissions={handleViewSubmissions}
+                    onEdit={(ev) => {
+                      setShowEventModal(true);
+                      // Pre-fill wizard by setting defaults via window event (simple approach), or adjust wizard to accept initial values
+                      // For simplicity, emit a custom event the wizard can read
+                      try {
+                        const prefill = {
+                          name: ev.title,
+                          theme: ev.category,
+                          description: ev.description,
+                          location: ev.location,
+                          isVirtual: ev.isOnline,
+                          startDate: ev?.timeline?.startDate || ev.startDate,
+                          endDate: ev?.timeline?.endDate || ev.endDate,
+                          registrationDeadline: ev?.timeline?.registrationDeadline,
+                          maxTeams: Math.max(1, Math.ceil((ev.maxParticipants || 0) / (ev.maxTeamSize || 4))),
+                          maxTeamSize: ev.maxTeamSize || 4,
+                          rules: Array.isArray(ev.rules) ? ev.rules : (typeof ev.rules === 'string' ? ev.rules.split('\n') : []),
+                          prizes: Array.isArray(ev.prizes) ? ev.prizes.map(p => ({ category: p, amount: '', description: '' })) : [],
+                          rounds: ev.rounds || [],
+                          _id: ev.id,
+                        };
+                        window.dispatchEvent(new CustomEvent('prefillEventWizard', { detail: prefill }));
+                      } catch {}
+                    }}
                   />
                 ))}
               </div>
@@ -341,6 +548,7 @@ const OrganizerDashboard = () => {
               <ParticipantsList 
                 participants={participants}
                 onViewDetails={handleViewParticipantDetails}
+                asCards
               />
             </div>
           )}

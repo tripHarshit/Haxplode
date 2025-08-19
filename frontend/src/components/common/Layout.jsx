@@ -14,9 +14,11 @@ import {
   Bell
 } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
+import { useSocket } from '../../context/SocketContext';
 
 const Layout = ({ children }) => {
   const { user, logout, hasRole } = useAuth();
+  const { unreadCount, setUnreadCount, refreshUnreadCount } = useSocket();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -48,6 +50,13 @@ const Layout = ({ children }) => {
     },
     ...(hasRole('participant') ? [
       { name: 'Hackathons', href: '/participant/hackathons', icon: Calendar },
+      { name: 'My Submissions', href: '/participant/submissions', icon: Trophy },
+      { name: 'My Teams', href: '/participant', icon: Users },
+    ] : []),
+    ...(hasRole('organizer') ? [
+      { name: 'My Hackathons', href: '/organizer?tab=events', icon: Calendar },
+      { name: 'Create Hackathon', href: '/organizer/create', icon: Calendar },
+      { name: 'Participants', href: '/organizer', icon: Users },
     ] : []),
     ...(hasRole('judge') ? [
       { name: 'Submissions', href: '/judge/submissions', icon: Trophy },
@@ -219,9 +228,14 @@ const Layout = ({ children }) => {
                 {/* Notifications */}
                 <Link
                   to="/notifications"
-                  className="p-2 text-neutral-400 hover:text-neutral-500 dark:text-gray-500 dark:hover:text-gray-300"
+                  className="relative p-2 text-neutral-400 hover:text-neutral-500 dark:text-gray-500 dark:hover:text-gray-300"
+                  onClick={() => setUnreadCount(0)}
+                  title="Notifications"
                 >
                   <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 inline-flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800" />
+                  )}
                 </Link>
 
               {/* User menu */}

@@ -2,6 +2,7 @@ const User = require('./User');
 const Event = require('./Event');
 const { Team, TeamMember } = require('./Team');
 const { Judge, JudgeEventAssignment } = require('./Judge');
+const Sponsor = require('./Sponsor');
 
 // User associations
 User.hasMany(Event, { foreignKey: 'createdBy', as: 'createdEvents' });
@@ -12,6 +13,10 @@ User.hasOne(Judge, { foreignKey: 'userId', as: 'judgeProfile' });
 Event.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 Event.hasMany(Team, { foreignKey: 'eventId', as: 'teams' });
 Event.hasMany(JudgeEventAssignment, { foreignKey: 'eventId', as: 'judgeAssignments' });
+
+// Sponsor associations
+User.hasMany(Sponsor, { foreignKey: 'organizerId', as: 'sponsors' });
+Sponsor.belongsTo(User, { foreignKey: 'organizerId', as: 'organizer' });
 
 // Team associations
 Team.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
@@ -37,4 +42,5 @@ module.exports = {
   TeamMember,
   Judge,
   JudgeEventAssignment,
+  Sponsor,
 };

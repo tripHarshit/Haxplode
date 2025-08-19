@@ -20,15 +20,6 @@ api.interceptors.request.use((config) => {
 });
 
 export const announcementService = {
-  // Get all announcements
-  async getAnnouncements(filters = {}) {
-    try {
-      const response = await api.get('/announcements', { params: filters });
-      return response.data;
-    } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch announcements');
-    }
-  },
 
   // Get announcement by ID
   async getAnnouncement(id) {
@@ -37,6 +28,16 @@ export const announcementService = {
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch announcement');
+    }
+  },
+
+  // Mark announcement as read
+  async markAsRead(id) {
+    try {
+      const response = await api.post(`/announcements/${id}/read`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to mark announcement as read');
     }
   },
 
@@ -71,9 +72,9 @@ export const announcementService = {
   },
 
   // Get announcements by event
-  async getEventAnnouncements(eventId) {
+  async getEventAnnouncements(eventId, params = {}) {
     try {
-      const response = await api.get(`/announcements/event/${eventId}`);
+      const response = await api.get(`/announcements/event/${eventId}`, { params });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch event announcements');

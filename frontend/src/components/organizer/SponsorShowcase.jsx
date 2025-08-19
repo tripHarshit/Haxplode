@@ -1,40 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Crown, Star, Award, Building2, ExternalLink, Plus, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '../ui/Toast';
+import axios from 'axios';
 
 const SponsorShowcase = () => {
-  const [sponsors, setSponsors] = useState([
-    {
-      id: 1,
-      name: 'TechCorp',
-      logo: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=150&h=150&fit=crop',
-      tier: 'platinum',
-      website: 'https://techcorp.com',
-      description: 'Leading technology solutions provider',
-      contribution: '$50,000',
-      featured: true
-    },
-    {
-      id: 2,
-      name: 'InnovateLabs',
-      logo: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=150&h=150&fit=crop',
-      tier: 'gold',
-      website: 'https://innovatelabs.com',
-      description: 'Innovation and research company',
-      contribution: '$25,000',
-      featured: false
-    },
-    {
-      id: 3,
-      name: 'StartupHub',
-      logo: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150&h=150&fit=crop',
-      tier: 'silver',
-      website: 'https://startuphub.com',
-      description: 'Startup accelerator and incubator',
-      contribution: '$10,000',
-      featured: false
+  const [sponsors, setSponsors] = useState([]);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+  const api = axios.create({ baseURL: API_URL });
+  api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  });
+
+  const loadSponsors = async () => {
+    try {
+      const resp = await api.get('/sponsors');
+      setSponsors(resp.data?.sponsors || []);
+    } catch (e) {
+      error('Failed to load sponsors');
     }
-  ]);
+  };
+
+  useEffect(() => { loadSponsors(); }, []);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSponsor, setSelectedSponsor] = useState(null);
@@ -66,25 +55,35 @@ const SponsorShowcase = () => {
     }
   };
 
-  const handleAddSponsor = (sponsorData) => {
-    const newSponsor = {
-      id: Date.now(),
-      ...sponsorData
-    };
-    setSponsors(prev => [...prev, newSponsor]);
-    setShowAddModal(false);
-    success('Sponsor Added', 'New sponsor has been added successfully!');
+  const handleAddSponsor = async (sponsorData) => {
+    try {
+      await api.post('/sponsors', sponsorData);
+      await loadSponsors();
+      setShowAddModal(false);
+      success('Sponsor Added', 'New sponsor has been added successfully!');
+    } catch {
+      error('Failed to add sponsor');
+    }
   };
 
-  const handleDeleteSponsor = (id) => {
-    setSponsors(prev => prev.filter(sponsor => sponsor.id !== id));
-    success('Sponsor Removed', 'Sponsor has been removed successfully!');
+  const handleDeleteSponsor = async (id) => {
+    try {
+      await api.delete(`/sponsors/${id}`);
+      await loadSponsors();
+      success('Sponsor Removed', 'Sponsor has been removed successfully!');
+    } catch {
+      error('Failed to remove sponsor');
+    }
   };
 
-  const handleToggleFeatured = (id) => {
-    setSponsors(prev => prev.map(sponsor => 
-      sponsor.id === id ? { ...sponsor, featured: !sponsor.featured } : sponsor
-    ));
+  const handleToggleFeatured = async (id) => {
+    try {
+      const s = sponsors.find(x => x.id === id);
+      await api.put(`/sponsors/${id}`, { featured: !s?.featured });
+      await loadSponsors();
+    } catch {
+      error('Failed to update sponsor');
+    }
   };
 
   return (

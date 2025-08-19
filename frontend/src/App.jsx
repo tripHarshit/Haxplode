@@ -63,9 +63,9 @@ function App() {
     <ErrorBoundary>
       <Router>
         <AuthProvider>
-          <SocketProvider>
-            <ThemeProvider>
-              <NotificationProvider>
+          <ThemeProvider>
+            <NotificationProvider>
+              <SocketProvider>
                 <ToastProvider>
                   <div className="min-h-screen bg-gradient dark:bg-gradient-dark transition-colors duration-300">
                     <Suspense fallback={
@@ -169,9 +169,9 @@ function App() {
             </Suspense>
           </div>
         </ToastProvider>
-      </NotificationProvider>
-    </ThemeProvider>
-  </SocketProvider>
+      </SocketProvider>
+    </NotificationProvider>
+  </ThemeProvider>
 </AuthProvider>
       </Router>
     </ErrorBoundary>

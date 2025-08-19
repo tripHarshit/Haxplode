@@ -57,7 +57,7 @@ const createAnnouncement = async (req, res) => {
     });
 
     audit(organizerId, 'announcement_created', { eventId, metadata: { title } });
-    emitToRoom(`event:${eventId}`, 'event_announcement', { eventId, type: 'announcement', message: title, timestamp: new Date().toISOString() });
+    emitToRoom(`event:${eventId}`, 'event_announcement', { eventId, type: 'announcement', message: title, title, body: message, timestamp: new Date().toISOString() });
 
     res.status(201).json({
       success: true,

@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 
-const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSubmissions }) => {
+const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSubmissions, onEdit }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -161,6 +161,18 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
           >
             <DocumentTextIcon className="h-5 w-5 mb-1" />
             <span className="text-xs">Submissions</span>
+          </button>
+
+          <button
+            onClick={() => onEdit?.(event)}
+            className="flex flex-col items-center p-3 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200"
+            title="Edit Event"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 mb-1">
+              <path d="M5.433 13.917l1.363-.39a2 2 0 00.948-.546l6.364-6.364a1.5 1.5 0 10-2.121-2.121L5.623 10.86a2 2 0 00-.546.948l-.39 1.363a.75.75 0 00.954.954z" />
+              <path d="M3.5 5.75A2.25 2.25 0 015.75 3.5h3a.75.75 0 010 1.5h-3a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-3a.75.75 0 011.5 0v3A2.25 2.25 0 0114.25 17h-8.5A2.25 2.25 0 013.5 14.75v-9z" />
+            </svg>
+            <span className="text-xs">Edit</span>
           </button>
         </div>
       </div>

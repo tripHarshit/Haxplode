@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { hackathonService } from '../../services/hackathonService';
 
 const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
@@ -20,6 +20,33 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
+  // Listen for prefill request to enter edit mode
+  useEffect(() => {
+    const handler = (e) => {
+      const d = e.detail || {};
+      setEditingId(d._id || null);
+      setFormData((prev) => ({
+        ...prev,
+        name: d.name || '',
+        theme: d.theme || '',
+        description: d.description || '',
+        location: d.location || '',
+        isVirtual: !!d.isVirtual,
+        startDate: d.startDate || '',
+        endDate: d.endDate || '',
+        registrationDeadline: d.registrationDeadline || '',
+        maxTeams: d.maxTeams || 50,
+        maxTeamSize: d.maxTeamSize || 4,
+        rules: Array.isArray(d.rules) && d.rules.length ? d.rules : [''],
+        prizes: Array.isArray(d.prizes) && d.prizes.length ? d.prizes : [{ category: '', amount: '', description: '' }],
+        rounds: Array.isArray(d.rounds) && d.rounds.length ? d.rounds : [{ name: '', description: '', startDate: '', endDate: '' }],
+      }));
+    };
+    window.addEventListener('prefillEventWizard', handler);
+    return () => window.removeEventListener('prefillEventWizard', handler);
+  }, []);
 
   const themes = [
     'Artificial Intelligence', 'Blockchain', 'Mobile Development', 'Web Development',
@@ -109,9 +136,7 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
     setIsSubmitting(true);
     
     try {
-      console.log('🚀 Calling hackathonService.createHackathon...');
-      
-      const response = await hackathonService.createHackathon({
+      const payload = {
         title: formData.name,
         description: formData.description,
         category: formData.theme,
@@ -143,10 +168,18 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
           allowTeams: true,
           registrationLimit: formData.maxTeams * formData.maxTeamSize
         }
-      });
+      };
 
-      console.log('✅ Event created successfully:', response);
-      onEventCreated(response.event);
+      let response;
+      if (editingId) {
+        console.log('🚀 Updating hackathon...', editingId);
+        response = await hackathonService.updateHackathon(editingId, payload);
+        onEventCreated(response.event);
+      } else {
+        console.log('🚀 Creating hackathon...');
+        response = await hackathonService.createHackathon(payload);
+        onEventCreated(response.event);
+      }
       onClose();
     } catch (error) {
       console.error('❌ Error creating event:', error);
@@ -520,7 +553,7 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
                 : 'bg-green-600 text-white hover:bg-green-700'
             }`}
           >
-            {isSubmitting ? 'Creating...' : 'Create Event'}
+            {isSubmitting ? (editingId ? 'Saving...' : 'Creating...') : (editingId ? 'Save Changes' : 'Create Event')}
           </button>
         </div>
       </div>
