@@ -1,5 +1,9 @@
 const { Sequelize } = require('sequelize');
 
+console.log("🔍 DB Host:", process.env.AZURE_SQL_SERVER);
+console.log("🔍 DB Name:", process.env.AZURE_SQL_DATABASE);
+console.log("🔍 DB User:", process.env.AZURE_SQL_USERNAME);
+
 const shouldEncrypt = process.env.AZURE_SQL_OPTIONS_ENCRYPT !== 'false';
 const shouldTrustServerCertificate = process.env.AZURE_SQL_OPTIONS_TRUST_SERVER_CERTIFICATE === 'true';
 

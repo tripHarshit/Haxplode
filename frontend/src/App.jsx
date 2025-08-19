@@ -81,7 +81,7 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-                <Route path="/hackathons" element={<HackathonList />} />
+                <Route path="/hackathons" element={<Layout><HackathonList /></Layout>} />
                 
                 {/* Profile and Settings routes */}
                 <Route path="/profile" element={

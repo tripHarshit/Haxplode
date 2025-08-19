@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import Layout from '../../components/common/Layout';
 import { hackathonService } from '../../services/hackathonService';
 import EventDetailsModal from '../../components/participant/EventDetailsModal';
 
@@ -51,26 +50,24 @@ const HackathonDetails = () => {
   }, [id]);
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-neutral-900">Hackathon Details</h1>
-        <p className="text-neutral-600">View hackathon information and register</p>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-neutral-900">Hackathon Details</h1>
+      <p className="text-neutral-600">View hackathon information and register</p>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3">{error}</div>
-        )}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3">{error}</div>
+      )}
 
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        ) : event ? (
-          <EventDetailsModal event={event} isOpen={open} onClose={() => setOpen(false)} />
-        ) : (
-          <div className="card">Not found</div>
-        )}
-      </div>
-    </Layout>
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : event ? (
+        <EventDetailsModal event={event} isOpen={open} onClose={() => setOpen(false)} />
+      ) : (
+        <div className="card">Not found</div>
+      )}
+    </div>
   );
 };
 
