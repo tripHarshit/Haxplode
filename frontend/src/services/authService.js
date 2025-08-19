@@ -31,6 +31,22 @@ api.interceptors.response.use(
     console.error('API Error:', error.response?.status, error.response?.data);
     
     if (error.response?.status === 401) {
+      // Guard against infinite refresh loops
+      const originalRequest = error.config || {};
+      if (originalRequest?.url?.includes('/auth/refresh')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        return Promise.reject(error);
+      }
+
+      if (originalRequest._retry) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        return Promise.reject(error);
+      }
+
+      originalRequest._retry = true;
+
       // Token expired, try to refresh
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
@@ -43,18 +59,18 @@ api.interceptors.response.use(
           }
           
           // Retry original request
-          const originalRequest = error.config;
+          originalRequest.headers = originalRequest.headers || {};
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return api(originalRequest);
         } catch (refreshError) {
           console.error('Token refresh failed:', refreshError);
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
-          window.location.href = '/login';
+          return Promise.reject(refreshError);
         }
       } else {
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        return Promise.reject(error);
       }
     }
     return Promise.reject(error);

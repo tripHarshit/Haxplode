@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
+import { hackathonService } from '../services/hackathonService';
+import { announcementService } from '../services/announcementService';
 import { 
   BellIcon, 
   CheckCircleIcon, 
@@ -10,61 +13,65 @@ import {
 
 const NotificationsPage = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'success',
-      title: 'Team Created Successfully',
-      message: 'Your team "CodeCrafters" has been created successfully.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-      read: false
-    },
-    {
-      id: 2,
-      type: 'info',
-      title: 'Event Registration',
-      message: 'You have successfully registered for "AI Innovation Hackathon".',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-      read: true
-    },
-    {
-      id: 3,
-      type: 'warning',
-      title: 'Submission Deadline Approaching',
-      message: 'Your project submission for "AI Innovation Hackathon" is due in 24 hours.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6 hours ago
-      read: false
-    },
-    {
-      id: 4,
-      type: 'success',
-      title: 'Project Submitted',
-      message: 'Your project "AI-Powered Task Manager" has been submitted successfully.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12), // 12 hours ago
-      read: true
-    }
-  ]);
+  const { refreshUnreadCount } = useSocket();
+  const [notifications, setNotifications] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const markAsRead = (notificationId) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, read: true }
-          : notification
-      )
-    );
+  useEffect(() => {
+    const loadAnnouncements = async () => {
+      if (!user) return;
+      setIsLoading(true);
+      try {
+        // Get events user participates in
+        const { participatingEvents } = await hackathonService.getUserEvents({ page: 1, limit: 100 });
+        const eventIds = (participatingEvents || []).map(e => e.id);
+        // Fetch announcements for each event
+        const results = await Promise.all(
+          eventIds.map(eventId => announcementService.getEventAnnouncements(eventId))
+        );
+        const anns = results.flatMap(r => (r?.data?.announcements || r?.announcements || []));
+        // Map to notification shape
+        const mapped = anns.map(a => {
+          let mappedType = 'info';
+          const priority = a.priority || '';
+          const aType = a.type || '';
+          if (priority === 'Critical' || aType === 'Urgent') mappedType = 'error';
+          else if (priority === 'High' || aType === 'Important' || aType === 'Reminder') mappedType = 'warning';
+          else mappedType = 'info';
+          return {
+            id: a._id || a.id,
+            type: mappedType,
+            title: a.title || 'Announcement',
+            message: a.message || '',
+            timestamp: new Date(a.createdAt || a.scheduledFor || Date.now()),
+            read: Array.isArray(a.readBy) ? a.readBy.some(rb => rb.userId === user.id) : false,
+          };
+        }).sort((x, y) => (y.timestamp?.getTime?.() || 0) - (x.timestamp?.getTime?.() || 0));
+        setNotifications(mapped);
+      } catch (err) {
+        console.error('Failed to load notifications:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadAnnouncements();
+  }, [user]);
+
+  const markAsRead = async (notificationId) => {
+    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
+    try { await announcementService.markAsRead(notificationId); } catch {}
+    try { refreshUnreadCount(); } catch {}
   };
 
   const markAllAsRead = () => {
     setNotifications(prev => 
       prev.map(notification => ({ ...notification, read: true }))
     );
+    try { refreshUnreadCount(); } catch {}
   };
 
   const deleteNotification = (notificationId) => {
-    setNotifications(prev => 
-      prev.filter(notification => notification.id !== notificationId)
-    );
+    setNotifications(prev => prev.filter(notification => notification.id !== notificationId));
   };
 
   const getNotificationIcon = (type) => {
@@ -106,7 +113,7 @@ const NotificationsPage = () => {
     return `${days} day${days > 1 ? 's' : ''} ago`;
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
   if (!user) {
     return (
@@ -146,7 +153,9 @@ const NotificationsPage = () => {
 
         {/* Notifications List */}
         <div className="divide-y divide-gray-200">
-          {notifications.length > 0 ? (
+          {isLoading ? (
+            <div className="p-12 text-center text-gray-500">Loading...</div>
+          ) : notifications.length > 0 ? (
             notifications.map((notification) => (
               <div
                 key={notification.id}

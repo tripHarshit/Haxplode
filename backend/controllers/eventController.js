@@ -326,8 +326,8 @@ const getEventsByUser = async (req, res) => {
     let participatingEvents = [];
     if (req.currentUser.role !== 'Organizer') {
       try {
-        // Only compute participating list for non-organizers to reduce query complexity
-        participatingEvents = await Event.findAll({
+        // Find via team membership
+        const byTeamMembership = await Event.findAll({
           include: [
             {
               model: Team,
@@ -343,6 +343,19 @@ const getEventsByUser = async (req, res) => {
           ],
           order: [['createdAt', 'DESC']],
         });
+
+        // Find via individual Registration (Mongo)
+        const regs = await Registration.find({ userId, status: { $in: ['pending', 'confirmed'] } });
+        const registeredEventIds = regs.map(r => r.eventId);
+        const byRegistration = registeredEventIds.length
+          ? await Event.findAll({ where: { id: registeredEventIds } })
+          : [];
+
+        // Merge unique by id
+        const mapById = new Map();
+        for (const ev of byTeamMembership) mapById.set(ev.id, ev);
+        for (const ev of byRegistration) mapById.set(ev.id, ev);
+        participatingEvents = Array.from(mapById.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       } catch (assocErr) {
         console.warn('Participating events query skipped due to association error:', assocErr?.message);
         participatingEvents = [];

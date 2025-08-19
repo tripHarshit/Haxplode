@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Crown } from 'lucide-react';
 import { mockSubmissions } from '../../utils/mockData';
-import { mockParticipants, mockAnnouncements, mockEventStats } from '../../utils/organizerMockData';
+import { mockParticipants, mockEventStats } from '../../utils/organizerMockData';
 import ParticipantsList from '../../components/organizer/ParticipantsList';
 import ParticipantDetailsModal from '../../components/organizer/ParticipantDetailsModal';
 import AnnouncementsList from '../../components/organizer/AnnouncementsList';
@@ -19,6 +19,7 @@ import AnalyticsCharts from '../../components/organizer/AnalyticsCharts';
 import SponsorShowcase from '../../components/organizer/SponsorShowcase';
 import EventCreationWizard from '../../components/organizer/EventCreationWizard';
 import { hackathonService } from '../../services/hackathonService';
+import { announcementService } from '../../services/announcementService';
 import { useAuth } from '../../context/AuthContext';
 
 const OrganizerDashboard = () => {
@@ -28,7 +29,7 @@ const OrganizerDashboard = () => {
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const { user } = useAuth();
   const [participants, setParticipants] = useState(mockParticipants);
-  const [announcements, setAnnouncements] = useState(mockAnnouncements);
+  const [announcements, setAnnouncements] = useState([]);
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [showParticipantModal, setShowParticipantModal] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState(null);
@@ -62,6 +63,12 @@ const OrganizerDashboard = () => {
           isRegistered: false
         }));
         setEvents(mapped);
+        // Select first event by default and load its announcements
+        if (mapped.length > 0) {
+          const firstId = mapped[0].id;
+          setSelectedEventId(firstId);
+          await loadAnnouncements(firstId);
+        }
         console.log('OrganizerDashboard: Events mapped and set in state');
       } catch (error) {
         console.error('OrganizerDashboard: Failed to load events:', error);
@@ -71,6 +78,27 @@ const OrganizerDashboard = () => {
     };
     loadEvents();
   }, []);
+
+  const loadAnnouncements = async (eventId) => {
+    try {
+      const resp = await announcementService.getEventAnnouncements(eventId, { limit: 50 });
+      const list = resp?.data?.announcements || [];
+      const mapped = list.map(a => ({
+        id: a._id,
+        title: a.title,
+        content: a.message,
+        targetAudience: Array.isArray(a.targetAudience) ? a.targetAudience[0] || 'All' : (a.targetAudience || 'All'),
+        isUrgent: String(a.type).toLowerCase() === 'urgent' || String(a.priority).toLowerCase() === 'critical',
+        isImportant: String(a.priority).toLowerCase() === 'high' || String(a.priority).toLowerCase() === 'critical',
+        date: a.createdAt,
+        createdBy: 'You',
+      }));
+      setAnnouncements(mapped);
+    } catch (e) {
+      console.error('Failed to load announcements:', e);
+      setAnnouncements([]);
+    }
+  };
 
   const handleCreateEvent = () => {
     // Log navigation test
@@ -121,22 +149,46 @@ const OrganizerDashboard = () => {
     setShowParticipantModal(true);
   };
 
-  const handleCreateAnnouncement = (announcementData) => {
-    const newAnnouncement = {
-      ...announcementData,
-      id: Date.now()
-    };
-    setAnnouncements(prev => [...prev, newAnnouncement]);
+  const handleCreateAnnouncement = async (announcementData) => {
+    if (!selectedEventId) return;
+    try {
+      const payload = {
+        eventId: selectedEventId,
+        title: announcementData.title,
+        message: announcementData.content,
+        type: announcementData.isUrgent ? 'Urgent' : 'General',
+        priority: announcementData.isUrgent ? 'Critical' : (announcementData.isImportant ? 'High' : 'Medium'),
+        isPinned: !!announcementData.isImportant,
+        isPublic: true,
+        targetAudience: [announcementData.targetAudience || 'All'],
+      };
+      await announcementService.createAnnouncement(payload);
+      await loadAnnouncements(selectedEventId);
+    } catch (e) {
+      console.error('Create announcement failed:', e);
+    }
   };
 
-  const handleEditAnnouncement = (announcementId, updatedData) => {
-    setAnnouncements(prev => prev.map(ann => 
-      ann.id === announcementId ? { ...ann, ...updatedData } : ann
-    ));
+  const handleEditAnnouncement = async (announcementId, updatedData) => {
+    try {
+      await announcementService.updateAnnouncement(announcementId, {
+        title: updatedData.title,
+        message: updatedData.content,
+        isPinned: !!updatedData.isImportant,
+      });
+      if (selectedEventId) await loadAnnouncements(selectedEventId);
+    } catch (e) {
+      console.error('Update announcement failed:', e);
+    }
   };
 
-  const handleDeleteAnnouncement = (announcementId) => {
-    setAnnouncements(prev => prev.filter(ann => ann.id !== announcementId));
+  const handleDeleteAnnouncement = async (announcementId) => {
+    try {
+      await announcementService.deleteAnnouncement(announcementId);
+      if (selectedEventId) await loadAnnouncements(selectedEventId);
+    } catch (e) {
+      console.error('Delete announcement failed:', e);
+    }
   };
 
   const handleViewParticipants = async (eventId) => {

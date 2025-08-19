@@ -27,6 +27,7 @@ const uploadRoutes = require('./routes/upload');
 const { setSocketServer } = require('./utils/socket');
 const { startSchedulers } = require('./utils/scheduler');
 const notificationsRoutes = require('./routes/notifications');
+const sponsorRoutes = require('./routes/sponsors');
 
 const http = require('http');
 const jwt = require('jsonwebtoken');
@@ -92,6 +93,7 @@ app.use('/api/hackathons', hackathonRoutes);
 app.use('/api/participant', participantRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/sponsors', sponsorRoutes);
 
 // 404 handler
 app.use(notFound);
