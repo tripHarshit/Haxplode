@@ -17,7 +17,7 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (isAuthenticated && user && localStorage.getItem('token')) {
       console.log('Socket: Attempting to connect with token:', localStorage.getItem('token') ? 'YES' : 'NO');
-      const socketUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || '';
       const newSocket = io(socketUrl, {
         auth: {
           token: localStorage.getItem('token')
