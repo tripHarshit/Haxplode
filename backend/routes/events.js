@@ -9,11 +9,14 @@ const {
   deleteEvent,
   getEventsByUser,
   changeEventStatus,
+  registerForEvent,
+  unregisterFromEvent,
 } = require('../controllers/eventController');
 
 const {
   authMiddleware,
   authorizeOrganizer,
+  authorizeParticipant,
   optionalAuth,
 } = require('../middleware/authMiddleware');
 
@@ -34,5 +37,7 @@ router.post('/', authMiddleware, authorizeOrganizer, validateInput(eventSchemas.
 router.put('/:id', authMiddleware, authorizeOrganizer, validateInput(eventSchemas.update), updateEvent);
 router.delete('/:id', authMiddleware, authorizeOrganizer, deleteEvent);
 router.patch('/:id/status', authMiddleware, authorizeOrganizer, changeEventStatus);
+router.post('/:id/register', authMiddleware, authorizeParticipant, registerForEvent);
+router.delete('/:id/register', authMiddleware, authorizeParticipant, unregisterFromEvent);
 
 module.exports = router;

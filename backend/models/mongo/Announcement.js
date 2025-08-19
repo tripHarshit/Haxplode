@@ -103,6 +103,7 @@ announcementSchema.index({ eventId: 1, priority: 1 });
 announcementSchema.index({ eventId: 1, isPinned: 1 });
 announcementSchema.index({ scheduledFor: 1 });
 announcementSchema.index({ expiresAt: 1 });
+announcementSchema.index({ title: 'text', message: 'text' });
 
 // Virtual for announcement age
 announcementSchema.virtual('age').get(function() {

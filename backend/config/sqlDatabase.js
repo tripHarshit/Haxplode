@@ -1,5 +1,8 @@
 const { Sequelize } = require('sequelize');
 
+const shouldEncrypt = process.env.AZURE_SQL_OPTIONS_ENCRYPT !== 'false';
+const shouldTrustServerCertificate = process.env.AZURE_SQL_OPTIONS_TRUST_SERVER_CERTIFICATE === 'true';
+
 const sequelize = new Sequelize({
   dialect: 'mssql',
   host: process.env.AZURE_SQL_SERVER,
@@ -9,8 +12,10 @@ const sequelize = new Sequelize({
   password: process.env.AZURE_SQL_PASSWORD,
   dialectOptions: {
     options: {
-      encrypt: process.env.AZURE_SQL_OPTIONS_ENCRYPT === 'true',
-      trustServerCertificate: process.env.AZURE_SQL_OPTIONS_TRUST_SERVER_CERTIFICATE === 'true',
+      // Default to encryption unless explicitly disabled via env var
+      encrypt: shouldEncrypt,
+      // Default to NOT trusting the server certificate unless explicitly enabled
+      trustServerCertificate: shouldTrustServerCertificate,
       requestTimeout: 30000,
       connectionTimeout: 30000,
     },
@@ -37,21 +42,21 @@ async function connectSQL() {
     // Sync models (in production, use migrations instead)
     if (process.env.NODE_ENV === 'development') {
       try {
-        await sequelize.sync({ alter: true });
-        console.log('✅ Database models synchronized.');
+        // Only sync if tables don't exist - NEVER force sync in development
+        await sequelize.sync({ alter: false });
+        console.log('✅ Database models synchronized safely.');
       } catch (syncError) {
-        console.warn('⚠️  Model sync failed, trying force sync...');
-        try {
-          await sequelize.sync({ force: true });
-          console.log('✅ Database models force synchronized.');
-        } catch (forceSyncError) {
-          console.error('❌ Force sync also failed:', forceSyncError.message);
-          console.warn('⚠️  Continuing without sync - ensure tables exist manually');
-        }
+        console.warn('⚠️  Model sync failed:', syncError.message);
+        console.warn('⚠️  Continuing without sync - ensure tables exist manually');
+        console.warn('⚠️  If you need to reset the database, do it manually in Azure Portal');
       }
     }
   } catch (error) {
     console.error('❌ Unable to connect to Azure SQL Database:', error);
+    if (error && (error.code === 'EENCRYPT' || error.parent?.code === 'EENCRYPT')) {
+      console.error('ℹ️ Tip: Azure SQL requires TLS. Ensure encryption is enabled.');
+      console.error("Set AZURE_SQL_OPTIONS_ENCRYPT to 'true' (default). Only set TRUST_SERVER_CERTIFICATE to 'true' for testing.");
+    }
     throw error;
   }
 }

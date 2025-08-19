@@ -1,6 +1,7 @@
 const Submission = require('../models/mongo/Submission');
 const { Team, TeamMember } = require('../models/sql/Team');
 const Event = require('../models/sql/Event');
+const { audit } = require('../utils/audit');
 
 // Create submission (Participant only)
 const createSubmission = async (req, res) => {
@@ -65,6 +66,19 @@ const createSubmission = async (req, res) => {
       });
     }
 
+    // Enforce team-only/individual-only
+    const eventSettings = event.settings || {};
+    if (eventSettings.allowIndividual === false) {
+      // must be in a team (already verified above), no extra action
+    }
+    if (eventSettings.allowTeams === false) {
+      // individual only: forbid team submissions
+      const memberCount = team.members.length;
+      if (memberCount > 1) {
+        return res.status(400).json({ success: false, message: 'This event does not allow team submissions' });
+      }
+    }
+
     // Check if submission already exists for this team and event
     const existingSubmission = await Submission.findOne({ teamId, eventId });
     if (existingSubmission) {
@@ -90,6 +104,8 @@ const createSubmission = async (req, res) => {
       futurePlans,
       status: 'Submitted',
     });
+
+    audit(req.currentUser.id, 'submission_created', { eventId, teamId, submissionId: submission._id });
 
     res.status(201).json({
       success: true,
@@ -229,12 +245,23 @@ const updateSubmission = async (req, res) => {
       });
     }
 
+    // Validate against event criteria if present
+    if (event && Array.isArray(event.customCriteria) && req.body.criteriaScores) {
+      const critIds = new Set(event.customCriteria.map(c => c.id));
+      const invalid = Object.keys(req.body.criteriaScores).some(k => !critIds.has(k));
+      if (invalid) {
+        return res.status(400).json({ success: false, message: 'Invalid criteria keys' });
+      }
+    }
+
     // Update submission
     const updatedSubmission = await Submission.findByIdAndUpdate(
       id,
       { ...updateData, lastModified: new Date() },
       { new: true, runValidators: true }
     );
+
+    audit(req.currentUser.id, 'submission_updated', { eventId: submission.eventId, teamId: submission.teamId, submissionId: submission._id });
 
     res.status(200).json({
       success: true,

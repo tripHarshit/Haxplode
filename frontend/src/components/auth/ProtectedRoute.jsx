@@ -53,7 +53,7 @@ const ProtectedRoute = ({ children, requiredRole = null, requiredRoles = [] }) =
 
   // User doesn't have required role(s)
   if (!hasAccess) {
-    console.log('Access denied for user:', user?.name, 'Required role(s):', requiredRole || requiredRoles);
+    console.log('Access denied for user:', user?.fullName, 'Required role(s):', requiredRole || requiredRoles);
     
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient">
@@ -77,15 +77,14 @@ const ProtectedRoute = ({ children, requiredRole = null, requiredRoles = [] }) =
                 <span>Your current role(s):</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {user?.roles?.map((role) => (
+                {user?.role ? (
                   <span
-                    key={role}
                     className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
                   >
-                    {role}
+                    {user.role}
                   </span>
-                )) || (
-                  <span className="text-neutral-500 text-xs">No roles assigned</span>
+                ) : (
+                  <span className="text-neutral-500 text-xs">No role assigned</span>
                 )}
               </div>
             </div>
@@ -112,7 +111,7 @@ const ProtectedRoute = ({ children, requiredRole = null, requiredRoles = [] }) =
   }
 
   // User has access, render the protected content
-  console.log('Access granted for user:', user?.name, 'to route:', location.pathname);
+  console.log('Access granted for user:', user?.fullName, 'to route:', location.pathname);
   return children;
 };
 
