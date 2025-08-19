@@ -4,24 +4,17 @@ const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage first, then system preference
+    // Check localStorage first, then default to light mode
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
       return savedTheme === 'dark';
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Default to light mode instead of system preference
+    return false;
   });
 
-  // When true, always render in light mode regardless of user/system preference
-  const [isLightForced, setIsLightForced] = useState(false);
-
   useEffect(() => {
-    // Update document class when theme changes or when light mode is forced
-    if (isLightForced) {
-      document.documentElement.classList.remove('dark');
-      return;
-    }
-
+    // Update document class when theme changes
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -29,7 +22,7 @@ export const ThemeProvider = ({ children }) => {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
     }
-  }, [isDarkMode, isLightForced]);
+  }, [isDarkMode]);
 
   const toggleTheme = () => {
     setIsDarkMode(prev => !prev);
@@ -41,11 +34,9 @@ export const ThemeProvider = ({ children }) => {
 
   const value = {
     isDarkMode,
+    theme: isDarkMode ? 'dark' : 'light',
     toggleTheme,
     setTheme,
-    // Force light mode for specific screens (e.g., home, auth)
-    isLightForced,
-    setLightModeForced: setIsLightForced,
   };
 
   return (

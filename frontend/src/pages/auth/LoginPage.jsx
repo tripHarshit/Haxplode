@@ -4,15 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { isValidEmail } from '../../utils/helpers';
-import { useTheme } from '../../context/ThemeContext';
 
 const LoginPage = () => {
-  const { setLightModeForced } = useTheme();
-
-  useEffect(() => {
-    setLightModeForced(true);
-    return () => setLightModeForced(false);
-  }, [setLightModeForced]);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
