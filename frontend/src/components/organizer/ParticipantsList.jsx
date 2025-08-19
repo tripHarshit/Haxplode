@@ -75,7 +75,7 @@ const ParticipantsList = ({ participants, onViewDetails }) => {
             placeholder="Search participants by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
           />
         </div>
         
@@ -83,7 +83,7 @@ const ParticipantsList = ({ participants, onViewDetails }) => {
           <select
             value={teamStatusFilter}
             onChange={(e) => setTeamStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
           >
             <option value="all">All Team Status</option>
             <option value="In Team">In Team</option>
@@ -93,7 +93,7 @@ const ParticipantsList = ({ participants, onViewDetails }) => {
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
           >
             <option value="all">All Dates</option>
             <option value="recent">Last 7 Days</option>
@@ -104,7 +104,7 @@ const ParticipantsList = ({ participants, onViewDetails }) => {
 
       {/* Export Button */}
       <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
           Showing {filteredParticipants.length} of {participants.length} participants
         </div>
         <button
@@ -117,8 +117,8 @@ const ParticipantsList = ({ participants, onViewDetails }) => {
       </div>
 
       {/* Participants Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
+      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+        <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {filteredParticipants.map((participant) => (
             <li key={participant.id}>
               <div className="px-4 py-4 sm:px-6">
@@ -131,16 +131,16 @@ const ParticipantsList = ({ participants, onViewDetails }) => {
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-medium text-gray-900 truncate">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
                           {participant.name}
                         </h3>
-                        <p className="text-sm text-gray-500 truncate">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                           {participant.email}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                    <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                       <span>Registered: {format(new Date(participant.registrationDate), 'MMM dd, yyyy')}</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTeamStatusColor(participant.teamStatus)}`}>
                         {participant.teamStatus}
@@ -156,13 +156,13 @@ const ParticipantsList = ({ participants, onViewDetails }) => {
                         {participant.skills.slice(0, 3).map((skill, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                           >
                             {skill}
                           </span>
                         ))}
                         {participant.skills.length > 3 && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                             +{participant.skills.length - 3} more
                           </span>
                         )}
@@ -189,8 +189,8 @@ const ParticipantsList = ({ participants, onViewDetails }) => {
       {filteredParticipants.length === 0 && (
         <div className="text-center py-12">
           <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No participants found</h3>
-          <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No participants found</h3>
+          <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or filter criteria</p>
         </div>
       )}
     </div>

@@ -183,14 +183,14 @@ const OrganizerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Organizer Dashboard</h1>
-              <p className="text-gray-600">Manage your hackathons and events</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Organizer Dashboard</h1>
+              <p className="text-gray-600 dark:text-gray-400">Manage your hackathons and events</p>
             </div>
           </div>
         </div>
@@ -198,7 +198,7 @@ const OrganizerDashboard = () => {
 
       <div className="flex">
         {/* Sidebar Navigation */}
-        <div className="w-64 bg-white shadow-sm min-h-screen">
+        <div className="w-64 bg-white dark:bg-gray-800 shadow-sm min-h-screen">
           <nav className="mt-8">
             <div className="px-4 space-y-2">
               {[
@@ -213,8 +213,8 @@ const OrganizerDashboard = () => {
                   onClick={() => handleTabChange(tab.id)}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-400'
+                      : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'
                   }`}
                 >
                   <tab.icon className="h-5 w-5" />
@@ -229,33 +229,33 @@ const OrganizerDashboard = () => {
         <div className="flex-1 p-8">
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h2>
               
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
                       <CalendarIcon className="h-8 w-8 text-blue-600" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Total Events</dt>
-                        <dd className="text-lg font-medium text-gray-900">{events.length}</dd>
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Events</dt>
+                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">{events.length}</dd>
                       </dl>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
                       <UsersIcon className="h-8 w-8 text-green-600" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Total Participants</dt>
-                        <dd className="text-lg font-medium text-gray-900">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Participants</dt>
+                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
                           {events.reduce((sum, event) => sum + event.currentParticipants, 0)}
                         </dd>
                       </dl>
@@ -263,15 +263,15 @@ const OrganizerDashboard = () => {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
                       <ChartBarIcon className="h-8 w-8 text-purple-600" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Active Submissions</dt>
-                        <dd className="text-lg font-medium text-gray-900">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Active Submissions</dt>
+                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
                           {mockSubmissions.filter(sub => sub.status === 'submitted').length}
                         </dd>
                       </dl>
@@ -279,15 +279,15 @@ const OrganizerDashboard = () => {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
                       <BellIcon className="h-8 w-8 text-orange-600" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Pending Reviews</dt>
-                        <dd className="text-lg font-medium text-gray-900">
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Pending Reviews</dt>
+                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
                           {mockSubmissions.filter(sub => sub.status === 'submitted').length}
                         </dd>
                       </dl>
@@ -304,7 +304,7 @@ const OrganizerDashboard = () => {
           {activeTab === 'events' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Events Management</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Events Management</h2>
                 <button
                   onClick={handleCreateEvent}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2"
@@ -337,7 +337,7 @@ const OrganizerDashboard = () => {
 
           {activeTab === 'participants' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900">Participant Management</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Participant Management</h2>
               <ParticipantsList 
                 participants={participants}
                 onViewDetails={handleViewParticipantDetails}

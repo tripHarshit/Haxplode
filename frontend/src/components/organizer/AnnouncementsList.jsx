@@ -37,7 +37,7 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete }) => 
     <div className="space-y-6">
       {/* Header with Create Button */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Announcements</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Announcements</h2>
         <button
           onClick={() => {
             setEditingAnnouncement(null);
@@ -51,15 +51,15 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete }) => 
       </div>
 
       {/* Announcements List */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
+      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+        <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {announcements.map((announcement) => (
             <li key={announcement.id}>
               <div className="px-4 py-4 sm:px-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="text-lg font-medium text-gray-900">{announcement.title}</h3>
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{announcement.title}</h3>
                       {announcement.isUrgent && (
                         <ExclamationTriangleIcon className="h-5 w-5 text-red-500" title="Urgent" />
                       )}
@@ -68,11 +68,11 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete }) => 
                       )}
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
                       {announcement.content}
                     </p>
                     
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                       <span className="flex items-center space-x-1">
                         <BellIcon className="h-4 w-4" />
                         <span>{announcement.targetAudience}</span>
@@ -108,8 +108,8 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete }) => 
       {announcements.length === 0 && (
         <div className="text-center py-12">
           <BellIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No announcements yet</h3>
-          <p className="text-gray-500">Create your first announcement to keep participants informed</p>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No announcements yet</h3>
+          <p className="text-gray-500 dark:text-gray-400">Create your first announcement to keep participants informed</p>
         </div>
       )}
 
@@ -179,14 +179,14 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit }) => {
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+      <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white dark:bg-gray-800 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
             {announcement ? 'Edit Announcement' : 'Create New Announcement'}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
+            className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 text-2xl"
           >
             ×
           </button>
@@ -194,7 +194,7 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit }) => {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Title *
             </label>
             <input
@@ -202,15 +202,15 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit }) => {
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
               className={`w-full px-3 py-2 border rounded-md ${
-                errors.title ? 'border-red-500' : 'border-gray-300'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100`}
               placeholder="Enter announcement title"
             />
             {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Content *
             </label>
             <textarea
@@ -218,21 +218,21 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit }) => {
               onChange={(e) => handleInputChange('content', e.target.value)}
               rows={4}
               className={`w-full px-3 py-2 border rounded-md ${
-                errors.content ? 'border-red-500' : 'border-gray-300'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                errors.content ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100`}
               placeholder="Write your announcement content..."
             />
             {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Target Audience
             </label>
             <select
               value={formData.targetAudience}
               onChange={(e) => handleInputChange('targetAudience', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100"
             >
               <option value="All">All</option>
               <option value="Participants">Participants</option>
@@ -246,9 +246,9 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit }) => {
                 type="checkbox"
                 checked={formData.isUrgent}
                 onChange={(e) => handleInputChange('isUrgent', e.target.checked)}
-                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 dark:border-gray-700 rounded"
               />
-              <span className="ml-2 text-sm text-gray-700">Mark as Urgent</span>
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Mark as Urgent</span>
             </label>
             
             <label className="flex items-center">
@@ -256,9 +256,9 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit }) => {
                 type="checkbox"
                 checked={formData.isImportant}
                 onChange={(e) => handleInputChange('isImportant', e.target.checked)}
-                className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 dark:border-gray-700 rounded"
               />
-              <span className="ml-2 text-sm text-gray-700">Mark as Important</span>
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Mark as Important</span>
             </label>
           </div>
 
@@ -266,7 +266,7 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               Cancel
             </button>
