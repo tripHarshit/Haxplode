@@ -1,6 +1,7 @@
 const Event = require('../models/sql/Event');
 const User = require('../models/sql/User');
 const { Team, TeamMember } = require('../models/sql/Team');
+const { Registration } = require('../models/mongo');
 const { Op } = require('sequelize');
 
 // Create new event (Organizer only)
@@ -400,4 +401,55 @@ module.exports = {
   deleteEvent,
   getEventsByUser,
   changeEventStatus,
+  registerForEvent,
+  unregisterFromEvent,
 };
+
+// Register for event (Participant)
+async function registerForEvent(req, res) {
+  try {
+    const eventId = parseInt(req.params.id);
+    const userId = req.currentUser.id;
+    const event = await Event.findByPk(eventId);
+    if (!event) return res.status(404).json({ message: 'Event not found' });
+    // Capacity check
+    const regCount = await Registration.countDocuments({ eventId, status: { $in: ['pending', 'confirmed'] } });
+    const settings = event.settings || {};
+    const capacity = settings.registrationLimit || event.maxTeams * (event.maxTeamSize || 4) || 0;
+    if (capacity && regCount >= capacity) {
+      return res.status(400).json({ message: 'Registration capacity reached' });
+    }
+    // Individual-only / team-only enforcement
+    if (settings.allowIndividual === false) {
+      const existingTeamMember = await TeamMember.findOne({
+        where: { userId },
+        include: [{ model: Team, where: { eventId } }],
+      });
+      if (!existingTeamMember) {
+        return res.status(400).json({ message: 'Team membership required to register for this event' });
+      }
+    }
+    await Registration.findOneAndUpdate(
+      { eventId, userId },
+      { $setOnInsert: { status: 'confirmed', registeredAt: new Date() } },
+      { upsert: true, new: true }
+    );
+    return res.status(201).json({ message: 'Registered' });
+  } catch (error) {
+    console.error('Register for event error:', error);
+    return res.status(500).json({ message: 'Failed to register for event' });
+  }
+}
+
+// Unregister from event (Participant)
+async function unregisterFromEvent(req, res) {
+  try {
+    const eventId = parseInt(req.params.id);
+    const userId = req.currentUser.id;
+    await Registration.deleteOne({ eventId, userId });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Unregister from event error:', error);
+    return res.status(500).json({ message: 'Failed to unregister from event' });
+  }
+}

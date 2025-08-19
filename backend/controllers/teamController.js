@@ -1,6 +1,10 @@
 const { Team, TeamMember } = require('../models/sql/Team');
 const Event = require('../models/sql/Event');
 const User = require('../models/sql/User');
+const { TeamInvitation } = require('../models/mongo');
+const crypto = require('crypto');
+const { emitToRoom } = require('../utils/socket');
+const { audit } = require('../utils/audit');
 
 // Create team (Participant only)
 const createTeam = async (req, res) => {
@@ -26,6 +30,16 @@ const createTeam = async (req, res) => {
         success: false,
         message: 'Event not found',
       });
+    }
+
+    // Enforce team creation settings and capacity
+    const eventSettings = event.settings || {};
+    if (eventSettings.allowTeams === false) {
+      return res.status(400).json({ success: false, message: 'Team creation is disabled for this event' });
+    }
+    const teamCount = await Team.count({ where: { eventId } });
+    if (typeof event.maxTeams === 'number' && teamCount >= event.maxTeams) {
+      return res.status(400).json({ success: false, message: 'Maximum number of teams reached for this event' });
     }
 
     if (event.status !== 'Registration Open') {
@@ -84,6 +98,10 @@ const createTeam = async (req, res) => {
       userId: leaderId,
       role: 'Leader',
     });
+
+    // Audit + notify
+    audit(leaderId, 'team_created', { eventId, teamId: team.id, metadata: { teamName } });
+    emitToRoom(`event:${eventId}`, 'team_update', { teamId: team.id, type: 'created', data: { id: team.id, teamName } });
 
     res.status(201).json({
       success: true,
@@ -290,6 +308,9 @@ const addTeamMember = async (req, res) => {
       role,
     });
 
+    audit(req.currentUser.id, 'team_member_added', { eventId: team.eventId, teamId: team.id, metadata: { userId, role } });
+    emitToRoom(`team:${team.id}`, 'team_update', { teamId: team.id, type: 'member_joined', data: { userId, role } });
+
     res.status(200).json({
       success: true,
       message: 'Member added to team successfully',
@@ -351,6 +372,9 @@ const removeTeamMember = async (req, res) => {
       where: { teamId, userId: parseInt(userId) },
     });
 
+    audit(req.currentUser.id, 'team_member_removed', { eventId: team.eventId, teamId: team.id, metadata: { userId: parseInt(userId) } });
+    emitToRoom(`team:${team.id}`, 'team_update', { teamId: team.id, type: 'member_left', data: { userId: parseInt(userId) } });
+
     res.status(200).json({
       success: true,
       message: 'Member removed from team successfully',
@@ -401,6 +425,9 @@ const updateTeam = async (req, res) => {
 
     // Update team
     await team.update(updateData);
+
+    audit(req.currentUser.id, 'team_updated', { eventId: team.eventId, teamId: team.id });
+    emitToRoom(`team:${team.id}`, 'team_update', { teamId: team.id, type: 'updated', data: updateData });
 
     res.status(200).json({
       success: true,
@@ -471,4 +498,72 @@ module.exports = {
   removeTeamMember,
   updateTeam,
   getUserTeams,
+  inviteToTeam,
+  joinByCode,
+  leaveTeam,
 };
+
+// Invite to team (generate code)
+async function inviteToTeam(req, res) {
+  try {
+    const { teamId } = req.params;
+    const { email, role = 'Member' } = req.body;
+
+    const team = await Team.findByPk(teamId, { include: [{ model: Event, as: 'event' }, { model: TeamMember, as: 'members' }] });
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    const isLeader = team.members.some(m => m.userId === req.currentUser.id && m.role === 'Leader');
+    if (!isLeader) return res.status(403).json({ message: 'Only leader can invite' });
+
+    const code = crypto.randomBytes(6).toString('hex').toUpperCase();
+    const invitation = await TeamInvitation.create({
+      invitationCode: code,
+      teamId: team.id,
+      eventId: team.eventId,
+      createdBy: req.currentUser.id,
+      role,
+    });
+    return res.status(201).json({ invitationCode: invitation.invitationCode });
+  } catch (err) {
+    console.error('Invite error:', err);
+    return res.status(500).json({ message: 'Failed to create invitation' });
+  }
+}
+
+// Join by code
+async function joinByCode(req, res) {
+  try {
+    const { invitationCode } = req.body;
+    const invite = await TeamInvitation.findOne({ invitationCode, isRevoked: false, expiresAt: { $gt: new Date() } });
+    if (!invite) return res.status(404).json({ message: 'Invitation not found or expired' });
+
+    // Check user already in any team for event
+    const existingTeamMember = await TeamMember.findOne({
+      where: { userId: req.currentUser.id },
+      include: [{ model: Team, where: { eventId: invite.eventId } }],
+    });
+    if (existingTeamMember) return res.status(400).json({ message: 'Already in a team for this event' });
+
+    await TeamMember.create({ teamId: invite.teamId, userId: req.currentUser.id, role: invite.role });
+    return res.json({ message: 'Joined team' });
+  } catch (err) {
+    console.error('Join by code error:', err);
+    return res.status(500).json({ message: 'Failed to join team' });
+  }
+}
+
+// Leave team
+async function leaveTeam(req, res) {
+  try {
+    const { teamId } = req.params;
+    const team = await Team.findByPk(teamId, { include: [{ model: TeamMember, as: 'members' }] });
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    const membership = team.members.find(m => m.userId === req.currentUser.id);
+    if (!membership) return res.status(404).json({ message: 'Not a team member' });
+    if (membership.role === 'Leader') return res.status(400).json({ message: 'Leader cannot leave. Transfer leadership.' });
+    await TeamMember.destroy({ where: { teamId: team.id, userId: req.currentUser.id } });
+    return res.json({ message: 'Left team' });
+  } catch (err) {
+    console.error('Leave team error:', err);
+    return res.status(500).json({ message: 'Failed to leave team' });
+  }
+}

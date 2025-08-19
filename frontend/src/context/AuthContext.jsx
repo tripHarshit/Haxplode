@@ -130,20 +130,30 @@ export const AuthProvider = ({ children }) => {
 
   // Role-based redirect logic
   const getRedirectPath = useCallback((user, intendedPath) => {
-    if (!user || !user.roles) return '/dashboard';
+    console.log('getRedirectPath called with:', { user, intendedPath });
     
-    const roles = user.roles;
+    if (!user || !user.role) {
+      console.log('No user or role, returning /dashboard');
+      return '/dashboard';
+    }
+    
+    const role = user.role.toLowerCase();
+    console.log('User role:', role);
     
     // If user has specific role, redirect to role-specific dashboard
-    if (roles.includes('organizer')) {
+    if (role === 'organizer') {
+      console.log('Redirecting to /organizer');
       return '/organizer';
-    } else if (roles.includes('judge')) {
+    } else if (role === 'judge') {
+      console.log('Redirecting to /judge');
       return '/judge';
-    } else if (roles.includes('participant')) {
+    } else if (role === 'participant') {
+      console.log('Redirecting to /participant');
       return '/participant';
     }
     
     // Default dashboard
+    console.log('Redirecting to default /dashboard');
     return '/dashboard';
   }, []);
 
@@ -164,10 +174,18 @@ export const AuthProvider = ({ children }) => {
       });
       
       console.log('Login successful, redirecting...');
+      console.log('User data:', user);
+      console.log('Redirect path:', getRedirectPath(user, location.state?.from?.pathname));
       
       // Get redirect path based on user role
       const redirectPath = getRedirectPath(user, location.state?.from?.pathname);
-      navigate(redirectPath, { replace: true });
+      console.log('About to navigate to:', redirectPath);
+      
+      // Add a small delay to see the logs before navigation
+      setTimeout(() => {
+        console.log('Executing navigation now...');
+        navigate(redirectPath, { replace: true });
+      }, 100);
       
       return { success: true };
     } catch (error) {
@@ -308,13 +326,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const hasRole = useCallback((requiredRole) => {
-    if (!state.user || !state.user.roles) return false;
-    return state.user.roles.includes(requiredRole);
+    if (!state.user || !state.user.role) return false;
+    return state.user.role.toLowerCase() === requiredRole.toLowerCase();
   }, [state.user]);
 
   const hasAnyRole = useCallback((roles) => {
-    if (!state.user || !state.user.roles) return false;
-    return roles.some(role => state.user.roles.includes(role));
+    if (!state.user || !state.user.role) return false;
+    return roles.some(role => state.user.role.toLowerCase() === role.toLowerCase());
   }, [state.user]);
 
   const isRole = useCallback((role) => {

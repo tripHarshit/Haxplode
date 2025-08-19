@@ -1,12 +1,14 @@
 const bcrypt = require('bcryptjs');
+const https = require('https');
+const crypto = require('crypto');
 const User = require('../models/sql/User');
-const { generateTokens } = require('../utils/jwtUtils');
+const { generateTokens, generatePasswordResetToken, verifyPasswordResetToken } = require('../utils/jwtUtils');
 const jwt = require('jsonwebtoken');
 
 // User signup
 const signup = async (req, res) => {
   try {
-    const { fullName, email, role, dob, password, socialLogin } = req.body;
+    const { name, email, role, dateOfBirth, password, socialLogin } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
@@ -17,15 +19,24 @@ const signup = async (req, res) => {
       });
     }
 
-    // Convert dob object to Date
-    const dateOfBirth = new Date(dob.year, dob.month - 1, dob.day);
+    // Convert dateOfBirth string to Date
+    const dob = new Date(dateOfBirth);
+
+    console.log('Signup - Creating user with data:', {
+      fullName: name,
+      email,
+      role: role.charAt(0).toUpperCase() + role.slice(1),
+      dob,
+      passwordProvided: password ? 'YES' : 'NO',
+      passwordLength: password ? password.length : 0
+    });
 
     // Create user
     const user = await User.create({
-      fullName,
+      fullName: name, // Map name to fullName for database
       email,
-      role,
-      dob: dateOfBirth,
+      role: role.charAt(0).toUpperCase() + role.slice(1), // Capitalize first letter
+      dob,
       password,
       emailVerified: !socialLogin, // Auto-verify if social login
     });
@@ -83,8 +94,19 @@ const login = async (req, res) => {
     }
 
     // Verify password
+    console.log('Login attempt - Email:', email);
+    console.log('Login attempt - Password provided:', password ? 'YES' : 'NO');
+    console.log('Login attempt - User found:', user ? 'YES' : 'NO');
+    console.log('Login attempt - User ID:', user?.id);
+    console.log('Login attempt - User role:', user?.role);
+    console.log('Login attempt - Stored password:', user?.password);
+    console.log('Login attempt - Provided password:', password);
+    
     const isPasswordValid = await user.comparePassword(password);
+    console.log('Login attempt - Password validation result:', isPasswordValid);
+    
     if (!isPasswordValid) {
+      console.log('Login failed - Password invalid for user:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password',
@@ -336,4 +358,102 @@ module.exports = {
   updateProfile,
   changePassword,
   logout,
+  forgotPassword,
+  resetPassword,
+  loginWithGoogle,
 };
+
+// Forgot password (issues a reset token; integrate email provider separately)
+async function forgotPassword(req, res) {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(200).json({ success: true, message: 'If the email exists, a reset link has been sent.' });
+    }
+    const token = generatePasswordResetToken(user.id);
+    // TODO: send via email provider; for now return token for testing
+    return res.status(200).json({ success: true, message: 'Password reset link generated', token });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ success: false, message: 'Failed to process forgot password' });
+  }
+}
+
+// Google OAuth login
+async function loginWithGoogle(req, res) {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: 'idToken is required' });
+    }
+    const clientId = process.env.OAUTH_GOOGLE_CLIENT_ID;
+    // Verify with Google tokeninfo endpoint
+    const tokenInfo = await new Promise((resolve, reject) => {
+      https.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`, (resp) => {
+        let data = '';
+        resp.on('data', (chunk) => { data += chunk; });
+        resp.on('end', () => {
+          try {
+            const json = JSON.parse(data);
+            if (json.error_description || json.error) return reject(new Error(json.error_description || json.error));
+            resolve(json);
+          } catch (e) { reject(e); }
+        });
+      }).on('error', reject);
+    });
+
+    if (clientId && tokenInfo.aud !== clientId) {
+      return res.status(401).json({ success: false, message: 'Invalid Google client' });
+    }
+
+    const email = tokenInfo.email;
+    const fullName = tokenInfo.name || tokenInfo.given_name || 'Google User';
+    if (!email) return res.status(400).json({ success: false, message: 'Email not present in token' });
+
+    let user = await User.findOne({ where: { email } });
+    if (!user) {
+      // Create user with defaults
+      user = await User.create({
+        fullName,
+        email,
+        role: 'Participant',
+        dob: new Date(2000, 0, 1),
+        password: crypto.randomBytes(32).toString('hex'),
+        emailVerified: true,
+      });
+    }
+
+    const tokens = generateTokens(user.id, user.role);
+    await user.update({ lastLoginAt: new Date() });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
+        tokens,
+      },
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(401).json({ success: false, message: 'Failed to login with Google' });
+  }
+}
+
+// Reset password
+async function resetPassword(req, res) {
+  try {
+    const { token, newPassword } = req.body;
+    const decoded = verifyPasswordResetToken(token);
+    const user = await User.findByPk(decoded.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    await user.update({ password: newPassword });
+    return res.status(200).json({ success: true, message: 'Password reset successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(400).json({ success: false, message: error.message || 'Failed to reset password' });
+  }
+}

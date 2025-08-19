@@ -66,6 +66,50 @@ const Event = sequelize.define('Event', {
       this.setDataValue('prizes', JSON.stringify(value));
     },
   },
+  tracks: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      const raw = this.getDataValue('tracks');
+      return raw ? JSON.parse(raw) : [];
+    },
+    set(value) {
+      this.setDataValue('tracks', JSON.stringify(value || []));
+    },
+  },
+  rounds: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      const raw = this.getDataValue('rounds');
+      return raw ? JSON.parse(raw) : [];
+    },
+    set(value) {
+      this.setDataValue('rounds', JSON.stringify(value || []));
+    },
+  },
+  customCriteria: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      const raw = this.getDataValue('customCriteria');
+      return raw ? JSON.parse(raw) : [];
+    },
+    set(value) {
+      this.setDataValue('customCriteria', JSON.stringify(value || []));
+    },
+  },
+  settings: {
+    type: DataTypes.TEXT,
+    defaultValue: '{}',
+    get() {
+      const raw = this.getDataValue('settings');
+      return raw ? JSON.parse(raw) : {};
+    },
+    set(value) {
+      this.setDataValue('settings', JSON.stringify(value || {}));
+    },
+  },
   sponsors: {
     type: DataTypes.TEXT,
     defaultValue: '[]',

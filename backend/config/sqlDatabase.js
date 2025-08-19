@@ -1,5 +1,8 @@
 const { Sequelize } = require('sequelize');
 
+const shouldEncrypt = process.env.AZURE_SQL_OPTIONS_ENCRYPT !== 'false';
+const shouldTrustServerCertificate = process.env.AZURE_SQL_OPTIONS_TRUST_SERVER_CERTIFICATE === 'true';
+
 const sequelize = new Sequelize({
   dialect: 'mssql',
   host: process.env.AZURE_SQL_SERVER,
@@ -9,8 +12,10 @@ const sequelize = new Sequelize({
   password: process.env.AZURE_SQL_PASSWORD,
   dialectOptions: {
     options: {
-      encrypt: process.env.AZURE_SQL_OPTIONS_ENCRYPT === 'true',
-      trustServerCertificate: process.env.AZURE_SQL_OPTIONS_TRUST_SERVER_CERTIFICATE === 'true',
+      // Default to encryption unless explicitly disabled via env var
+      encrypt: shouldEncrypt,
+      // Default to NOT trusting the server certificate unless explicitly enabled
+      trustServerCertificate: shouldTrustServerCertificate,
       requestTimeout: 30000,
       connectionTimeout: 30000,
     },
@@ -52,6 +57,10 @@ async function connectSQL() {
     }
   } catch (error) {
     console.error('❌ Unable to connect to Azure SQL Database:', error);
+    if (error && (error.code === 'EENCRYPT' || error.parent?.code === 'EENCRYPT')) {
+      console.error('ℹ️ Tip: Azure SQL requires TLS. Ensure encryption is enabled.');
+      console.error("Set AZURE_SQL_OPTIONS_ENCRYPT to 'true' (default). Only set TRUST_SERVER_CERTIFICATE to 'true' for testing.");
+    }
     throw error;
   }
 }

@@ -10,57 +10,34 @@ export const SocketProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      // In a real app, this would connect to your Socket.io server
-      // const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
-      //   auth: {
-      //     token: localStorage.getItem('token')
-      //   }
-      // });
-      
-      // For demo purposes, we'll simulate socket connection
-      const newSocket = {
-        on: (event, callback) => {
-          // Simulate real-time events
-          if (event === 'connect') {
-            setTimeout(() => callback(), 100);
-          } else if (event === 'team_update') {
-            // Simulate team updates every 30 seconds
-            setInterval(() => {
-              callback({
-                type: 'member_joined',
-                teamId: 1,
-                message: 'New team member joined',
-                timestamp: new Date().toISOString()
-              });
-            }, 30000);
-          } else if (event === 'event_announcement') {
-            // Simulate event announcements every 2 minutes
-            setInterval(() => {
-              callback({
-                type: 'deadline_reminder',
-                eventId: 1,
-                message: 'Submission deadline approaching',
-                timestamp: new Date().toISOString()
-              });
-            }, 120000);
-          }
-        },
-        emit: (event, data) => {
-          console.log('Socket emit:', event, data);
-        },
-        disconnect: () => {
-          console.log('Socket disconnected');
+    if (isAuthenticated && user && localStorage.getItem('token')) {
+      console.log('Socket: Attempting to connect with token:', localStorage.getItem('token') ? 'YES' : 'NO');
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const newSocket = io(socketUrl, {
+        auth: {
+          token: localStorage.getItem('token')
         }
-      };
+      });
 
       setSocket(newSocket);
       setIsConnected(true);
 
-      // Simulate connection
+      // Handle connection
       newSocket.on('connect', () => {
         console.log('Socket connected');
         setIsConnected(true);
+      });
+
+      // Handle disconnection
+      newSocket.on('disconnect', () => {
+        console.log('Socket disconnected');
+        setIsConnected(false);
+      });
+
+      // Handle connection errors
+      newSocket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        setIsConnected(false);
       });
 
       // Listen for team updates
@@ -73,6 +50,18 @@ export const SocketProvider = ({ children }) => {
       newSocket.on('event_announcement', (data) => {
         console.log('Event announcement received:', data);
         // In a real app, this would show notifications or update the UI
+      });
+
+      // Listen for submission updates
+      newSocket.on('submission_update', (data) => {
+        console.log('Submission update received:', data);
+        // In a real app, this would update the UI or show notifications
+      });
+
+      // Listen for leaderboard updates
+      newSocket.on('leaderboard_update', (data) => {
+        console.log('Leaderboard update received:', data);
+        // In a real app, this would update the UI or show notifications
       });
 
       return () => {
