@@ -227,12 +227,12 @@ const Layout = ({ children }) => {
               {/* User menu */}
               <div className="flex items-center gap-x-4">
                 <div className="hidden sm:flex sm:flex-col sm:items-end">
-                  <p className="text-sm font-medium text-neutral-900 dark:text-gray-100">{user?.name}</p>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-gray-100">{user?.fullName || user?.name}</p>
                   <p className="text-xs text-neutral-500 dark:text-gray-400">{user?.email}</p>
                 </div>
                 <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
                   <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    {(user?.fullName || user?.name || 'U')?.charAt(0)?.toUpperCase()}
                   </span>
                 </div>
                 <button
