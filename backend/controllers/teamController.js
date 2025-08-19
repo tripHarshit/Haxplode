@@ -527,24 +527,47 @@ async function inviteToTeam(req, res) {
   }
 }
 
-// Join by code
+// Join by code (supports both Mongo invitation code and SQL referralCode)
 async function joinByCode(req, res) {
   try {
-    const { invitationCode } = req.body;
-    const invite = await TeamInvitation.findOne({ invitationCode, isRevoked: false, expiresAt: { $gt: new Date() } });
-    if (!invite) return res.status(404).json({ message: 'Invitation not found or expired' });
+    const rawCode = String(req.body?.invitationCode || req.body?.referralCode || '').trim();
+    if (!rawCode) return res.status(400).json({ message: 'Code is required' });
+    const code = rawCode.toUpperCase();
 
-    // Check user already in any team for event
+    let targetTeamId = null;
+    let eventId = null;
+    let role = 'Member';
+
+    // First try Mongo invitation code (if present in system)
+    try {
+      const invite = await TeamInvitation.findOne({ invitationCode: code, isRevoked: false, expiresAt: { $gt: new Date() } });
+      if (invite) {
+        targetTeamId = invite.teamId;
+        eventId = invite.eventId;
+        role = invite.role || 'Member';
+      }
+    } catch {}
+
+    // If not found, try SQL referralCode on Team
+    if (!targetTeamId) {
+      const team = await Team.findOne({ where: { referralCode: code } });
+      if (!team) return res.status(404).json({ message: 'Invitation not found or expired' });
+      targetTeamId = team.id;
+      eventId = team.eventId;
+    }
+
+    // Check user already in any team for this event
     const existingTeamMember = await TeamMember.findOne({
       where: { userId: req.currentUser.id },
-      include: [{ model: Team, where: { eventId: invite.eventId } }],
+      include: [{ model: Team, as: 'team', where: { eventId } }],
     });
     if (existingTeamMember) return res.status(400).json({ message: 'Already in a team for this event' });
 
-    await TeamMember.create({ teamId: invite.teamId, userId: req.currentUser.id, role: invite.role });
+    // Optional: capacity check (skipped in dev to avoid blocking)
+    await TeamMember.create({ teamId: targetTeamId, userId: req.currentUser.id, role });
     return res.json({ message: 'Joined team' });
   } catch (err) {
-    console.error('Join by code error:', err);
+    console.error('Join by code error:', err?.message, err?.stack);
     return res.status(500).json({ message: 'Failed to join team' });
   }
 }

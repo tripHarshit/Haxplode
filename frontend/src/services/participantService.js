@@ -70,9 +70,9 @@ export const participantService = {
     }
   },
 
-  async joinTeam(invitationCode) {
+  async joinTeam(invitationCodeOrReferral) {
     try {
-      const response = await api.post('/teams/join', { invitationCode });
+      const response = await api.post('/teams/join', { invitationCode: invitationCodeOrReferral });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to join team');
