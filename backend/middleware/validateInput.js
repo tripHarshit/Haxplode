@@ -111,6 +111,13 @@ const authSchemas = {
     }),
     role: Joi.string().valid('Participant', 'Organizer', 'Judge').default('Participant'),
   }),
+
+  updateProfile: Joi.object({
+    fullName: Joi.string().min(2).max(100).optional(),
+    bio: Joi.string().max(1000).allow('', null).optional(),
+    githubUsername: Joi.string().max(100).allow('', null).optional(),
+    linkedinProfile: Joi.string().uri().allow('', null).optional(),
+  }),
 };
 
 const eventSchemas = {

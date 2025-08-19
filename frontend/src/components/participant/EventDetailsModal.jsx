@@ -13,7 +13,7 @@ import {
 import { format } from 'date-fns';
 import { hackathonService } from '../../services/hackathonService';
 
-const EventDetailsModal = ({ event, isOpen, onClose }) => {
+const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
@@ -22,14 +22,11 @@ const EventDetailsModal = ({ event, isOpen, onClose }) => {
   const handleRegistration = async () => {
     setIsRegistering(true);
     try {
-      // Log navigation test
       if (window.navigationTester) {
         window.navigationTester.logButtonClick('Register Now', 'event_details_modal');
         window.navigationTester.logFormSubmission('Event Registration Form', true);
       }
-      
-      await hackathonService.registerForHackathon(event.id);
-      setRegistrationSuccess(true);
+      if (onRequestRegister) onRequestRegister();
     } catch (error) {
       console.error('Registration failed:', error);
       if (window.navigationTester) {

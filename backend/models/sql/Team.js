@@ -15,6 +15,15 @@ const Team = sequelize.define('Team', {
       notEmpty: true,
     },
   },
+  referralCode: {
+    type: DataTypes.STRING(32),
+    allowNull: false,
+    unique: true,
+    validate: {
+      notEmpty: true,
+      len: [4, 32],
+    },
+  },
   eventId: {
     type: DataTypes.INTEGER,
     allowNull: false,
