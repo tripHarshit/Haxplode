@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import { useTheme } from '../context/ThemeContext';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -15,18 +14,6 @@ import {
 } from 'lucide-react';
 
 const HomePage = () => {
-  const { setLightModeForced } = useTheme();
-
-  useEffect(() => {
-    setLightModeForced(true);
-    return () => setLightModeForced(false);
-  }, [setLightModeForced]);
-  
-  // Preload auth pages to avoid blank screen on first navigation in some environments
-  useEffect(() => {
-    import('./auth/LoginPage').catch(() => {});
-    import('./auth/RegisterPage').catch(() => {});
-  }, []);
   const { isAuthenticated, user, getRedirectPath } = useAuth();
   const navigate = useNavigate();
 

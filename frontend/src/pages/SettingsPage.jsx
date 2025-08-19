@@ -281,8 +281,8 @@ const SettingsPage = () => {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900">Event Reminders</h3>
-                  <p className="text-sm text-gray-500">Get reminded about upcoming events</p>
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Event Reminders</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Get reminded about upcoming events</p>
                 </div>
                 <button
                   onClick={() => handleNotificationChange('eventReminders')}
