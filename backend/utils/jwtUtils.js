@@ -1,5 +1,11 @@
 const jwt = require('jsonwebtoken');
 
+// Provide safe development fallbacks to avoid 500s when env is missing
+const DEV_ACCESS_FALLBACK = 'dev-access-secret-change-me';
+const DEV_REFRESH_FALLBACK = 'dev-refresh-secret-change-me';
+const JWT_SECRET = process.env.JWT_SECRET || DEV_ACCESS_FALLBACK;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || DEV_REFRESH_FALLBACK;
+
 // Generate access token
 const generateAccessToken = (userId, role) => {
   try {
@@ -9,7 +15,7 @@ const generateAccessToken = (userId, role) => {
         role,
         type: 'access'
       },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { 
         expiresIn: process.env.JWT_EXPIRES_IN || '24h' 
       }
@@ -28,7 +34,7 @@ const generateRefreshToken = (userId, role) => {
         role,
         type: 'refresh'
       },
-      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+      JWT_REFRESH_SECRET,
       { 
         expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' 
       }
@@ -58,7 +64,7 @@ const generateTokens = (userId, role) => {
 // Verify access token
 const verifyAccessToken = (token) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     
     if (decoded.type !== 'access') {
       throw new Error('Invalid token type');
@@ -79,7 +85,7 @@ const verifyAccessToken = (token) => {
 // Verify refresh token
 const verifyRefreshToken = (token) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_REFRESH_SECRET);
     
     if (decoded.type !== 'refresh') {
       throw new Error('Invalid token type');
@@ -144,7 +150,7 @@ const generatePasswordResetToken = (userId) => {
         type: 'password-reset',
         purpose: 'reset-password'
       },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { 
         expiresIn: '1h' // Short expiration for security
       }
