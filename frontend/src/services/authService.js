@@ -78,21 +78,31 @@ export const authService = {
     }
   },
 
-  async loginWithGoogle(googleToken) {
-    try {
-      console.log('Google OAuth login attempt');
-      
-      const response = await api.post('/auth/google', { token: googleToken });
-      const { user, token, refreshToken } = response.data.data;
-      
-      console.log('Google login successful for user:', user.fullName);
-      
-      return { user, token, refreshToken };
-    } catch (error) {
-      console.error('Google login failed:', error.message);
-      throw new Error(error.response?.data?.message || 'Google login failed');
+  async loginWithGoogle(idToken) {
+  try {
+    console.log('Google OAuth login attempt');
+
+    const response = await api.post('/auth/google', {
+      idToken,
+      role: 'Participant' // Default role, can be made configurable later
+    });
+
+    const { user, tokens } = response.data.data;
+
+    // Store tokens
+    localStorage.setItem('token', tokens.accessToken);
+    if (tokens.refreshToken) {
+      localStorage.setItem('refreshToken', tokens.refreshToken);
     }
-  },
+
+    console.log('Google login successful for user:', user.fullName);
+
+    return { user, token: tokens.accessToken, refreshToken: tokens.refreshToken };
+  } catch (error) {
+    console.error('Google login failed:', error.message);
+    throw new Error(error.response?.data?.message || 'Google login failed');
+  }
+}
 
   async register(userData) {
     try {
