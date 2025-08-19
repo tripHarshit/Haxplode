@@ -50,13 +50,9 @@ const Layout = ({ children }) => {
     },
     ...(hasRole('participant') ? [
       { name: 'Hackathons', href: '/participant/hackathons', icon: Calendar },
-      { name: 'My Submissions', href: '/participant/submissions', icon: Trophy },
-      { name: 'My Teams', href: '/participant', icon: Users },
     ] : []),
     ...(hasRole('organizer') ? [
-      { name: 'My Hackathons', href: '/organizer?tab=events', icon: Calendar },
       { name: 'Create Hackathon', href: '/organizer/create', icon: Calendar },
-      { name: 'Participants', href: '/organizer', icon: Users },
     ] : []),
     ...(hasRole('judge') ? [
       { name: 'Submissions', href: '/judge/submissions', icon: Trophy },

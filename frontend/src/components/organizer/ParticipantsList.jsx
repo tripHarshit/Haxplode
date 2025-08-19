@@ -117,7 +117,8 @@ const ParticipantsList = ({ participants, onViewDetails, asCards = false }) => {
       </div>
 
       {/* Participants Table */}
-      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+      {filteredParticipants.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
         <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {filteredParticipants.map((participant) => (
             <li key={participant.id}>
@@ -200,6 +201,7 @@ const ParticipantsList = ({ participants, onViewDetails, asCards = false }) => {
                     </button>
                   </div>
                 </div>
+              </div>
               </li>
             ))}
           </ul>

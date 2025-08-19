@@ -86,7 +86,7 @@ const OrganizerDashboard = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab && ['overview','events','participants','announcements','sponsors'].includes(tab)) {
+    if (tab && ['overview','events','announcements','sponsors'].includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
@@ -128,7 +128,9 @@ const OrganizerDashboard = () => {
       // Update events with _stats
       setEvents(prev => prev.map(p => {
         const found = results.find(r => r.ev.id === p.id);
-        return found ? { ...p, _stats: found.stats } : p;
+        if (!found) return p;
+        const participantsCount = Number(found.stats?.participants) || 0;
+        return { ...p, _stats: found.stats, currentParticipants: participantsCount };
       }));
 
       // Build map for AnalyticsCharts
@@ -341,7 +343,6 @@ const OrganizerDashboard = () => {
               {[
                 { id: 'overview', label: 'Overview', icon: ChartBarIcon },
                 { id: 'events', label: 'Events', icon: CalendarIcon },
-                { id: 'participants', label: 'Participants', icon: UsersIcon },
                 { id: 'announcements', label: 'Announcements', icon: BellIcon },
                 { id: 'sponsors', label: 'Sponsors', icon: Crown }
               ].map((tab) => (
@@ -409,7 +410,7 @@ const OrganizerDashboard = () => {
                       <dl>
                         <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Active Submissions</dt>
                         <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                          {mockSubmissions.filter(sub => sub.status === 'submitted').length}
+                          {events.reduce((sum, ev) => sum + (ev._stats?.submissions || 0), 0)}
                         </dd>
                       </dl>
                     </div>
@@ -425,7 +426,7 @@ const OrganizerDashboard = () => {
                       <dl>
                         <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Pending Reviews</dt>
                         <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                          {mockSubmissions.filter(sub => sub.status === 'submitted').length}
+                          {events.reduce((sum, ev) => sum + (ev._stats?.totalReviews || 0), 0)}
                         </dd>
                       </dl>
                     </div>
@@ -488,13 +489,6 @@ const OrganizerDashboard = () => {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Events Management</h2>
-                <button
-                  onClick={handleCreateEvent}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2"
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  <span>Create New Event</span>
-                </button>
               </div>
               
               {/* Events Grid */}
@@ -503,7 +497,7 @@ const OrganizerDashboard = () => {
                   <div className="text-gray-500">Loading your events...</div>
                 )}
                 {!isLoadingEvents && events.length === 0 && (
-                  <div className="text-gray-500">No events created yet. Click "Create New Event" to add one.</div>
+                  <div className="text-gray-500">No events created yet.</div>
                 )}
                 {!isLoadingEvents && events.map((event) => (
                   <EnhancedEventCard

@@ -48,6 +48,14 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
     return Math.min((current / max) * 100, 100);
   };
 
+  const currentParticipants = typeof event?._stats?.participants === 'number'
+    ? event._stats.participants
+    : (typeof event?.currentParticipants === 'number' ? event.currentParticipants : 0);
+  const maxParticipants = typeof event?.maxParticipants === 'number' ? event.maxParticipants : 0;
+  const percentFilled = maxParticipants > 0
+    ? Math.round((currentParticipants / maxParticipants) * 100)
+    : 0;
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200">
       {/* Header with Status Badge */}
@@ -92,22 +100,22 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Participants</span>
           </div>
           <span className="text-sm text-gray-600 dark:text-gray-300">
-            {event.currentParticipants}/{event.maxParticipants}
+            {currentParticipants}/{maxParticipants}
           </span>
         </div>
         
         {/* Progress Bar */}
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div
-            className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(event.currentParticipants, event.maxParticipants)}`}
-            style={{ width: `${getProgressWidth(event.currentParticipants, event.maxParticipants)}%` }}
+            className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(currentParticipants, maxParticipants)}`}
+            style={{ width: `${getProgressWidth(currentParticipants, maxParticipants)}%` }}
           ></div>
         </div>
         
         {/* Progress Text */}
         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-          <span>{Math.round((event.currentParticipants / event.maxParticipants) * 100)}% filled</span>
-          {event.currentParticipants >= event.maxParticipants && (
+          <span>{percentFilled}% filled</span>
+          {maxParticipants > 0 && currentParticipants >= maxParticipants && (
             <span className="text-red-600 font-medium">Event Full!</span>
           )}
         </div>
