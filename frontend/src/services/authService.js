@@ -102,7 +102,7 @@ export const authService = {
     console.error('Google login failed:', error.message);
     throw new Error(error.response?.data?.message || 'Google login failed');
   }
-}
+},
 
   async register(userData) {
     try {

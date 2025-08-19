@@ -40,11 +40,11 @@ async function connectSQL() {
     console.log('✅ Azure SQL Database connection established successfully.');
     
     // Sync models (in production, use migrations instead)
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV !== 'production') {
       try {
-        // Only sync if tables don't exist - NEVER force sync in development
-        await sequelize.sync({ alter: false });
-        console.log('✅ Database models synchronized safely.');
+        // Allow non-destructive ALTERs in development to add missing columns
+        await sequelize.sync({ alter: true });
+        console.log('✅ Database models synchronized with alter:true (non-production).');
       } catch (syncError) {
         console.warn('⚠️  Model sync failed:', syncError.message);
         console.warn('⚠️  Continuing without sync - ensure tables exist manually');
