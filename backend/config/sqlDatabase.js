@@ -42,17 +42,13 @@ async function connectSQL() {
     // Sync models (in production, use migrations instead)
     if (process.env.NODE_ENV === 'development') {
       try {
-        await sequelize.sync({ alter: true });
-        console.log('✅ Database models synchronized.');
+        // Only sync if tables don't exist - NEVER force sync in development
+        await sequelize.sync({ alter: false });
+        console.log('✅ Database models synchronized safely.');
       } catch (syncError) {
-        console.warn('⚠️  Model sync failed, trying force sync...');
-        try {
-          await sequelize.sync({ force: true });
-          console.log('✅ Database models force synchronized.');
-        } catch (forceSyncError) {
-          console.error('❌ Force sync also failed:', forceSyncError.message);
-          console.warn('⚠️  Continuing without sync - ensure tables exist manually');
-        }
+        console.warn('⚠️  Model sync failed:', syncError.message);
+        console.warn('⚠️  Continuing without sync - ensure tables exist manually');
+        console.warn('⚠️  If you need to reset the database, do it manually in Azure Portal');
       }
     }
   } catch (error) {
