@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
-import { useTheme } from '../context/ThemeContext';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useForceLightMode } from '../context/ThemeContext';
 import { 
   Code, 
   Users, 
@@ -15,18 +15,7 @@ import {
 } from 'lucide-react';
 
 const HomePage = () => {
-  const { setLightModeForced } = useTheme();
-
-  useEffect(() => {
-    setLightModeForced(true);
-    return () => setLightModeForced(false);
-  }, [setLightModeForced]);
-  
-  // Preload auth pages to avoid blank screen on first navigation in some environments
-  useEffect(() => {
-    import('./auth/LoginPage').catch(() => {});
-    import('./auth/RegisterPage').catch(() => {});
-  }, []);
+  useForceLightMode();
   const { isAuthenticated, user, getRedirectPath } = useAuth();
   const navigate = useNavigate();
 
@@ -81,7 +70,7 @@ const HomePage = () => {
             <div className="flex items-center space-x-4">
               {isAuthenticated ? (
                 <>
-                  <span className="text-neutral-600">Welcome, {user?.name}!</span>
+                  <span className="text-neutral-600">Welcome, {user?.fullName || user?.name}!</span>
                   <button
                     onClick={handleDashboardNavigation}
                     className="btn-primary"

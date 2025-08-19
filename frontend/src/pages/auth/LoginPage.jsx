@@ -4,15 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { isValidEmail } from '../../utils/helpers';
-import { useTheme } from '../../context/ThemeContext';
+import { useForceLightMode } from '../../context/ThemeContext';
 
 const LoginPage = () => {
-  const { setLightModeForced } = useTheme();
-
-  useEffect(() => {
-    setLightModeForced(true);
-    return () => setLightModeForced(false);
-  }, [setLightModeForced]);
+  useForceLightMode();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -45,6 +40,72 @@ const LoginPage = () => {
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
+  // Initialize Google Sign-In
+  useEffect(() => {
+    // Load Google Sign-In API
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogleSignIn;
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
+
+  const initializeGoogleSignIn = () => {
+    if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+    }
+  };
+
+  const handleGoogleCredentialResponse = async (response) => {
+    try {
+      setIsGoogleLoading(true);
+      setErrors({});
+      
+      if (window.navigationTester) {
+        window.navigationTester.logAuthEvent('google_oauth_attempt', true);
+        window.navigationTester.logButtonClick('Continue with Google', 'login_page');
+      }
+
+      const result = await loginWithGoogle(response.credential);
+      
+      if (result.success) {
+        setSuccessMessage('Google login successful! Redirecting...');
+        
+        if (window.navigationTester) {
+          window.navigationTester.logAuthEvent('google_oauth_attempt', false);
+        }
+
+        // Redirect to dashboard
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Google login failed:', error);
+      
+      if (window.navigationTester) {
+        window.navigationTester.logAuthEvent('google_oauth_attempt', false, { error: error.message });
+      }
+      
+      setErrors({ general: error.message || 'Google login failed' });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -117,38 +178,11 @@ const LoginPage = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setIsGoogleLoading(true);
-    setErrors({});
-    
-    try {
-      // Log navigation test
-      if (window.navigationTester) {
-        window.navigationTester.logAuthEvent('google_oauth_attempt', true);
-        window.navigationTester.logButtonClick('Continue with Google', 'login_page');
-      }
-      
-      // Mock Google OAuth flow for development
-      // In production, this would integrate with Google OAuth
-      const mockGoogleToken = 'mock.google.token.' + Date.now();
-      
-      const result = await loginWithGoogle(mockGoogleToken);
-      if (result.success) {
-        setSuccessMessage('Google login successful! Redirecting...');
-        // Navigation is handled by the AuthContext
-      } else {
-        setErrors({ general: result.error });
-        if (window.navigationTester) {
-          window.navigationTester.logAuthEvent('google_oauth_attempt', false, { error: result.error });
-        }
-      }
-    } catch (error) {
-      setErrors({ general: error.message });
-      if (window.navigationTester) {
-        window.navigationTester.logError(error, 'Google OAuth Login');
-      }
-    } finally {
-      setIsGoogleLoading(false);
+  const handleGoogleLogin = () => {
+    if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+      window.google.accounts.id.prompt();
+    } else {
+      setErrors({ general: 'Google Sign-In is not configured. Please check your environment variables.' });
     }
   };
 

@@ -15,6 +15,12 @@ const {
 } = require('../controllers/authController');
 
 const {
+  googleAuth,
+  getGoogleAuthUrl,
+  googleCallback,
+} = require('../controllers/googleAuthController');
+
+const {
   authMiddleware,
   authorizeParticipant,
   authorizeOrganizer,
@@ -32,6 +38,11 @@ router.post('/signup', validateInput(authSchemas.signup), signup);
 router.post('/login', validateInput(authSchemas.login), login);
 router.post('/google', loginWithGoogle);
 router.post('/refresh', refreshToken);
+
+// Google OAuth routes
+router.post('/google', validateInput(authSchemas.googleAuth), googleAuth);
+router.get('/google/url', getGoogleAuthUrl);
+router.get('/google/callback', googleCallback);
 
 // Protected routes
 router.get('/me', authMiddleware, getProfile);

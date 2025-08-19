@@ -75,7 +75,7 @@ const ParticipantsList = ({ participants, onViewDetails, asCards = false }) => {
             placeholder="Search participants by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
           />
         </div>
         
@@ -83,7 +83,7 @@ const ParticipantsList = ({ participants, onViewDetails, asCards = false }) => {
           <select
             value={teamStatusFilter}
             onChange={(e) => setTeamStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
           >
             <option value="all">All Team Status</option>
             <option value="In Team">In Team</option>
@@ -93,7 +93,7 @@ const ParticipantsList = ({ participants, onViewDetails, asCards = false }) => {
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
           >
             <option value="all">All Dates</option>
             <option value="recent">Last 7 Days</option>
@@ -104,7 +104,7 @@ const ParticipantsList = ({ participants, onViewDetails, asCards = false }) => {
 
       {/* Export Button */}
       <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
           Showing {filteredParticipants.length} of {participants.length} participants
         </div>
         <button
@@ -116,82 +116,18 @@ const ParticipantsList = ({ participants, onViewDetails, asCards = false }) => {
         </button>
       </div>
 
-      {/* Participants List */}
-      {asCards ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredParticipants.map((p) => (
-            <div key={p.id} className="bg-white rounded-lg shadow p-5">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <UsersIcon className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="text-base font-semibold text-gray-900">{p.name}</div>
-                    <div className="text-sm text-gray-500">{p.email}</div>
-                  </div>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTeamStatusColor(p.teamStatus)}`}>{p.teamStatus}</span>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <div className="text-gray-500">Registered</div>
-                  <div className="font-medium">{format(new Date(p.registrationDate), 'MMM dd, yyyy')}</div>
-                </div>
-                <div>
-                  <div className="text-gray-500">Hackathon</div>
-                  <div className="font-medium truncate" title={p.hackathonTitle}>{p.hackathonTitle}</div>
-                </div>
-                <div>
-                  <div className="text-gray-500">Team</div>
-                  <div className="font-medium">{p.teamName || '—'}</div>
-                </div>
-                <div>
-                  <div className="text-gray-500">Submissions</div>
-                  <div className="font-medium">{p.submissions}</div>
-                </div>
-              </div>
-              {p.teamMembers && p.teamMembers.length > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-gray-500 mb-1">Team Members</div>
-                  <div className="flex flex-wrap gap-1">
-                    {p.teamMembers.slice(0, 4).map((m) => (
-                      <span key={m.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {m.fullName}
-                      </span>
-                    ))}
-                    {p.teamMembers.length > 4 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        +{p.teamMembers.length - 4} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-              <div className="mt-4 flex items-center justify-end">
-                <button
-                  onClick={() => onViewDetails(p)}
-                  className="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md"
-                >
-                  <span className="inline-flex items-center"><EyeIcon className="h-4 w-4 mr-1" /> View</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
-            {filteredParticipants.map((participant) => (
-              <li key={participant.id}>
-                <div className="px-4 py-4 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <UsersIcon className="h-5 w-5 text-blue-600" />
-                          </div>
+      {/* Participants Table */}
+      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+        <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+          {filteredParticipants.map((participant) => (
+            <li key={participant.id}>
+              <div className="px-4 py-4 sm:px-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <UsersIcon className="h-5 w-5 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-medium text-gray-900 truncate">
@@ -214,34 +150,54 @@ const ParticipantsList = ({ participants, onViewDetails, asCards = false }) => {
                         <span>Submissions: {participant.submissions}</span>
                       </div>
                       
-                      <div className="mt-2">
-                        <div className="flex flex-wrap gap-1">
-                          {participant.skills.slice(0, 3).map((skill, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                          {participant.skills.length > 3 && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              +{participant.skills.length - 3} more
-                            </span>
-                          )}
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {participant.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {participant.email}
+                        </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => onViewDetails(participant)}
-                        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md"
-                        title="View Details"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                      </button>
+                    <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                      <span>Registered: {format(new Date(participant.registrationDate), 'MMM dd, yyyy')}</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTeamStatusColor(participant.teamStatus)}`}>
+                        {participant.teamStatus}
+                      </span>
+                      {participant.teamName && (
+                        <span className="text-blue-600">Team: {participant.teamName}</span>
+                      )}
+                      <span>Submissions: {participant.submissions}</span>
                     </div>
+                    
+                    <div className="mt-2">
+                      <div className="flex flex-wrap gap-1">
+                        {participant.skills.slice(0, 3).map((skill, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                        {participant.skills.length > 3 && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                            +{participant.skills.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => onViewDetails(participant)}
+                      className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md"
+                      title="View Details"
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               </li>
@@ -253,8 +209,8 @@ const ParticipantsList = ({ participants, onViewDetails, asCards = false }) => {
       {filteredParticipants.length === 0 && (
         <div className="text-center py-12">
           <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No participants found</h3>
-          <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No participants found</h3>
+          <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or filter criteria</p>
         </div>
       )}
     </div>
