@@ -12,7 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { hackathonService } from '../../services/hackathonService';
 
-const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate }) => {
+const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onRequestRegister }) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotifications();
   const [isRegistering, setIsRegistering] = useState(false);
@@ -36,23 +36,13 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate }) => 
 
   const handleRegister = async (e) => {
     e.stopPropagation();
-    
     if (!user) {
       showError('Please log in to register for events');
       return;
     }
-
-    setIsRegistering(true);
-    try {
-      await hackathonService.registerForHackathon(event.id);
-      showSuccess(`Successfully registered for ${event.title}!`);
-      if (onEventUpdate) {
-        onEventUpdate();
-      }
-    } catch (error) {
-      showError(error.message || 'Registration failed');
-    } finally {
-      setIsRegistering(false);
+    if (onRequestRegister) {
+      onRequestRegister(event);
+      return;
     }
   };
 

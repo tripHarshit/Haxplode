@@ -9,6 +9,8 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 
 const { connectSQL } = require('./config/sqlDatabase');
+// Ensure all SQL models and associations are registered BEFORE syncing
+require('./models/sql');
 const { connectMongo } = require('./config/mongoDatabase');
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');

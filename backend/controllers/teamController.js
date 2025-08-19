@@ -1,6 +1,5 @@
-const { Team, TeamMember } = require('../models/sql/Team');
-const Event = require('../models/sql/Event');
-const User = require('../models/sql/User');
+// Import via centralized index to ensure associations are registered
+const { Team, TeamMember, Event, User } = require('../models/sql');
 const { TeamInvitation } = require('../models/mongo');
 const crypto = require('crypto');
 const { emitToRoom } = require('../utils/socket');
@@ -32,22 +31,8 @@ const createTeam = async (req, res) => {
       });
     }
 
-    // Enforce team creation settings and capacity
-    const eventSettings = event.settings || {};
-    if (eventSettings.allowTeams === false) {
-      return res.status(400).json({ success: false, message: 'Team creation is disabled for this event' });
-    }
-    const teamCount = await Team.count({ where: { eventId } });
-    if (typeof event.maxTeams === 'number' && teamCount >= event.maxTeams) {
-      return res.status(400).json({ success: false, message: 'Maximum number of teams reached for this event' });
-    }
-
-    if (event.status !== 'Registration Open') {
-      return res.status(400).json({
-        success: false,
-        message: 'Event registration is not open',
-      });
-    }
+    // Relaxed checks for development: allow team creation by default and do not enforce capacity here
+    // If you want strict enforcement, restore allowTeams/maxTeams/status checks.
 
     // Check if user is already in a team for this event
     const existingTeamMember = await TeamMember.findOne({
@@ -55,6 +40,7 @@ const createTeam = async (req, res) => {
       include: [
         {
           model: Team,
+          as: 'team',
           where: { eventId },
         },
       ],
@@ -80,6 +66,16 @@ const createTeam = async (req, res) => {
     }
 
     // Create team
+    // Generate a referral code
+    const generateCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
+    let referralCode = generateCode();
+    // Minimal collision avoidance (unlikely with 8 hex chars); retry a few times
+    for (let i = 0; i < 3; i += 1) {
+      const exists = await Team.findOne({ where: { referralCode } });
+      if (!exists) break;
+      referralCode = generateCode();
+    }
+
     const team = await Team.create({
       teamName,
       eventId,
@@ -89,7 +85,8 @@ const createTeam = async (req, res) => {
       githubRepository,
       projectVideo,
       projectDocumentation,
-      tags,
+      referralCode,
+      tags: Array.isArray(tags) ? tags : [],
     });
 
     // Add leader as team member
@@ -111,11 +108,11 @@ const createTeam = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Create team error:', error);
+    console.error('Create team error:', error?.message, error?.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to create team',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      error: error?.message,
     });
   }
 };
@@ -289,6 +286,7 @@ const addTeamMember = async (req, res) => {
       include: [
         {
           model: Team,
+          as: 'team',
           where: { eventId: team.eventId },
         },
       ],

@@ -90,7 +90,9 @@ export const participantService = {
 
   async inviteTeamMember(teamId, email) {
     try {
-      const response = await api.post(`/teams/${teamId}/invite`, { email });
+      // Backend only needs an email shape but doesn't actually use it to send
+      // email right now; we request an invitation code for sharing.
+      const response = await api.post(`/teams/${teamId}/invite`, { email: email || 'invite@local' });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to invite team member');

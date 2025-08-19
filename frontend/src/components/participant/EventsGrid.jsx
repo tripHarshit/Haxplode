@@ -14,6 +14,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import EventCard from './EventCard';
 import EventDetailsModal from './EventDetailsModal';
+import RegistrationModal from './RegistrationModal';
 import { mockCategories, mockPrizeRanges } from '../../utils/mockData';
 
 const EventsGrid = ({ events, onRefresh }) => {
@@ -25,6 +26,7 @@ const EventsGrid = ({ events, onRefresh }) => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEvents, setCurrentEvents] = useState(events);
+  const [showRegistration, setShowRegistration] = useState(false);
 
   useEffect(() => {
     setCurrentEvents(events);
@@ -68,6 +70,15 @@ const EventsGrid = ({ events, onRefresh }) => {
   const handleEventClick = (event) => {
     setSelectedEvent(event);
     setIsModalOpen(true);
+  };
+
+  const openRegistration = (event) => {
+    setSelectedEvent(event);
+    setShowRegistration(true);
+  };
+
+  const closeRegistration = () => {
+    setShowRegistration(false);
   };
 
   const closeModal = () => {
@@ -223,6 +234,7 @@ const EventsGrid = ({ events, onRefresh }) => {
               statusBadge={getStatusBadge(event)}
               onClick={() => handleEventClick(event)}
               onEventUpdate={handleEventUpdate}
+              onRequestRegister={() => openRegistration(event)}
             />
           ))}
         </div>
@@ -240,6 +252,19 @@ const EventsGrid = ({ events, onRefresh }) => {
           event={selectedEvent}
           isOpen={isModalOpen}
           onClose={closeModal}
+          onRequestRegister={() => {
+            closeModal();
+            openRegistration(selectedEvent);
+          }}
+        />
+      )}
+
+      {showRegistration && selectedEvent && (
+        <RegistrationModal
+          isOpen={showRegistration}
+          onClose={closeRegistration}
+          event={selectedEvent}
+          onCompleted={handleEventUpdate}
         />
       )}
     </div>
