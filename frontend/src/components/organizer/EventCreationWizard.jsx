@@ -192,24 +192,24 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-gray-900 dark:bg-opacity-60 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Create New Event</h2>
-            <p className="text-gray-600">Simple Event Creation Form</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Create New Event</h2>
+            <p className="text-gray-600 dark:text-gray-300">Simple Event Creation Form</p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             ✕
           </button>
         </div>
 
         {/* Debug Info */}
-        <div className="mb-4 p-3 bg-blue-100 rounded text-xs">
+        <div className="mb-4 p-3 bg-blue-100 dark:bg-blue-900/30 rounded text-xs text-gray-900 dark:text-gray-200">
           <strong>Debug Info:</strong> 
           Name: {formData.name || 'empty'} | 
           Theme: {formData.theme || 'empty'} | 
@@ -219,7 +219,7 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
           <br />
           <button 
             onClick={() => console.log('Current form data:', formData)}
-            className="mt-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+            className="mt-2 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs"
           >
             Log Form Data
           </button>
@@ -230,15 +230,15 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
           {/* Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Event Name *
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                  errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 placeholder="Enter event name"
               />
@@ -246,14 +246,14 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Theme *
               </label>
               <select
                 value={formData.theme}
                 onChange={(e) => handleInputChange('theme', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  errors.theme ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors.theme ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               >
                 <option value="">Select theme</option>
@@ -266,15 +266,15 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Description *
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={4}
-              className={`w-full px-3 py-2 border rounded-md ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
               } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               placeholder="Describe your event..."
             />
@@ -283,45 +283,45 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Start Date *
               </label>
               <input
                 type="datetime-local"
                 value={formData.startDate}
                 onChange={(e) => handleInputChange('startDate', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  errors.startDate ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors.startDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               />
               {errors.startDate && <p className="mt-1 text-sm text-red-600">{errors.startDate}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 End Date *
               </label>
               <input
                 type="datetime-local"
                 value={formData.endDate}
                 onChange={(e) => handleInputChange('endDate', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  errors.endDate ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors.endDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               />
               {errors.endDate && <p className="mt-1 text-sm text-red-600">{errors.endDate}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Registration Deadline *
               </label>
               <input
                 type="datetime-local"
                 value={formData.registrationDeadline}
                 onChange={(e) => handleInputChange('registrationDeadline', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  errors.registrationDeadline ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors.registrationDeadline ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               />
               {errors.registrationDeadline && <p className="mt-1 text-sm text-red-600">{errors.registrationDeadline}</p>}
@@ -330,15 +330,15 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Max Teams *
               </label>
               <input
                 type="number"
                 value={formData.maxTeams}
                 onChange={(e) => handleInputChange('maxTeams', parseInt(e.target.value) || 50)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  errors.maxTeams ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors.maxTeams ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 placeholder="50"
                 min="1"
@@ -347,15 +347,15 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Location *
               </label>
               <input
                 type="text"
                 value={formData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  errors.location ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors.location ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 placeholder="San Francisco, CA or Online"
               />
@@ -371,14 +371,14 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
               onChange={(e) => handleInputChange('isVirtual', e.target.checked)}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
-            <label htmlFor="isVirtual" className="ml-2 block text-sm text-gray-900">
+            <label htmlFor="isVirtual" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
               This is a virtual event
             </label>
           </div>
 
           {/* Rules */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Event Rules *
             </label>
             {formData.rules.map((rule, index) => (
@@ -387,7 +387,7 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
                   type="text"
                   value={rule || ''}
                   onChange={(e) => handleArrayChange('rules', index, e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter a rule..."
                 />
                 {formData.rules.length > 1 && (
@@ -413,39 +413,39 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
 
           {/* Prizes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Prize Pool *
             </label>
             {formData.prizes.map((prize, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 border rounded-lg">
+              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 border rounded-lg border-gray-200 dark:border-gray-700">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                   <input
                     type="text"
                     value={prize.category}
                     onChange={(e) => handleArrayChange('prizes', index, { category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="1st Place"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Amount</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
                   <input
                     type="text"
                     value={prize.amount}
                     onChange={(e) => handleArrayChange('prizes', index, { amount: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="$10,000"
                   />
                 </div>
                 <div className="flex items-end space-x-2">
                   <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                     <input
                       type="text"
                       value={prize.description}
                       onChange={(e) => handleArrayChange('prizes', index, { description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       placeholder="Best overall project"
                     />
                   </div>
@@ -473,50 +473,50 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
 
           {/* Rounds */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Judging Rounds *
             </label>
             {formData.rounds.map((round, index) => (
-              <div key={index} className="border rounded-lg p-4 mb-4">
+              <div key={index} className="border rounded-lg p-4 mb-4 border-gray-200 dark:border-gray-700">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Round Name</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Round Name</label>
                     <input
                       type="text"
                       value={round.name}
                       onChange={(e) => handleArrayChange('rounds', index, { name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       placeholder="Initial Review"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                     <input
                       type="text"
                       value={round.description}
                       onChange={(e) => handleArrayChange('rounds', index, { description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       placeholder="First round of judging"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
                     <input
                       type="datetime-local"
                       value={round.startDate}
                       onChange={(e) => handleArrayChange('rounds', index, { startDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
                     <input
                       type="datetime-local"
                       value={round.endDate}
                       onChange={(e) => handleArrayChange('rounds', index, { endDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     />
                   </div>
                 </div>
@@ -549,7 +549,7 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
             disabled={isSubmitting}
             className={`px-6 py-2 rounded-md ${
               isSubmitting
-                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                ? 'bg-gray-400 text-gray-600 dark:bg-gray-600 dark:text-gray-300 cursor-not-allowed'
                 : 'bg-green-600 text-white hover:bg-green-700'
             }`}
           >

@@ -39,6 +39,26 @@ export const judgeService = {
     const res = await api.get(`/submissions/event/${eventId}`);
     return res.data?.data?.submissions || [];
   },
+
+  async getJudgesForEvent(eventId) {
+    const res = await api.get(`/judges/event/${eventId}`);
+    const list = res.data?.data?.judges || res.data?.judges || [];
+    // Normalize to simple array of { id, user: { fullName, email } }
+    return list.map((row) => {
+      const user = row?.judge?.user || row?.user || {};
+      return {
+        id: row?.judgeId || row?.id,
+        user,
+        role: row?.role,
+        assignedAt: row?.assignedAt,
+      };
+    });
+  },
+
+  async assignJudgeByEmail({ eventId, email, role = 'Secondary' }) {
+    const res = await api.post('/judges/assign', { eventId, email, role });
+    return res.data;
+  },
 };
 
 

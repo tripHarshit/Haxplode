@@ -73,13 +73,13 @@ const AssignedSubmissions = ({ submissions, onViewSubmission, onStartReview }) =
       {/* Header with Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
-          <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             placeholder="Search by project title or team name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
           />
         </div>
         
@@ -87,7 +87,7 @@ const AssignedSubmissions = ({ submissions, onViewSubmission, onStartReview }) =
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             <option value="all">All Status</option>
             <option value="assigned">Assigned</option>
@@ -99,7 +99,7 @@ const AssignedSubmissions = ({ submissions, onViewSubmission, onStartReview }) =
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             <option value="all">All Priority</option>
             <option value="urgent">Urgent</option>
@@ -108,13 +108,13 @@ const AssignedSubmissions = ({ submissions, onViewSubmission, onStartReview }) =
             <option value="low">Low</option>
           </select>
 
-          <div className="flex border border-gray-300 rounded-md">
+          <div className="flex border border-gray-300 dark:border-gray-700 rounded-md">
             <button
               onClick={() => setViewMode('cards')}
               className={`px-3 py-2 text-sm font-medium ${
                 viewMode === 'cards' 
                   ? 'bg-blue-600 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               Cards
@@ -124,7 +124,7 @@ const AssignedSubmissions = ({ submissions, onViewSubmission, onStartReview }) =
               className={`px-3 py-2 text-sm font-medium ${
                 viewMode === 'table' 
                   ? 'bg-blue-600 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               Table
@@ -134,7 +134,7 @@ const AssignedSubmissions = ({ submissions, onViewSubmission, onStartReview }) =
       </div>
 
       {/* Results Count */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-gray-600 dark:text-gray-300">
         Showing {filteredSubmissions.length} of {submissions.length} submissions
       </div>
 
@@ -183,11 +183,11 @@ const SubmissionCard = ({ submission, onViewSubmission, onStartReview, getStatus
   const isDeadlineUrgent = daysUntilDeadline <= 2;
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-start justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{submission.projectTitle}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">{submission.projectTitle}</h3>
           <div className="flex items-center space-x-2">
             {submission.isUrgent && (
               <ExclamationTriangleIcon className="h-5 w-5 text-red-500" title="Urgent" />
@@ -210,27 +210,27 @@ const SubmissionCard = ({ submission, onViewSubmission, onStartReview, getStatus
           </span>
         </div>
 
-        <p className="text-sm text-gray-600 line-clamp-2 mb-3">{submission.description}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">{submission.description}</p>
         
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
           <span>Team: {submission.teamName}</span>
           <span>{format(new Date(submission.submissionDate), 'MMM dd, yyyy')}</span>
         </div>
       </div>
 
       {/* Technologies */}
-      <div className="px-6 py-3 border-b border-gray-200">
+      <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-wrap gap-1">
           {submission.technologies.slice(0, 4).map((tech, index) => (
             <span
               key={index}
-              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100"
             >
               {tech}
             </span>
           ))}
           {submission.technologies.length > 4 && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
               +{submission.technologies.length - 4} more
             </span>
           )}
@@ -240,14 +240,14 @@ const SubmissionCard = ({ submission, onViewSubmission, onStartReview, getStatus
       {/* Quick Actions */}
       <div className="p-6">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-300">
             {submission.timeSpent > 0 ? (
               <span>Time spent: {Math.floor(submission.timeSpent / 60)}h {submission.timeSpent % 60}m</span>
             ) : (
               <span>Not started</span>
             )}
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-300">
             {daysUntilDeadline > 0 ? (
               <span>{daysUntilDeadline} day{daysUntilDeadline !== 1 ? 's' : ''} left</span>
             ) : (
@@ -259,7 +259,7 @@ const SubmissionCard = ({ submission, onViewSubmission, onStartReview, getStatus
         <div className="flex space-x-2">
           <button
             onClick={() => onViewSubmission(submission)}
-            className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50"
+            className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30"
           >
             <EyeIcon className="h-4 w-4 inline mr-1" />
             View Details
@@ -282,45 +282,45 @@ const SubmissionCard = ({ submission, onViewSubmission, onStartReview, getStatus
 // Submission Table Component
 const SubmissionTable = ({ submissions, onViewSubmission, onStartReview, getStatusColor, getPriorityColor, getStatusIcon, getDaysUntilDeadline }) => {
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-md">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Project
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Team
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Status
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Priority
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Deadline
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Time Spent
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
           {submissions.map((submission) => {
             const daysUntilDeadline = getDaysUntilDeadline(submission.deadline);
             return (
-              <tr key={submission.id} className="hover:bg-gray-50">
+              <tr key={submission.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
-                    <div className="text-sm font-medium text-gray-900">{submission.projectTitle}</div>
-                    <div className="text-sm text-gray-500">{submission.eventTitle}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{submission.projectTitle}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{submission.eventTitle}</div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   {submission.teamName}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -334,33 +334,33 @@ const SubmissionTable = ({ submissions, onViewSubmission, onStartReview, getStat
                     {submission.priority.charAt(0).toUpperCase() + submission.priority.slice(1)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   <div>
                     <div>{format(new Date(submission.deadline), 'MMM dd, yyyy')}</div>
-                    <div className={`text-xs ${daysUntilDeadline <= 2 ? 'text-red-600' : 'text-gray-500'}`}>
+                    <div className={`text-xs ${daysUntilDeadline <= 2 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}`}>
                       {daysUntilDeadline > 0 ? `${daysUntilDeadline} day${daysUntilDeadline !== 1 ? 's' : ''} left` : 'Overdue'}
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                   {submission.timeSpent > 0 ? (
                     <span>{Math.floor(submission.timeSpent / 60)}h {submission.timeSpent % 60}m</span>
                   ) : (
-                    <span className="text-gray-400">Not started</span>
+                    <span className="text-gray-400 dark:text-gray-500">Not started</span>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex space-x-2">
                     <button
                       onClick={() => onViewSubmission(submission)}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400"
                     >
                       View
                     </button>
                     {submission.reviewStatus !== 'completed' && (
                       <button
                         onClick={() => onStartReview(submission)}
-                        className="text-green-600 hover:text-green-900"
+                        className="text-green-600 hover:text-green-900 dark:hover:text-green-400"
                       >
                         {submission.reviewStatus === 'in_progress' ? 'Continue' : 'Review'}
                       </button>

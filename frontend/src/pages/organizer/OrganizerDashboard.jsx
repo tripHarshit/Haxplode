@@ -5,7 +5,6 @@ import {
   BellIcon,
   ChartBarIcon,
   PlusIcon,
-  PencilIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { Crown } from 'lucide-react';
@@ -21,13 +20,14 @@ import EventCreationWizard from '../../components/organizer/EventCreationWizard'
 import { hackathonService } from '../../services/hackathonService';
 import { announcementService } from '../../services/announcementService';
 import { useAuth } from '../../context/AuthContext';
+import JudgeAssignmentModal from '../../components/organizer/JudgeAssignmentModal';
 
 const OrganizerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showEventModal, setShowEventModal] = useState(false);
   const [events, setEvents] = useState([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [participants, setParticipants] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -35,6 +35,16 @@ const OrganizerDashboard = () => {
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [eventStatsMap, setEventStatsMap] = useState({});
   const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [profile, setProfile] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    bio: user?.bio || '',
+    organization: user?.organization || '',
+    linkedinProfile: user?.linkedinProfile || ''
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [showJudgeModal, setShowJudgeModal] = useState(false);
+  const [judgeModalEventId, setJudgeModalEventId] = useState(null);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -90,6 +100,17 @@ const OrganizerDashboard = () => {
       setActiveTab(tab);
     }
   }, []);
+
+  // Sync local profile state with user changes
+  useEffect(() => {
+    setProfile({
+      name: user?.name || '',
+      email: user?.email || '',
+      bio: user?.bio || '',
+      organization: user?.organization || '',
+      linkedinProfile: user?.linkedinProfile || ''
+    });
+  }, [user]);
 
   const buildRegistrationTrend = (participants) => {
     // Group by day from registrationDate, normalize to YYYY-MM-DD
@@ -314,10 +335,28 @@ const OrganizerDashboard = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'upcoming': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'upcoming': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'completed': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+  };
+
+  const handleProfileSave = async () => {
+    setIsSavingProfile(true);
+    try {
+      await updateProfile({
+        name: profile.name,
+        bio: profile.bio,
+        organization: profile.organization,
+        linkedinProfile: profile.linkedinProfile,
+      });
+      window.alert('Profile updated');
+    } catch (e) {
+      console.error('Failed to save profile', e);
+      window.alert('Failed to save profile');
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -437,38 +476,38 @@ const OrganizerDashboard = () => {
               {/* Per-event Live Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {events.map((ev) => (
-                  <div key={ev.id} className="bg-white rounded-lg shadow p-6">
+                  <div key={ev.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{ev.title}</h3>
-                        <p className="text-sm text-gray-500">{ev.category} • {ev.isOnline ? 'Online' : (ev.location || 'Onsite')}</p>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{ev.title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{ev.category} • {ev.isOnline ? 'Online' : (ev.location || 'Onsite')}</p>
                       </div>
                       <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(ev.status)}`}>{ev.status}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 mt-4">
                       <div>
-                        <p className="text-xs text-gray-500">Participants</p>
-                        <p className="text-xl font-semibold">{ev._stats?.participants ?? '—'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Participants</p>
+                        <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{ev._stats?.participants ?? '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Teams</p>
-                        <p className="text-xl font-semibold">{ev._stats?.teams ?? '—'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Teams</p>
+                        <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{ev._stats?.teams ?? '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Submissions</p>
-                        <p className="text-xl font-semibold">{ev._stats?.submissions ?? '—'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Submissions</p>
+                        <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{ev._stats?.submissions ?? '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Avg. Score</p>
-                        <p className="text-xl font-semibold">{ev._stats?.averageScore ?? '—'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Avg. Score</p>
+                        <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{ev._stats?.averageScore ?? '—'}</p>
                       </div>
                     </div>
                     <div className="mt-4 flex items-center justify-between text-sm">
                       <button
                         onClick={() => loadStatsForEvents([ev])}
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                       >Refresh stats</button>
-                      <span className="text-gray-500">Max: {ev.maxParticipants || 0}</span>
+                      <span className="text-gray-500 dark:text-gray-400">Max: {ev.maxParticipants || 0}</span>
                     </div>
                   </div>
                 ))}
@@ -477,7 +516,7 @@ const OrganizerDashboard = () => {
               {/* Analytics Charts with real data */}
               <div className="mt-8">
                 {isLoadingStats ? (
-                  <div className="text-gray-500">Loading charts...</div>
+                  <div className="text-gray-500 dark:text-gray-400">Loading charts...</div>
                 ) : (
                   <AnalyticsCharts eventStats={eventStatsMap} />
                 )}
@@ -489,7 +528,15 @@ const OrganizerDashboard = () => {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Events Management</h2>
+                <button
+                  onClick={handleCreateEvent}
+                  className="inline-flex items-center space-x-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                  <span>Create Hackathon</span>
+                </button>
               </div>
+              
               
               {/* Events Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -530,6 +577,10 @@ const OrganizerDashboard = () => {
                         window.dispatchEvent(new CustomEvent('prefillEventWizard', { detail: prefill }));
                       } catch {}
                     }}
+                    onAddJudge={(ev) => {
+                      setJudgeModalEventId(ev.id);
+                      setShowJudgeModal(true);
+                    }}
                   />
                 ))}
               </div>
@@ -563,6 +614,7 @@ const OrganizerDashboard = () => {
               <SponsorShowcase />
             </div>
           )}
+          {/* No right-side content for Profile tab as requested */}
         </div>
       </div>
 
@@ -582,6 +634,15 @@ const OrganizerDashboard = () => {
         onClose={() => {
           setShowParticipantModal(false);
           setSelectedParticipant(null);
+        }}
+      />
+
+      <JudgeAssignmentModal
+        isOpen={showJudgeModal}
+        eventId={judgeModalEventId}
+        onClose={() => {
+          setShowJudgeModal(false);
+          setJudgeModalEventId(null);
         }}
       />
     </div>

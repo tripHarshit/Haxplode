@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 
-const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSubmissions, onEdit }) => {
+const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSubmissions, onEdit, onAddJudge }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -181,6 +181,19 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
               <path d="M3.5 5.75A2.25 2.25 0 015.75 3.5h3a.75.75 0 010 1.5h-3a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-3a.75.75 0 011.5 0v3A2.25 2.25 0 0114.25 17h-8.5A2.25 2.25 0 013.5 14.75v-9z" />
             </svg>
             <span className="text-xs">Edit</span>
+          </button>
+
+          <button
+            onClick={() => onAddJudge?.(event)}
+            className="flex flex-col items-center p-3 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors duration-200"
+            title="Add Judge"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 mb-1">
+              <path d="M12 12a5 5 0 100-10 5 5 0 000 10z" />
+              <path d="M15 14H9a6 6 0 00-6 6 1 1 0 001 1h16a1 1 0 001-1 6 6 0 00-6-6z" />
+              <path d="M19 8a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V8z" />
+            </svg>
+            <span className="text-xs">Add Judge</span>
           </button>
         </div>
       </div>

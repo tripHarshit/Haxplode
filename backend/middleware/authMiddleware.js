@@ -48,6 +48,15 @@ const authMiddleware = async (req, res, next) => {
         });
       }
       
+      // If user is a judge, include judge profile
+      if (user.role === 'Judge') {
+        const { Judge } = require('../models/sql/Judge');
+        const judgeProfile = await Judge.findOne({ where: { userId: user.id } });
+        if (judgeProfile) {
+          user.judgeProfile = judgeProfile;
+        }
+      }
+      
       req.currentUser = user;
       next();
     } catch (error) {
