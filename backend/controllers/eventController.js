@@ -7,6 +7,11 @@ const { Op } = require('sequelize');
 // Create new event (Organizer only)
 const createEvent = async (req, res) => {
   try {
+    console.log('=== EVENT CREATION STARTED ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Current user ID:', req.currentUser.id);
+    console.log('Current user role:', req.currentUser.role);
+    
     const {
       name,
       theme,
@@ -26,7 +31,20 @@ const createEvent = async (req, res) => {
     } = req.body;
 
     const createdBy = req.currentUser.id;
+    
+    console.log('Extracted event data:');
+    console.log('- Name:', name);
+    console.log('- Theme:', theme);
+    console.log('- Description length:', description ? description.length : 'NULL');
+    console.log('- Max team size:', maxTeamSize);
+    console.log('- Max teams:', maxTeams);
+    console.log('- Registration fee:', registrationFee);
+    console.log('- Is public:', isPublic);
+    console.log('- Location:', location);
+    console.log('- Is virtual:', isVirtual);
 
+    console.log('About to create event in database...');
+    
     // Create event
     const event = await Event.create({
       name,
@@ -46,7 +64,15 @@ const createEvent = async (req, res) => {
       virtualMeetingLink,
       createdBy,
     });
+    
+    console.log('Event created successfully in database:');
+    console.log('- Event ID:', event.id);
+    console.log('- Event name:', event.name);
+    console.log('- Created at:', event.createdAt);
+    console.log('- Status:', event.status);
 
+    console.log('Sending success response...');
+    
     res.status(201).json({
       success: true,
       message: 'Event created successfully',
@@ -54,6 +80,8 @@ const createEvent = async (req, res) => {
         event,
       },
     });
+    
+    console.log('=== EVENT CREATION COMPLETED ===');
   } catch (error) {
     console.error('Create event error:', error);
     res.status(500).json({

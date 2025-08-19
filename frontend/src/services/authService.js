@@ -188,6 +188,9 @@ export const authService = {
         throw new Error('No refresh token found');
       }
       
+      // Add a small delay to prevent rapid calls
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const response = await api.post('/auth/refresh', { refreshToken });
       const { token } = response.data;
       
@@ -225,7 +228,25 @@ export const authService = {
   // Helper method to check if user is authenticated
   isAuthenticated() {
     const token = localStorage.getItem('token');
-    return !!token;
+    if (!token) return false;
+    
+    try {
+      // Check if token is expired
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      
+      if (payload.exp && payload.exp < currentTime) {
+        // Token is expired, remove it
+        localStorage.removeItem('token');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      // Invalid token, remove it
+      localStorage.removeItem('token');
+      return false;
+    }
   },
 
   // Helper method to get user roles from token

@@ -84,6 +84,17 @@ const login = async (req, res) => {
         message: 'Invalid email or password',
       });
     }
+    
+    // Debug: Check what's actually stored in the database
+    console.log('=== DATABASE DEBUG INFO ===');
+    console.log('User found in database:');
+    console.log('- ID:', user.id);
+    console.log('- Email:', user.email);
+    console.log('- Role:', user.role);
+    console.log('- Password length:', user.password ? user.password.length : 'NULL');
+    console.log('- Password starts with:', user.password ? user.password.substring(0, 10) + '...' : 'NULL');
+    console.log('- Is password hashed?', user.password && user.password.startsWith('$2a$') ? 'YES (bcrypt)' : 'NO (plain text)');
+    console.log('=== END DEBUG INFO ===');
 
     // Check if user is active
     if (!user.isActive) {

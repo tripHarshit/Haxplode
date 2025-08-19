@@ -81,16 +81,17 @@ export const AuthProvider = ({ children }) => {
         try {
           dispatch({ type: 'AUTH_START' });
           
-          // Check if token is valid
-          if (authService.isAuthenticated()) {
+          // Try to get current user directly first
+          try {
             const user = await authService.getCurrentUser();
             dispatch({
               type: 'AUTH_SUCCESS',
               payload: { user, token, refreshToken },
             });
             console.log('Authentication initialized successfully');
-          } else {
-            // Token expired, try to refresh
+          } catch (userError) {
+            // If getting user fails, token might be expired, try to refresh
+            console.log('Getting user failed, attempting token refresh...');
             try {
               const refreshResponse = await authService.refreshToken();
               const user = await authService.getCurrentUser();
@@ -267,17 +268,28 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       console.log('Logout attempt started');
-      dispatch({ type: 'SET_LOADING', payload: true });
       
-      await authService.logout();
+      // Clear tokens immediately to prevent refresh loops
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       
       dispatch({ type: 'LOGOUT' });
+      
+      // Try to call logout API, but don't wait for it
+      try {
+        await authService.logout();
+      } catch (error) {
+        console.error('Logout API call failed:', error);
+        // Continue with local logout
+      }
       
       console.log('Logout successful, redirecting to home');
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Logout failed:', error);
-      // Still logout locally even if API call fails
+      // Still logout locally even if everything fails
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       dispatch({ type: 'LOGOUT' });
       navigate('/', { replace: true });
     }

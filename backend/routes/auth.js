@@ -34,6 +34,7 @@ router.post('/google', loginWithGoogle);
 router.post('/refresh', refreshToken);
 
 // Protected routes
+router.get('/me', authMiddleware, getProfile);
 router.get('/profile', authMiddleware, getProfile);
 router.put('/profile', authMiddleware, validateInput(authSchemas.updateProfile), updateProfile);
 router.put('/change-password', authMiddleware, changePassword);
