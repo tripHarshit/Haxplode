@@ -2,6 +2,9 @@ const { Judge, JudgeEventAssignment } = require('../models/sql/Judge');
 const User = require('../models/sql/User');
 const Event = require('../models/sql/Event');
 const Submission = require('../models/mongo/Submission');
+const { AnalyticsEvent } = require('../models/mongo');
+const { emitToRoom } = require('../utils/socket');
+const { audit } = require('../utils/audit');
 
 // Assign judge to event (Organizer only)
 const assignJudgeToEvent = async (req, res) => {
@@ -53,6 +56,9 @@ const assignJudgeToEvent = async (req, res) => {
       role,
     });
 
+    audit(req.currentUser.id, 'judge_assigned', { eventId, metadata: { judgeId, role } });
+    emitToRoom(`event:${eventId}`, 'judge_assignment', { judgeId, assignment: { eventId, role } });
+
     res.status(201).json({
       success: true,
       message: 'Judge assigned to event successfully',
@@ -96,6 +102,8 @@ const removeJudgeFromEvent = async (req, res) => {
     await JudgeEventAssignment.destroy({
       where: { judgeId, eventId },
     });
+
+    audit(req.currentUser.id, 'judge_removed', { eventId, metadata: { judgeId } });
 
     res.status(200).json({
       success: true,
@@ -412,6 +420,30 @@ const updateJudgeProfile = async (req, res) => {
   }
 };
 
+// Judge analytics (basic)
+const getJudgeAnalytics = async (req, res) => {
+  try {
+    const judgeId = req.currentUser.judgeProfile?.id;
+    if (!judgeId) {
+      return res.status(404).json({ success: false, message: 'Judge profile not found' });
+    }
+    const countAgg = await Submission.aggregate([
+      { $unwind: { path: '$scores', preserveNullAndEmptyArrays: false } },
+      { $match: { 'scores.judgeId': judgeId } },
+      { $group: { _id: null, total: { $sum: 1 }, avgScore: { $avg: '$scores.score' } } },
+    ]);
+    const totals = countAgg[0] || { total: 0, avgScore: 0 };
+    const recent = await AnalyticsEvent.find({ userId: req.currentUser.id }).sort({ ts: -1 }).limit(20);
+    return res.json({
+      totals: { reviews: totals.total, averageScore: Math.round((totals.avgScore || 0) * 100) / 100 },
+      recent,
+    });
+  } catch (error) {
+    console.error('Judge analytics error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch judge analytics' });
+  }
+};
+
 module.exports = {
   assignJudgeToEvent,
   removeJudgeFromEvent,
@@ -421,4 +453,5 @@ module.exports = {
   getEventScores,
   getJudgeProfile,
   updateJudgeProfile,
+  getJudgeAnalytics,
 };

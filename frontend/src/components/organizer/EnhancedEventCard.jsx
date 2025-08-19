@@ -36,6 +36,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
   };
 
   const getProgressColor = (current, max) => {
+    if (!max || max <= 0) return 'bg-green-500';
     const percentage = (current / max) * 100;
     if (percentage >= 90) return 'bg-red-500';
     if (percentage >= 75) return 'bg-yellow-500';
@@ -43,6 +44,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
   };
 
   const getProgressWidth = (current, max) => {
+    if (!max || max <= 0) return 0;
     return Math.min((current / max) * 100, 100);
   };
 
@@ -51,7 +53,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
       {/* Header with Status Badge */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-start justify-between mb-3">
-          <h3 className="text-xl font-semibold text-gray-900 line-clamp-2">{event.title}</h3>
+          <h3 className="text-xl font-semibold text-gray-900 line-clamp-2">{event.title || event.name}</h3>
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
             {getStatusText(event.status)}
           </span>
@@ -63,7 +65,17 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
         <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
           <div className="flex items-center space-x-2">
             <CalendarIcon className="h-4 w-4" />
-            <span>{format(new Date(event.startDate), 'MMM dd')} - {format(new Date(event.endDate), 'MMM dd, yyyy')}</span>
+            <span>
+              {(() => {
+                const start = event.startDate || event?.timeline?.startDate;
+                const end = event.endDate || event?.timeline?.endDate;
+                try {
+                  return `${format(new Date(start), 'MMM dd')} - ${format(new Date(end), 'MMM dd, yyyy')}`;
+                } catch {
+                  return 'Dates TBA';
+                }
+              })()}
+            </span>
           </div>
           <div className="flex items-center space-x-2">
             <MapPinIcon className="h-4 w-4" />
@@ -158,7 +170,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium text-gray-700">Prize Pool:</span>
-            <span className="text-sm text-green-600 font-semibold">{event.prize}</span>
+            <span className="text-sm text-green-600 font-semibold">{Array.isArray(event.prizes) ? event.prizes.join(', ') : (event.prize || '')}</span>
           </div>
           
           {event.currentParticipants >= event.maxParticipants * 0.9 && (

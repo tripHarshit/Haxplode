@@ -5,14 +5,8 @@ import {
   ClockIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
-import { 
-  mockJudgeProfile, 
-  mockJudgeAssignments, 
-  mockAssignedSubmissions, 
-  mockScoringCriteria,
-  mockJudgeAnalytics,
-  mockRecentActivity
-} from '../../utils/judgeMockData';
+import { judgeService } from '../../services/judgeService';
+import { teamService } from '../../services/teamService';
 import JudgeProfile from '../../components/judge/JudgeProfile';
 import AssignedSubmissions from '../../components/judge/AssignedSubmissions';
 import ScoringForm from '../../components/judge/ScoringForm';
@@ -22,22 +16,70 @@ import Leaderboard from '../../components/common/Leaderboard';
 
 const JudgeDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [submissions, setSubmissions] = useState(mockAssignedSubmissions);
+  const [submissions, setSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showScoringForm, setShowScoringForm] = useState(false);
   const [reviewingSubmission, setReviewingSubmission] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [assignments, setAssignments] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // Socket.io integration for real-time updates
   useEffect(() => {
-    // TODO: Implement Socket.io connection for real-time updates
-    // socket.on('newAssignment', handleNewAssignment);
-    // socket.on('deadlineUpdate', handleDeadlineUpdate);
-    
-    return () => {
-      // socket.off('newAssignment');
-      // socket.off('deadlineUpdate');
-    };
+    let isMounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const [judgeProfile, eventAssignments, judgeAnalytics] = await Promise.all([
+          judgeService.getProfile(),
+          judgeService.getEvents(),
+          judgeService.getAnalytics(),
+        ]);
+        if (!isMounted) return;
+        setProfile(judgeProfile);
+        setAssignments(eventAssignments);
+        setAnalytics(judgeAnalytics);
+        const firstEvent = eventAssignments?.[0]?.event || null;
+        const firstEventId = firstEvent?.id || eventAssignments?.[0]?.eventId;
+        if (firstEventId) {
+          const [subs, teams] = await Promise.all([
+            judgeService.getSubmissionsByEvent(firstEventId),
+            teamService.getTeamsByEvent(firstEventId),
+          ]);
+          const teamIdToName = new Map((teams || []).map(t => [t.id, t.teamName]));
+          if (isMounted) setSubmissions(subs.map(s => mapBackendSubmissionToUI(s, teamIdToName, firstEvent?.name)));
+        } else {
+          setSubmissions([]);
+        }
+      } catch (e) {
+        if (isMounted) setError(e?.message || 'Failed to load judge data');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => { isMounted = false; };
   }, []);
+
+  const mapBackendSubmissionToUI = (sub, teamIdToName = new Map(), eventName = '') => ({
+    id: sub._id || sub.id,
+    projectTitle: sub.projectName || sub.projectTitle || 'Project',
+    eventTitle: eventName || '',
+    teamName: teamIdToName.get(sub.teamId) || '',
+    description: sub.projectDescription || '',
+    technologies: Array.isArray(sub.technologies) ? sub.technologies : [],
+    submissionDate: sub.submissionDate || sub.createdAt || new Date().toISOString(),
+    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    reviewStatus: 'assigned',
+    priority: 'medium',
+    timeSpent: 0,
+    isUrgent: false,
+    isApproachingDeadline: false,
+    githubUrl: sub.githubLink,
+    demoUrl: sub.docLink,
+    videoUrl: sub.videoLink,
+  });
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -67,15 +109,20 @@ const JudgeDashboard = () => {
         window.navigationTester.logModalInteraction('Scoring Form Modal', 'submit');
       }
       
-      // Update submission status
-      setSubmissions(prev => prev.map(sub => 
-        sub.id === reviewData.submissionId 
+      // Persist to backend
+      await judgeService.submitScore({
+        submissionId: reviewData.submissionId,
+        score: Math.round(reviewData.totalScore),
+        feedback: reviewData.feedback,
+        criteria: reviewData.scores,
+      });
+
+      // Update local state
+      setSubmissions(prev => prev.map(sub =>
+        sub.id === reviewData.submissionId
           ? { ...sub, reviewStatus: 'completed', scores: reviewData.scores, feedback: reviewData.feedback }
           : sub
       ));
-      
-      // TODO: Send to backend
-      console.log('Review submitted:', reviewData);
       
       setShowScoringForm(false);
       setReviewingSubmission(null);
@@ -95,15 +142,12 @@ const JudgeDashboard = () => {
         window.navigationTester.logFormSubmission('Scoring Form Draft', true);
       }
       
-      // Update submission with draft data
-      setSubmissions(prev => prev.map(sub => 
-        sub.id === draftData.submissionId 
+      // For now, only update local state (no backend draft endpoint)
+      setSubmissions(prev => prev.map(sub =>
+        sub.id === draftData.submissionId
           ? { ...sub, reviewStatus: 'in_progress', scores: draftData.scores, feedback: draftData.feedback }
           : sub
       ));
-      
-      // TODO: Send to backend
-      console.log('Draft saved:', draftData);
     } catch (error) {
       console.error('Error saving draft:', error);
       if (window.navigationTester) {
@@ -123,7 +167,7 @@ const JudgeDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
@@ -169,10 +213,23 @@ const JudgeDashboard = () => {
               <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
               
               {/* Judge Profile */}
-              <JudgeProfile 
-                profile={mockJudgeProfile} 
-                assignments={mockJudgeAssignments}
-              />
+              {profile && (
+                <JudgeProfile 
+                  profile={{
+                    avatar: profile?.user?.profilePicture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(profile?.user?.fullName || 'Judge'),
+                    name: profile?.user?.fullName || 'Judge',
+                    position: profile?.position || '',
+                    organization: profile?.company || '',
+                    expertise: profile?.expertise || [],
+                    lastActive: new Date().toISOString(),
+                    totalReviews: analytics?.totals?.reviews || 0,
+                    averageScore: analytics?.totals?.averageScore || 0,
+                    reviewAccuracy: 100,
+                    experience: (profile?.yearsOfExperience || 0) + ' yrs',
+                  }} 
+                  assignments={assignments.map(a => ({ assignedSubmissions: 0, completedReviews: 0, pendingReviews: 0 }))}
+                />
+              )}
 
               {/* Quick Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -221,7 +278,7 @@ const JudgeDashboard = () => {
 
               {/* Recent Activity and Analytics Preview */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RecentActivity activities={mockRecentActivity} />
+                <RecentActivity activities={[]} />
                 
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Analytics</h3>
@@ -255,10 +312,17 @@ const JudgeDashboard = () => {
             </div>
           )}
 
-          {activeTab === 'analytics' && (
+          {activeTab === 'analytics' && analytics && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900">Judge Analytics</h2>
-              <JudgeAnalytics analytics={mockJudgeAnalytics} />
+              <JudgeAnalytics analytics={{
+                totalReviews: analytics?.totals?.reviews || 0,
+                averageScore: analytics?.totals?.averageScore || 0,
+                averageTimePerReview: 0,
+                completionRate: submissions.length ? Math.round((submissions.filter(s => s.reviewStatus === 'completed').length / submissions.length) * 100) : 0,
+                scoreDistribution: {},
+                monthlyStats: [],
+              }} />
             </div>
           )}
 
@@ -274,7 +338,7 @@ const JudgeDashboard = () => {
       {showScoringForm && reviewingSubmission && (
         <ScoringForm
           submission={reviewingSubmission}
-          scoringCriteria={mockScoringCriteria}
+          scoringCriteria={[{ id: 'overall', name: 'Overall', description: 'Overall score', weight: 100, maxScore: 10 }]}
           isOpen={showScoringForm}
           onClose={() => {
             setShowScoringForm(false);

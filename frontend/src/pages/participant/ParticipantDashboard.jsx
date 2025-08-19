@@ -30,6 +30,7 @@ import EventsGrid from '../../components/participant/EventsGrid';
 import TeamsList from '../../components/participant/TeamsList';
 import SubmissionsList from '../../components/participant/SubmissionsList';
 import Certificates from '../../components/participant/Certificates';
+import { hackathonService } from '../../services/hackathonService';
 
 const ParticipantDashboard = () => {
   const { user } = useAuth();
@@ -54,19 +55,15 @@ const ParticipantDashboard = () => {
   ];
 
   useEffect(() => {
-    // In a real app, this would fetch data from the API
-    // For now, we're using mock data
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        // In real app: const data = await participantService.getDashboardData();
+        const mappedEvents = await loadHackathons();
         setDashboardData({
           stats: mockDashboardStats,
           activities: mockActivities,
           deadlines: mockDeadlines,
-          events: mockEvents,
+          events: mappedEvents,
           teams: mockTeams,
           submissions: mockSubmissions
         });
@@ -79,6 +76,35 @@ const ParticipantDashboard = () => {
 
     fetchDashboardData();
   }, []);
+
+  const loadHackathons = async () => {
+    try {
+      const response = await hackathonService.getHackathons();
+      const rawEvents = response?.events || [];
+      const mapped = rawEvents.map(ev => ({
+        id: ev.id,
+        title: ev.name,
+        description: ev.description,
+        category: ev.theme,
+        startDate: ev?.timeline?.startDate || ev.startDate || null,
+        endDate: ev?.timeline?.endDate || ev.endDate || null,
+        registrationDeadline: ev?.timeline?.registrationDeadline || null,
+        maxParticipants: (ev.maxTeams || 0) * (ev.maxTeamSize || 0),
+        currentParticipants: 0,
+        prize: Array.isArray(ev.prizes) ? ev.prizes.join(', ') : (ev.prize || ''),
+        location: ev.location,
+        isOnline: !!ev.isVirtual,
+        status: ev.status ? String(ev.status).toLowerCase() : 'draft',
+        rules: typeof ev.rules === 'string' ? ev.rules.split('\n') : (ev.rules || []),
+        timeline: ev.timeline || [],
+        isRegistered: false,
+      }));
+      return mapped;
+    } catch (e) {
+      console.error('Failed to load hackathons:', e);
+      return [];
+    }
+  };
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -112,15 +138,12 @@ const ParticipantDashboard = () => {
     }
   };
 
-  const refreshDashboardData = () => {
-    setDashboardData({
-      stats: mockDashboardStats,
-      activities: mockActivities,
-      deadlines: mockDeadlines,
-      events: dataService.getEvents(),
-      teams: dataService.getTeams(),
-      submissions: dataService.getSubmissions()
-    });
+  const refreshDashboardData = async () => {
+    const mappedEvents = await loadHackathons();
+    setDashboardData(prev => ({
+      ...prev,
+      events: mappedEvents,
+    }));
   };
 
   if (isLoading) {
@@ -270,7 +293,7 @@ const ParticipantDashboard = () => {
         )}
 
         {activeTab === 'events' && (
-          <EventsGrid events={dashboardData.events} />
+          <EventsGrid events={dashboardData.events} onRefresh={refreshDashboardData} />
         )}
 
         {activeTab === 'teams' && (

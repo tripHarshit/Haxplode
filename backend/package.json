@@ -10,31 +10,39 @@
     "lint": "eslint .",
     "migrate": "node scripts/migrate.js"
   },
-  "keywords": ["hackathon", "backend", "express", "azure-sql", "mongodb"],
+  "keywords": [
+    "hackathon",
+    "backend",
+    "express",
+    "azure-sql",
+    "mongodb"
+  ],
   "author": "Haxplode Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "helmet": "^7.1.0",
-    "morgan": "^1.10.0",
-    "dotenv": "^16.3.1",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-async-errors": "^3.1.1",
     "express-rate-limit": "^7.1.5",
     "express-validator": "^7.0.1",
+    "google-auth-library": "^10.2.1",
+    "helmet": "^7.1.0",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.3",
+    "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "sequelize": "^6.35.2",
-    "tedious": "^16.7.0",
-    "mongoose": "^8.0.3",
-    "joi": "^17.11.0",
-    "compression": "^1.7.4",
-    "express-async-errors": "^3.1.1"
+    "socket.io": "^4.8.1",
+    "tedious": "^16.7.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
-    "jest": "^29.7.0",
     "eslint": "^8.55.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
     "supertest": "^6.3.3"
   },
   "engines": {

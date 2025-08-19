@@ -10,16 +10,28 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
-import { dataService } from '../../utils/mockData';
+import { hackathonService } from '../../services/hackathonService';
 
 const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate }) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotifications();
   const [isRegistering, setIsRegistering] = useState(false);
+  
+  const parseValidDate = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  };
 
   const isRegistrationOpen = () => {
-    if (event.isRegistered || event.status === 'full') return false;
-    return new Date(event.registrationDeadline) > new Date();
+    if (event.isRegistered) return false;
+    const normalizedStatus = String(event.status || '').toLowerCase();
+    if (['completed', 'cancelled', 'registration closed', 'closed', 'full'].includes(normalizedStatus)) return false;
+    if (event.maxParticipants && event.currentParticipants >= event.maxParticipants) return false;
+    const deadline = parseValidDate(event.registrationDeadline);
+    // If there is no valid deadline, assume registration is open
+    if (!deadline) return true;
+    return deadline > new Date();
   };
 
   const handleRegister = async (e) => {
@@ -32,13 +44,13 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate }) => 
 
     setIsRegistering(true);
     try {
-      await dataService.registerForEvent(event.id, user.id, user.name);
+      await hackathonService.registerForHackathon(event.id);
       showSuccess(`Successfully registered for ${event.title}!`);
       if (onEventUpdate) {
         onEventUpdate();
       }
     } catch (error) {
-      showError(error.message);
+      showError(error.message || 'Registration failed');
     } finally {
       setIsRegistering(false);
     }
@@ -106,7 +118,12 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate }) => 
             
             <div className="flex items-center justify-between pt-3 border-t border-gray-100">
               <span className="text-sm text-gray-500">
-                Registration closes {formatDistanceToNow(new Date(event.registrationDeadline), { addSuffix: true })}
+                {(() => {
+                  const deadline = parseValidDate(event.registrationDeadline);
+                  return deadline
+                    ? `Registration closes ${formatDistanceToNow(deadline, { addSuffix: true })}`
+                    : 'Registration deadline TBA';
+                })()}
               </span>
               
               {isRegistrationOpen() && (
@@ -180,7 +197,12 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate }) => 
         <div className="pt-4 border-t border-gray-100">
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">
-              Closes {formatDistanceToNow(new Date(event.registrationDeadline), { addSuffix: true })}
+              {(() => {
+                const deadline = parseValidDate(event.registrationDeadline);
+                return deadline
+                  ? `Closes ${formatDistanceToNow(deadline, { addSuffix: true })}`
+                  : 'Registration deadline TBA';
+              })()}
             </span>
             
             {isRegistrationOpen() && (

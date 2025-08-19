@@ -21,23 +21,33 @@ const submissionRoutes = require('./routes/submissions');
 const judgeRoutes = require('./routes/judges');
 const announcementRoutes = require('./routes/announcements');
 const chatRoutes = require('./routes/chats');
+const hackathonRoutes = require('./routes/hackathons');
+const participantRoutes = require('./routes/participant');
+const uploadRoutes = require('./routes/upload');
+const { setSocketServer } = require('./utils/socket');
+const { startSchedulers } = require('./utils/scheduler');
+const notificationsRoutes = require('./routes/notifications');
 
+const http = require('http');
+const jwt = require('jsonwebtoken');
 const app = express();
 const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+let io; // initialized after DB connections
 
 // Security middleware
 app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: 'http://localhost:5173', // Temporarily hardcoded for testing
   credentials: true
 }));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Temporarily increased for testing
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -50,6 +60,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Compression middleware
 app.use(compression());
+// Serve uploaded files statically (read-only)
+app.use('/uploads', express.static('uploads'));
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
@@ -76,6 +88,10 @@ app.use('/api/submissions', submissionRoutes);
 app.use('/api/judges', judgeRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/hackathons', hackathonRoutes);
+app.use('/api/participant', participantRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // 404 handler
 app.use(notFound);
@@ -94,8 +110,49 @@ async function startServer() {
     await connectMongo();
     console.log('✅ Connected to MongoDB');
 
+    // Initialize Socket.io
+    const { Server } = require('socket.io');
+    io = new Server(server, {
+      cors: {
+        origin: 'http://localhost:5173', // Temporarily hardcoded for testing
+        credentials: true,
+      },
+    });
+
+    io.use((socket, next) => {
+      const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace('Bearer ', '');
+      if (!token) return next(new Error('Unauthorized'));
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.user = decoded;
+        next();
+      } catch (err) {
+        next(new Error('Unauthorized'));
+      }
+    });
+
+    io.on('connection', (socket) => {
+      // Rooms
+      socket.on('join_room', ({ roomType, roomId }) => {
+        if (!roomType || !roomId) return;
+        socket.join(`${roomType}:${roomId}`);
+      });
+
+      socket.on('typing', ({ roomId, userId }) => {
+        if (roomId) socket.to(roomId).emit('typing', { userId });
+      });
+
+      socket.on('disconnect', () => {});
+    });
+
+    // Make io available to controllers
+    setSocketServer(io);
+
+    // Start background schedulers (deadline reminders, scheduled announcements)
+    startSchedulers();
+
     // Start server
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);

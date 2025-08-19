@@ -23,6 +23,15 @@ const authMiddleware = async (req, res, next) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Check if this is an access token, not a refresh token
+      if (decoded.type !== 'access') {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token type. Please use access token.',
+        });
+      }
+      
       req.user = decoded;
       
       // Fetch fresh user data from database

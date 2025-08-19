@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   CalendarIcon, 
   UsersIcon, 
@@ -9,7 +9,7 @@ import {
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { Crown } from 'lucide-react';
-import { mockEvents, mockSubmissions } from '../../utils/mockData';
+import { mockSubmissions } from '../../utils/mockData';
 import { mockParticipants, mockAnnouncements, mockEventStats } from '../../utils/organizerMockData';
 import ParticipantsList from '../../components/organizer/ParticipantsList';
 import ParticipantDetailsModal from '../../components/organizer/ParticipantDetailsModal';
@@ -17,19 +17,60 @@ import AnnouncementsList from '../../components/organizer/AnnouncementsList';
 import EnhancedEventCard from '../../components/organizer/EnhancedEventCard';
 import AnalyticsCharts from '../../components/organizer/AnalyticsCharts';
 import SponsorShowcase from '../../components/organizer/SponsorShowcase';
+import EventCreationWizard from '../../components/organizer/EventCreationWizard';
+import { hackathonService } from '../../services/hackathonService';
+import { useAuth } from '../../context/AuthContext';
 
 const OrganizerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showEventModal, setShowEventModal] = useState(false);
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const { user } = useAuth();
   const [participants, setParticipants] = useState(mockParticipants);
   const [announcements, setAnnouncements] = useState(mockAnnouncements);
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [showParticipantModal, setShowParticipantModal] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState(null);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
   };
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        console.log('OrganizerDashboard: Loading events for current user...');
+        const rawEvents = await hackathonService.getMyEvents();
+        console.log('OrganizerDashboard: Raw events from API:', rawEvents);
+        const mapped = rawEvents.map(ev => ({
+          id: ev.id,
+          title: ev.name,
+          description: ev.description,
+          category: ev.theme,
+          startDate: ev?.timeline?.startDate || ev.startDate || null,
+          endDate: ev?.timeline?.endDate || ev.endDate || null,
+          registrationDeadline: ev?.timeline?.registrationDeadline || null,
+          maxParticipants: (ev.maxTeams || 0) * (ev.maxTeamSize || 0),
+          currentParticipants: 0,
+          prize: Array.isArray(ev.prizes) ? ev.prizes.join(', ') : (ev.prize || ''),
+          location: ev.location,
+          isOnline: !!ev.isVirtual,
+          status: ev.status ? String(ev.status).toLowerCase() : 'draft',
+          rules: typeof ev.rules === 'string' ? ev.rules.split('\n') : (ev.rules || []),
+          timeline: ev.timeline || [],
+          isRegistered: false
+        }));
+        setEvents(mapped);
+        console.log('OrganizerDashboard: Events mapped and set in state');
+      } catch (error) {
+        console.error('OrganizerDashboard: Failed to load events:', error);
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    };
+    loadEvents();
+  }, []);
 
   const handleCreateEvent = () => {
     // Log navigation test
@@ -38,6 +79,31 @@ const OrganizerDashboard = () => {
       window.navigationTester.logModalInteraction('Event Creation Modal', 'open');
     }
     setShowEventModal(true);
+  };
+
+  const handleEventCreated = (newEvent) => {
+    console.log('New event created:', newEvent);
+    // Map backend event shape to UI card shape expected by EnhancedEventCard
+    const mapped = {
+      id: newEvent.id,
+      title: newEvent.name,
+      description: newEvent.description,
+      category: newEvent.theme,
+      startDate: newEvent?.timeline?.startDate || newEvent.startDate || null,
+      endDate: newEvent?.timeline?.endDate || newEvent.endDate || null,
+      registrationDeadline: newEvent?.timeline?.registrationDeadline || null,
+      maxParticipants: (newEvent.maxTeams || 0) * (newEvent.maxTeamSize || 0),
+      currentParticipants: 0,
+      prize: Array.isArray(newEvent.prizes) ? newEvent.prizes.join(', ') : (newEvent.prize || ''),
+      location: newEvent.location,
+      isOnline: !!newEvent.isVirtual,
+      status: newEvent.status ? String(newEvent.status).toLowerCase() : 'draft',
+      rules: typeof newEvent.rules === 'string' ? newEvent.rules.split('\n') : (newEvent.rules || []),
+      timeline: newEvent.timeline || [],
+      isRegistered: false
+    };
+    setEvents(prev => [...prev, mapped]);
+    setShowEventModal(false);
   };
 
   const handleDeleteEvent = (eventId) => {
@@ -73,8 +139,28 @@ const OrganizerDashboard = () => {
     setAnnouncements(prev => prev.filter(ann => ann.id !== announcementId));
   };
 
-  const handleViewParticipants = (eventId) => {
+  const handleViewParticipants = async (eventId) => {
     setActiveTab('participants');
+    setSelectedEventId(eventId);
+    try {
+      const resp = await hackathonService.getHackathonParticipants(eventId);
+      const raw = resp?.participants || [];
+      const mapped = raw.map(u => ({
+        id: u.id,
+        name: u.fullName || u.name || 'Unknown',
+        email: u.email,
+        registrationDate: u.registrationDate || new Date().toISOString(),
+        teamStatus: 'No Team',
+        teamName: null,
+        hackathonTitle: events.find(e => e.id === eventId)?.title || '',
+        skills: [],
+        submissions: 0,
+      }));
+      setParticipants(mapped);
+    } catch (e) {
+      console.error('Failed to load participants:', e);
+      setParticipants([]);
+    }
   };
 
   const handleSendMessage = (eventId) => {
@@ -230,7 +316,13 @@ const OrganizerDashboard = () => {
               
               {/* Events Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {events.map((event) => (
+                {isLoadingEvents && (
+                  <div className="text-gray-500">Loading your events...</div>
+                )}
+                {!isLoadingEvents && events.length === 0 && (
+                  <div className="text-gray-500">No events created yet. Click "Create New Event" to add one.</div>
+                )}
+                {!isLoadingEvents && events.map((event) => (
                   <EnhancedEventCard
                     key={event.id}
                     event={event}
@@ -272,23 +364,14 @@ const OrganizerDashboard = () => {
         </div>
       </div>
 
-      {/* Event Creation Modal */}
-      {showEventModal && (
-        <EventCreationModal 
-          onClose={() => setShowEventModal(false)}
-          onSubmit={(eventData) => {
-            const newEvent = {
-              ...eventData,
-              id: Date.now(),
-              status: 'upcoming',
-              currentParticipants: 0,
-              category: 'Other'
-            };
-            setEvents(prev => [...prev, newEvent]);
-            setShowEventModal(false);
-          }}
-        />
-      )}
+
+
+      {/* Event Creation Wizard */}
+      <EventCreationWizard
+        isOpen={showEventModal}
+        onClose={() => setShowEventModal(false)}
+        onEventCreated={handleEventCreated}
+      />
 
       {/* Participant Details Modal */}
       <ParticipantDetailsModal
@@ -299,159 +382,6 @@ const OrganizerDashboard = () => {
           setSelectedParticipant(null);
         }}
       />
-    </div>
-  );
-};
-
-// Simple Event Creation Modal Component
-const EventCreationModal = ({ onClose, onSubmit }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    startDate: '',
-    endDate: '',
-    maxParticipants: ''
-  });
-  const [errors, setErrors] = useState({});
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.title.trim()) newErrors.title = 'Event title is required';
-    if (!formData.description.trim()) newErrors.description = 'Description is required';
-    if (!formData.startDate) newErrors.startDate = 'Start date is required';
-    if (!formData.endDate) newErrors.endDate = 'End date is required';
-    if (!formData.maxParticipants) newErrors.maxParticipants = 'Max participants is required';
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      onSubmit(formData);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Create New Event</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
-          >
-            ×
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Event Title *
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => handleInputChange('title', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md ${
-                errors.title ? 'border-red-500' : 'border-gray-300'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              placeholder="Enter event title"
-            />
-            {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description *
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              rows={3}
-              className={`w-full px-3 py-2 border rounded-md ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              placeholder="Describe your event..."
-            />
-            {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Date *
-              </label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => handleInputChange('startDate', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  errors.startDate ? 'border-red-500' : 'border-gray-300'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              />
-              {errors.startDate && <p className="mt-1 text-sm text-red-600">{errors.startDate}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                End Date *
-              </label>
-              <input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => handleInputChange('endDate', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  errors.endDate ? 'border-red-500' : 'border-gray-300'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              />
-              {errors.endDate && <p className="mt-1 text-sm text-red-600">{errors.endDate}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Max Participants *
-            </label>
-            <input
-              type="number"
-              value={formData.maxParticipants}
-              onChange={(e) => handleInputChange('maxParticipants', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md ${
-                errors.maxParticipants ? 'border-red-500' : 'border-gray-300'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              placeholder="100"
-              min="1"
-            />
-            {errors.maxParticipants && <p className="mt-1 text-sm text-red-600">{errors.maxParticipants}</p>}
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
-            >
-              Create Event
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 };

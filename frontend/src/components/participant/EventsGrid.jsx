@@ -14,9 +14,9 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import EventCard from './EventCard';
 import EventDetailsModal from './EventDetailsModal';
-import { mockCategories, mockPrizeRanges, dataService } from '../../utils/mockData';
+import { mockCategories, mockPrizeRanges } from '../../utils/mockData';
 
-const EventsGrid = ({ events }) => {
+const EventsGrid = ({ events, onRefresh }) => {
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -30,9 +30,10 @@ const EventsGrid = ({ events }) => {
     setCurrentEvents(events);
   }, [events]);
 
-  const handleEventUpdate = () => {
-    // Refresh events from data service
-    setCurrentEvents(dataService.getEvents());
+  const handleEventUpdate = async () => {
+    if (onRefresh) {
+      await onRefresh();
+    }
   };
 
   const filteredEvents = useMemo(() => {

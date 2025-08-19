@@ -123,6 +123,17 @@ const submissionSchema = new mongoose.Schema({
     }],
     default: [],
   },
+  scores: {
+    type: [{
+      judgeId: Number,
+      roundId: String,
+      score: Number,
+      feedback: String,
+      criteria: Object,
+      submittedAt: { type: Date, default: Date.now },
+    }],
+    default: [],
+  },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -134,6 +145,7 @@ submissionSchema.index({ teamId: 1, eventId: 1 }, { unique: true });
 submissionSchema.index({ eventId: 1, status: 1 });
 submissionSchema.index({ submissionDate: -1 });
 submissionSchema.index({ status: 1 });
+submissionSchema.index({ projectName: 'text', projectDescription: 'text', technologies: 'text' });
 
 // Virtual for submission age
 submissionSchema.virtual('submissionAge').get(function() {
