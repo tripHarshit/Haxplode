@@ -17,7 +17,7 @@ import EventDetailsModal from './EventDetailsModal';
 import RegistrationModal from './RegistrationModal';
 import { mockCategories, mockPrizeRanges } from '../../utils/mockData';
 
-const EventsGrid = ({ events, onRefresh }) => {
+const EventsGrid = ({ events, onRefresh, onRequestSubmit }) => {
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -124,7 +124,7 @@ const EventsGrid = ({ events, onRefresh }) => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Events</h2>
-          <p className="text-gray-600">Discover and register for hackathons</p>
+          <p className="text-gray-600">Hackathons you are registered for</p>
         </div>
         
         {/* View Toggle */}
@@ -235,6 +235,7 @@ const EventsGrid = ({ events, onRefresh }) => {
               onClick={() => handleEventClick(event)}
               onEventUpdate={handleEventUpdate}
               onRequestRegister={() => openRegistration(event)}
+              onRequestSubmit={() => onRequestSubmit && onRequestSubmit(event)}
             />
           ))}
         </div>

@@ -10,9 +10,8 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
-import { hackathonService } from '../../services/hackathonService';
 
-const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onRequestRegister }) => {
+const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onRequestRegister, onRequestSubmit }) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotifications();
   const [isRegistering, setIsRegistering] = useState(false);
@@ -33,6 +32,8 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
     if (!deadline) return true;
     return deadline > new Date();
   };
+
+  // Events view should not show avatars
 
   const handleRegister = async (e) => {
     e.stopPropagation();
@@ -105,6 +106,7 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
                 </span>
               </div>
             </div>
+            {/* Teammate avatars removed per requirement */}
             
             <div className="flex items-center justify-between pt-3 border-t border-gray-100">
               <span className="text-sm text-gray-500">
@@ -116,14 +118,23 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
                 })()}
               </span>
               
-              {isRegistrationOpen() && (
+              {event.isRegistered ? (
                 <button 
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={handleRegister}
-                  disabled={isRegistering}
+                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={(e) => { e.stopPropagation(); if (window.navigationTester) { window.navigationTester.logButtonClick('Submit Project', 'events_grid'); } if (onRequestSubmit) onRequestSubmit(event); }}
                 >
-                  {isRegistering ? 'Registering...' : 'Register Now'}
+                  Submit Project
                 </button>
+              ) : (
+                isRegistrationOpen() && (
+                  <button 
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleRegister}
+                    disabled={isRegistering}
+                  >
+                    {isRegistering ? 'Registering...' : 'Register Now'}
+                  </button>
+                )
               )}
             </div>
           </div>
@@ -181,6 +192,7 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
             <TrophyIcon className="h-4 w-4" />
             <span className="font-medium text-green-600">{event.prize}</span>
           </div>
+          {/* Teammate avatars removed per requirement */}
         </div>
 
         {/* Footer */}
@@ -195,14 +207,23 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
               })()}
             </span>
             
-            {isRegistrationOpen() && (
+            {event.isRegistered ? (
               <button 
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleRegister}
-                disabled={isRegistering}
+                className="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={(e) => { e.stopPropagation(); if (window.navigationTester) { window.navigationTester.logButtonClick('Submit Project', 'events_grid'); } if (onRequestSubmit) onRequestSubmit(event); }}
               >
-                {isRegistering ? 'Registering...' : 'Register'}
+                Submit Project
               </button>
+            ) : (
+              isRegistrationOpen() && (
+                <button 
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleRegister}
+                  disabled={isRegistering}
+                >
+                  {isRegistering ? 'Registering...' : 'Register'}
+                </button>
+              )
             )}
           </div>
         </div>

@@ -30,7 +30,7 @@ import EventsGrid from '../../components/participant/EventsGrid';
 import TeamsList from '../../components/participant/TeamsList';
 import SubmissionsList from '../../components/participant/SubmissionsList';
 import Certificates from '../../components/participant/Certificates';
-import { hackathonService } from '../../services/hackathonService';
+import { participantService } from '../../services/participantService';
 
 const ParticipantDashboard = () => {
   const { user } = useAuth();
@@ -45,6 +45,7 @@ const ParticipantDashboard = () => {
     teams: mockTeams,
     submissions: mockSubmissions
   });
+  const [submissionDefaults, setSubmissionDefaults] = useState(null);
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: ChartBarIcon },
@@ -58,14 +59,16 @@ const ParticipantDashboard = () => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        const mappedEvents = await loadHackathons();
+        const { events: registeredEvents } = await participantService.getRegisteredEvents();
+        const { teams: myTeams } = await participantService.getParticipantTeams();
+        const mappedEvents = await mapRegisteredHackathonsWithTeams(registeredEvents, myTeams);
         setDashboardData({
-          stats: mockDashboardStats,
-          activities: mockActivities,
-          deadlines: mockDeadlines,
+          stats: { registeredEvents: registeredEvents.length, activeTeams: myTeams.length, completedSubmissions: 0, upcomingDeadlines: 0 },
+          activities: [],
+          deadlines: [],
           events: mappedEvents,
-          teams: mockTeams,
-          submissions: mockSubmissions
+          teams: myTeams,
+          submissions: []
         });
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
@@ -77,33 +80,45 @@ const ParticipantDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const loadHackathons = async () => {
-    try {
-      const response = await hackathonService.getHackathons();
-      const rawEvents = response?.events || [];
-      const mapped = rawEvents.map(ev => ({
-        id: ev.id,
-        title: ev.name,
-        description: ev.description,
-        category: ev.theme,
-        startDate: ev?.timeline?.startDate || ev.startDate || null,
-        endDate: ev?.timeline?.endDate || ev.endDate || null,
-        registrationDeadline: ev?.timeline?.registrationDeadline || null,
-        maxParticipants: (ev.maxTeams || 0) * (ev.maxTeamSize || 0),
-        currentParticipants: 0,
-        prize: Array.isArray(ev.prizes) ? ev.prizes.join(', ') : (ev.prize || ''),
-        location: ev.location,
-        isOnline: !!ev.isVirtual,
-        status: ev.status ? String(ev.status).toLowerCase() : 'draft',
-        rules: typeof ev.rules === 'string' ? ev.rules.split('\n') : (ev.rules || []),
-        timeline: ev.timeline || [],
-        isRegistered: false,
-      }));
-      return mapped;
-    } catch (e) {
-      console.error('Failed to load hackathons:', e);
-      return [];
-    }
+  const mapRegisteredHackathonsWithTeams = async (rawEvents = [], teams = []) => {
+    const eventsById = new Map(rawEvents.map(ev => [ev.id, ev]));
+    const teamsByEventId = teams.reduce((acc, team) => {
+      const eventId = team?.event?.id || team.eventId;
+      if (!eventId) return acc;
+      if (!acc[eventId]) acc[eventId] = [];
+      acc[eventId].push(team);
+      return acc;
+    }, {});
+
+    const mapped = Array.from(eventsById.values()).map(ev => ({
+      id: ev.id,
+      title: ev.name,
+      description: ev.description,
+      category: ev.theme,
+      startDate: ev?.timeline?.startDate || ev.startDate || null,
+      endDate: ev?.timeline?.endDate || ev.endDate || null,
+      registrationDeadline: ev?.timeline?.registrationDeadline || null,
+      maxParticipants: (ev.maxTeams || 0) * (ev.maxTeamSize || 0),
+      currentParticipants: 0,
+      prize: Array.isArray(ev.prizes) ? ev.prizes.join(', ') : (ev.prize || ''),
+      location: ev.location,
+      isOnline: !!ev.isVirtual,
+      status: ev.status ? String(ev.status).toLowerCase() : 'draft',
+      rules: typeof ev.rules === 'string' ? ev.rules.split('\n') : (ev.rules || []),
+      timeline: ev.timeline || [],
+      isRegistered: true,
+      teams: teamsByEventId[ev.id] || [],
+    }));
+
+    return mapped;
+  };
+
+  const handleRequestSubmit = (event) => {
+    // Set default event and a default team if only one available
+    const eventId = event?.id;
+    const teamId = Array.isArray(event?.teams) && event.teams.length === 1 ? (event.teams[0]?.id) : '';
+    setSubmissionDefaults({ eventId, teamId });
+    setActiveTab('submissions');
   };
 
   const handleTabChange = (tabId) => {
@@ -139,11 +154,17 @@ const ParticipantDashboard = () => {
   };
 
   const refreshDashboardData = async () => {
-    const mappedEvents = await loadHackathons();
-    setDashboardData(prev => ({
-      ...prev,
-      events: mappedEvents,
-    }));
+    try {
+      const { events: registeredEvents } = await participantService.getRegisteredEvents();
+      const { teams: myTeams } = await participantService.getParticipantTeams();
+      const mappedEvents = await mapRegisteredHackathonsWithTeams(registeredEvents, myTeams);
+      setDashboardData(prev => ({
+        ...prev,
+        events: mappedEvents,
+      }));
+    } catch (e) {
+      console.error('Failed to refresh dashboard data:', e);
+    }
   };
 
   if (isLoading) {
@@ -293,7 +314,11 @@ const ParticipantDashboard = () => {
         )}
 
         {activeTab === 'events' && (
-          <EventsGrid events={dashboardData.events} onRefresh={refreshDashboardData} />
+          <EventsGrid 
+            events={dashboardData.events} 
+            onRefresh={refreshDashboardData} 
+            onRequestSubmit={handleRequestSubmit}
+          />
         )}
 
         {activeTab === 'teams' && (
@@ -301,7 +326,11 @@ const ParticipantDashboard = () => {
         )}
 
         {activeTab === 'submissions' && (
-          <SubmissionsList submissions={dashboardData.submissions} />
+          <SubmissionsList 
+            submissions={dashboardData.submissions} 
+            defaultEventId={submissionDefaults?.eventId}
+            defaultTeamId={submissionDefaults?.teamId}
+          />
         )}
 
         {activeTab === 'certificates' && (

@@ -23,7 +23,7 @@ const RegisterPage = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
-  const { register, loginWithGoogle, error: authError, clearError } = useAuth();
+  const { register, loginWithGoogle, error: authError, clearError, user, getRedirectPath } = useAuth();
   const navigate = useNavigate();
 
   // Clear auth errors when component mounts
@@ -32,6 +32,15 @@ const RegisterPage = () => {
       clearError();
     }
   }, [authError, clearError]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user) {
+      console.log('User already authenticated, redirecting to dashboard');
+      const redirectPath = getRedirectPath(user, '/');
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, navigate, getRedirectPath]);
 
   // Clear success message after 5 seconds
   useEffect(() => {
@@ -91,7 +100,8 @@ const RegisterPage = () => {
 
         // Redirect to dashboard
         setTimeout(() => {
-          navigate('/dashboard');
+          const redirectPath = getRedirectPath(user, '/');
+          navigate(redirectPath, { replace: true });
         }, 1500);
       }
     } catch (error) {

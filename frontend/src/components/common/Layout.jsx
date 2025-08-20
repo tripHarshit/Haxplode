@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Home, 
@@ -16,7 +16,7 @@ import {
 import ThemeToggle from '../ui/ThemeToggle';
 import { useSocket } from '../../context/SocketContext';
 
-const Layout = ({ children }) => {
+const Layout = () => {
   const { user, logout, hasRole } = useAuth();
   const { unreadCount, setUnreadCount, refreshUnreadCount } = useSocket();
   const location = useLocation();
@@ -260,7 +260,7 @@ const Layout = ({ children }) => {
         {/* Page content */}
         <main className="py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            {children}
+            <Outlet />
           </div>
         </main>
       </div>

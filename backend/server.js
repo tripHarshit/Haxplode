@@ -30,6 +30,7 @@ const { setSocketServer } = require('./utils/socket');
 const { startSchedulers } = require('./utils/scheduler');
 const notificationsRoutes = require('./routes/notifications');
 const sponsorRoutes = require('./routes/sponsors');
+const certificateRoutes = require('./routes/certificateRoutes');
 
 const http = require('http');
 const jwt = require('jsonwebtoken');
@@ -96,6 +97,7 @@ app.use('/api/participant', participantRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/sponsors', sponsorRoutes);
+app.use('/api/certificates', certificateRoutes);
 
 // 404 handler
 app.use(notFound);

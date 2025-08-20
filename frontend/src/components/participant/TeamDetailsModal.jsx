@@ -78,9 +78,9 @@ const TeamDetailsModal = ({ team, isOpen, onClose }) => {
   };
 
   const copyInvitationCode = () => {
-    navigator.clipboard.writeText(team.invitationCode);
+    navigator.clipboard.writeText(team.referralCode || team.invitationCode || '');
     // In real app, show a toast notification
-    alert('Invitation code copied to clipboard!');
+    alert('Referral code copied to clipboard!');
   };
 
   return (
@@ -99,7 +99,7 @@ const TeamDetailsModal = ({ team, isOpen, onClose }) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <UserGroupIcon className="h-6 w-6 text-white" />
-                <h3 className="text-lg font-semibold text-white">{team.name}</h3>
+                <h3 className="text-lg font-semibold text-white">{team.teamName || team.name}</h3>
               </div>
               <button
                 onClick={onClose}
@@ -128,7 +128,7 @@ const TeamDetailsModal = ({ team, isOpen, onClose }) => {
                       <DocumentTextIcon className="h-4 w-4" />
                       <span className="font-medium">Hackathon</span>
                     </div>
-                    <p className="text-blue-900">{team.hackathonTitle}</p>
+                    <p className="text-blue-900">{team.event?.name || team.hackathonTitle || '—'}</p>
                   </div>
                   
                   <div className="bg-green-50 rounded-lg p-4">
@@ -142,16 +142,16 @@ const TeamDetailsModal = ({ team, isOpen, onClose }) => {
                   <div className="bg-purple-50 rounded-lg p-4">
                     <div className="flex items-center space-x-2 text-sm text-purple-800 mb-2">
                       <ClipboardDocumentIcon className="h-4 w-4" />
-                      <span className="font-medium">Invitation Code</span>
+                      <span className="font-medium">Referral Code</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <code className="text-purple-900 font-mono text-sm bg-purple-100 px-2 py-1 rounded">
-                        {team.invitationCode}
+                        {team.referralCode || team.invitationCode || '—'}
                       </code>
                       <button
                         onClick={copyInvitationCode}
                         className="text-purple-600 hover:text-purple-700 transition-colors"
-                        title="Copy invitation code"
+                        title="Copy referral code"
                       >
                         <ClipboardDocumentIcon className="h-4 w-4" />
                       </button>
@@ -239,32 +239,17 @@ const TeamDetailsModal = ({ team, isOpen, onClose }) => {
 
                 {/* Members List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {team.members.map((member) => (
-                    <div key={member.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                  {(team.members || []).map((member, idx) => (
+                    <div key={member.id || idx} className="bg-white border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center space-x-3">
                         <img
-                          src={member.avatar}
-                          alt={member.name}
+                          src={member.user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.user?.fullName || member.user?.email || 'U')}`}
+                          alt={member.user?.fullName || 'Member'}
                           className="w-12 h-12 rounded-full"
                         />
                         <div className="flex-1">
-                          <h5 className="font-medium text-gray-900">{member.name}</h5>
-                          <p className="text-sm text-blue-600 font-medium">{member.role}</p>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {member.skills.slice(0, 3).map((skill, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                            {member.skills.length > 3 && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
-                                +{member.skills.length - 3} more
-                              </span>
-                            )}
-                          </div>
+                          <h5 className="font-medium text-gray-900">{member.user?.fullName || member.user?.email || 'Member'}</h5>
+                          <p className="text-sm text-blue-600 font-medium">{member.role || 'Member'}</p>
                         </div>
                       </div>
                     </div>
@@ -272,7 +257,7 @@ const TeamDetailsModal = ({ team, isOpen, onClose }) => {
                 </div>
                 
                 <p className="text-sm text-gray-500 mt-3">
-                  {team.members.length} of {team.maxMembers} members
+                  {(team.members?.length || 0)} of {(team.event?.maxTeamSize || team.maxMembers || '')} members
                 </p>
               </div>
             </div>

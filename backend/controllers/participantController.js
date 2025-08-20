@@ -26,9 +26,21 @@ async function getDashboardData(req, res) {
 async function getRegisteredEvents(req, res) {
   try {
     const userId = req.currentUser.id;
-    const regs = await Registration.find({ userId, status: { $in: ['pending', 'confirmed'] } });
-    const eventIds = regs.map(r => r.eventId);
-    const events = await Event.findAll({ where: { id: eventIds }, order: [['startDate', 'ASC']] });
+    // Determine registered events from the user's actual SQL team memberships
+    const myMemberships = await TeamMember.findAll({ attributes: ['teamId'], where: { userId } });
+    const teamIds = myMemberships.map(m => m.teamId);
+    if (teamIds.length === 0) {
+      return res.json({ events: [] });
+    }
+    const teams = await Team.findAll({
+      where: { id: teamIds },
+      include: [{ model: Event, as: 'event' }],
+    });
+    const uniqueEventsMap = new Map();
+    for (const t of teams) {
+      if (t.event) uniqueEventsMap.set(t.event.id, t.event);
+    }
+    const events = Array.from(uniqueEventsMap.values());
     return res.json({ events });
   } catch (err) {
     console.error('Participant registered events error:', err);
@@ -39,13 +51,42 @@ async function getRegisteredEvents(req, res) {
 async function getParticipantTeams(req, res) {
   try {
     const userId = req.currentUser.id;
+
+    // First find teamIds where the current user is a member
+    const myMemberships = await TeamMember.findAll({
+      attributes: ['teamId'],
+      where: { userId },
+    });
+    const teamIds = myMemberships.map(m => m.teamId);
+
+    if (teamIds.length === 0) {
+      return res.json({ teams: [] });
+    }
+
+    // Then fetch full teams with all members (expanded with user) and event info
     const teams = await Team.findAll({
+      where: { id: teamIds },
       include: [
-        { model: TeamMember, as: 'members', where: { userId } },
-        { model: Event, as: 'event', attributes: ['id', 'name', 'status'] },
+        {
+          model: TeamMember,
+          as: 'members',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'fullName', 'email', 'profilePicture'],
+            },
+          ],
+        },
+        { 
+          model: Event, 
+          as: 'event', 
+          attributes: ['id', 'name', 'status', 'timeline', 'maxTeamSize'] 
+        },
       ],
       order: [['createdAt', 'DESC']],
     });
+
     return res.json({ teams });
   } catch (err) {
     console.error('Participant teams error:', err);

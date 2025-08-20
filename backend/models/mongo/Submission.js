@@ -23,22 +23,29 @@ const submissionSchema = new mongoose.Schema({
   },
   docLink: {
     type: String,
-    required: [true, 'Documentation link is required'],
     validate: {
       validator: function(v) {
-        return /^https?:\/\/.+/.test(v);
+        return !v || /^https?:\/\/.+/.test(v);
       },
-      message: 'Please provide a valid documentation URL',
+      message: 'Please provide a valid URL',
     },
   },
   videoLink: {
     type: String,
-    required: [true, 'Video link is required'],
     validate: {
       validator: function(v) {
-        return /^https?:\/\/.+/.test(v);
+        return !v || /^https?:\/\/.+/.test(v);
       },
       message: 'Please provide a valid video URL',
+    },
+  },
+  siteLink: {
+    type: String,
+    validate: {
+      validator: function(v) {
+        return !v || /^https?:\/\/.+/.test(v);
+      },
+      message: 'Please provide a valid URL',
     },
   },
   projectName: {

@@ -65,7 +65,7 @@ router.get('/:id/summary', async (req, res) => {
 });
 
 // Submission file management
-router.post('/:id/files', authMiddleware, upload.single('file'), async (req, res) => {
+router.post('/:id/files', authMiddleware, upload.single('submission'), async (req, res) => {
   try {
     const sub = await Submission.findById(req.params.id);
     if (!sub) return res.status(404).json({ message: 'Submission not found' });
@@ -82,8 +82,8 @@ router.delete('/:id/files', authMiddleware, async (req, res) => {
   try {
     const sub = await Submission.findById(req.params.id);
     if (!sub) return res.status(404).json({ message: 'Submission not found' });
-    const { url } = req.body;
-    sub.attachments = sub.attachments.filter(f => f.url !== url);
+    const { fileUrl } = req.body;
+    sub.attachments = sub.attachments.filter(f => f.url !== fileUrl);
     await sub.save();
     return res.json({ ok: true });
   } catch (e) { return res.status(500).json({ message: 'Failed to delete file' }); }

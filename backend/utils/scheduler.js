@@ -1,6 +1,7 @@
 const Event = require('../models/sql/Event');
 const Announcement = require('../models/mongo/Announcement');
 const { emitToRoom } = require('./socket');
+const { scheduleCertificateGeneration } = require('./certificateScheduler');
 
 // simple in-memory dedupe for reminders within TTL
 const sentReminders = new Map(); // key -> expiresAt (ms)
@@ -88,6 +89,9 @@ function startSchedulers() {
       console.warn('Scheduler error:', err.message);
     }
   }, 60 * 1000);
+
+  // Start certificate generation scheduler
+  scheduleCertificateGeneration();
 }
 
 module.exports = { startSchedulers };

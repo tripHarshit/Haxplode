@@ -176,7 +176,7 @@ const getJudgeEvents = async (req, res) => {
         {
           model: Event,
           as: 'event',
-          attributes: ['id', 'name', 'status', 'theme', 'startDate', 'endDate'],
+          attributes: ['id', 'name', 'status', 'theme', 'timeline'],
         },
       ],
       order: [['assignedAt', 'DESC']],
