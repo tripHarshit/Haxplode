@@ -120,7 +120,7 @@ const getAnnouncementsByEvent = async (req, res) => {
   try {
     const { eventId: eventIdParam } = req.params;
     const eventId = parseInt(eventIdParam);
-    const { page = 1, limit = 10, type, priority, isPinned } = req.query;
+    const { page = 1, limit = 10, type, priority, isPinned, status } = req.query;
     const offset = (page - 1) * limit;
 
     const filter = { eventId };
@@ -128,12 +128,21 @@ const getAnnouncementsByEvent = async (req, res) => {
     if (priority) filter.priority = priority;
     if (isPinned !== undefined) filter.isPinned = isPinned === 'true';
 
-    // Get active announcements
-    const announcements = await Announcement.findActiveByEvent(eventId)
+    // Status filtering: Published vs Archived (default to active published/scheduled)
+    if (status === 'Archived') {
+      filter.status = 'Archived';
+    } else if (status === 'Published') {
+      filter.status = 'Published';
+    } else {
+      filter.status = { $in: ['Published', 'Scheduled'] };
+    }
+
+    const announcements = await Announcement.find(filter)
+      .sort({ isPinned: -1, priority: -1, createdAt: -1 })
       .skip(offset)
       .limit(parseInt(limit));
 
-    const totalCount = await Announcement.countDocuments({ ...filter, status: { $in: ['Published', 'Scheduled'] } });
+    const totalCount = await Announcement.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / limit);
 
     res.status(200).json({

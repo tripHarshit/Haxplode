@@ -185,9 +185,11 @@ const OrganizerDashboard = () => {
     }
   };
 
-  const loadAnnouncements = async (eventId) => {
+  const [announcementStatusFilter, setAnnouncementStatusFilter] = useState('Published');
+
+  const loadAnnouncements = async (eventId, status = announcementStatusFilter) => {
     try {
-      const resp = await announcementService.getEventAnnouncements(eventId, { limit: 50 });
+      const resp = await announcementService.getEventAnnouncements(eventId, { limit: 50, status });
       const list = resp?.data?.announcements || [];
       const mapped = list.map(a => ({
         id: a._id,
@@ -658,6 +660,24 @@ const OrganizerDashboard = () => {
 
           {activeTab === 'announcements' && (
             <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Announcements</h2>
+                <div className="flex items-center space-x-3">
+                  <label className="text-sm text-gray-600 dark:text-gray-300">Status</label>
+                  <select
+                    value={announcementStatusFilter}
+                    onChange={async (e) => {
+                      const val = e.target.value;
+                      setAnnouncementStatusFilter(val);
+                      if (selectedEventId) await loadAnnouncements(selectedEventId, val);
+                    }}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-200"
+                  >
+                    <option value="Published">Published</option>
+                    <option value="Archived">Archived</option>
+                  </select>
+                </div>
+              </div>
               <AnnouncementsList
                 announcements={announcements}
                 onCreateNew={handleCreateAnnouncement}
