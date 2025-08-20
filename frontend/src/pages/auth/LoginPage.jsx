@@ -434,15 +434,6 @@ const LoginPage = () => {
           </div>
         </div>
 
-        {/* Demo credentials hint */}
-        <div className="mt-6 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
-          <p className="text-xs text-neutral-600 text-center">
-            <strong>Demo Credentials:</strong><br />
-            Email: john@example.com | Password: password123<br />
-            Email: jane@example.com | Password: password123<br />
-            Email: mike@example.com | Password: password123
-          </p>
-        </div>
       </div>
     </div>
   );
