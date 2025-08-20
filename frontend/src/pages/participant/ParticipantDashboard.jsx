@@ -130,10 +130,6 @@ const ParticipantDashboard = () => {
       case 'browse-events':
         setActiveTab('events');
         break;
-      case 'create-team':
-        setActiveTab('teams');
-        // Could open team creation modal here
-        break;
       case 'join-team':
         setActiveTab('teams');
         // Could open team join modal here
@@ -237,11 +233,11 @@ const ParticipantDashboard = () => {
                   Keep up the great work!
                 </p>
                 <div className="flex flex-wrap gap-4">
-                  <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
+                  <button 
+                    onClick={() => setActiveTab('events')}
+                    className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                  >
                     Browse Events
-                  </button>
-                  <button className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
-                    Create Team
                   </button>
                 </div>
               </div>

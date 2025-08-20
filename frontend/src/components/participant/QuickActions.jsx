@@ -25,14 +25,6 @@ const QuickActions = ({ onActionClick }) => {
       action: 'browse-events'
     },
     {
-      id: 'create-team',
-      title: 'Create Team',
-      description: 'Form a new team for upcoming events',
-      icon: UserGroupIcon,
-      color: 'bg-green-500 hover:bg-green-600',
-      action: 'create-team'
-    },
-    {
       id: 'join-team',
       title: 'Join Team',
       description: 'Join an existing team with invitation code',
@@ -76,11 +68,6 @@ const QuickActions = ({ onActionClick }) => {
 
     setIsLoading(true);
     try {
-      // Log navigation test
-      if (window.navigationTester) {
-        window.navigationTester.logButtonClick(action.title, 'quick_actions');
-      }
-      
       // Call the parent handler with the action
       if (onActionClick) {
         await onActionClick(action.action);

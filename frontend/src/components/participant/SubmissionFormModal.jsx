@@ -43,7 +43,6 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
 
   // Load registered events and teams for the dropdowns
   React.useEffect(() => {
-    console.log('Loading events and teams for submission form');
     (async () => {
       try {
         const [{ events }, { teams }] = await Promise.all([
@@ -52,7 +51,6 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
         ]);
         setUserEvents((events || []).map(ev => ({ id: ev.id, title: ev.name })));
         setUserTeams(teams || []);
-        console.log('Successfully loaded events and teams');
       } catch (e) {
         console.error('Failed to load events/teams for submission form', e);
       }
@@ -62,7 +60,6 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
   // Sync form when submission prop changes (e.g., edit or defaults)
   React.useEffect(() => {
     if (!isOpen) return;
-    console.log('Syncing form data with submission prop:', submission);
     setFormData(prev => ({
       projectName: submission?.projectName || '',
       description: submission?.projectDescription || submission?.description || '',
@@ -225,16 +222,12 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Form submit triggered. Current step:', currentStep, 'Total steps:', totalSteps);
-    
     // Prevent submission if not on the final step
     if (currentStep !== totalSteps) {
-      console.log('Preventing submission - not on final step');
       return;
     }
     
     if (!validateStep(currentStep)) {
-      console.log('Validation failed');
       return;
     }
     
@@ -257,11 +250,9 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
     );
     
     if (!confirmed) {
-      console.log('User cancelled submission');
       return;
     }
     
-    console.log('Starting submission process...');
     setIsSubmitting(true);
     
     try {
@@ -296,7 +287,6 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
           technologies: formData.technologies,
         };
         
-        console.log('Creating submission with payload:', createPayload);
         const resp = await submissionService.createSubmission(createPayload);
         const created = resp?.data?.submission;
         
@@ -309,15 +299,12 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
         
         if (formData.files?.length) {
           const filesToUpload = (formData.files || []).filter(f => f.file instanceof File);
-          console.log(`Uploading ${filesToUpload.length} files for submission ${created._id}`);
           
           // Try to upload files, but don't fail the submission if upload fails
           for (const f of filesToUpload) {
             try {
-              console.log(`Uploading file: ${f.name}`);
               await submissionService.uploadSubmissionFile(created._id, f.file);
               filesUploaded++;
-              console.log(`Successfully uploaded: ${f.name}`);
             } catch (uploadError) {
               console.warn('File upload failed:', uploadError);
               filesFailed++;
@@ -396,7 +383,6 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
   // Auto-select team if only one available for selected event
   React.useEffect(() => {
     if (formData.hackathonId && availableTeams.length === 1 && !formData.teamId) {
-      console.log('Auto-selecting team:', availableTeams[0].id);
       setFormData(prev => ({ ...prev, teamId: availableTeams[0].id }));
     }
   }, [formData.hackathonId, availableTeams.length]);
@@ -765,30 +751,6 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                       <p className="text-sm text-yellow-800">
                         💡 <strong>Tip:</strong> Consider uploading screenshots or demo images to showcase your project!
                       </p>
-                    </div>
-                  )}
-                  
-                  {/* Debug section - remove in production */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-800 mb-2">
-                        <strong>Debug Info:</strong>
-                      </p>
-                      <p className="text-xs text-blue-700">User ID: {user?.id}</p>
-                      <p className="text-xs text-blue-700">Token: {localStorage.getItem('token') ? 'Present' : 'Missing'}</p>
-                      <p className="text-xs text-blue-700">Current Step: {currentStep}/{totalSteps}</p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const token = localStorage.getItem('token');
-                          console.log('Current token:', token);
-                          console.log('User:', user);
-                          console.log('Form data:', formData);
-                        }}
-                        className="mt-2 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                      >
-                        Log Debug Info
-                      </button>
                     </div>
                   )}
                 </div>
