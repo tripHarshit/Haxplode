@@ -208,11 +208,29 @@ const RegisterPage = () => {
     }
   };
 
-  const handleGoogleRegister = () => {
-    if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-      window.google.accounts.id.prompt();
-    } else {
-      setErrors({ general: 'Google Sign-In is not configured. Please check your environment variables.' });
+  const handleGoogleRegister = async () => {
+    // Leverage same popup flow as Login for consistency
+    try {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+          window.google.accounts.id.initialize({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+            callback: async (response) => {
+              await loginWithGoogle(response.credential);
+            },
+          });
+          window.google.accounts.id.prompt();
+        } else {
+          setErrors({ general: 'Google Sign-In is not configured. Please check your environment variables.' });
+        }
+      };
+      document.head.appendChild(script);
+    } catch (e) {
+      setErrors({ general: 'Failed to start Google Sign-In' });
     }
   };
 

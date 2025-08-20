@@ -23,6 +23,12 @@ const announcementSchema = new mongoose.Schema({
     trim: true,
     maxlength: [2000, 'Message cannot exceed 2000 characters'],
   },
+  // New field to match organizer UI visibility selection
+  visibility: {
+    type: String,
+    enum: ['Participants', 'Judges', 'Both'],
+    default: 'Participants',
+  },
   type: {
     type: String,
     enum: ['General', 'Important', 'Urgent', 'Update', 'Reminder'],
@@ -77,6 +83,7 @@ const announcementSchema = new mongoose.Schema({
   },
   tags: {
     type: [String],
+    enum: ['important', 'urgent', 'mandatory'],
     default: [],
     validate: {
       validator: function(v) {

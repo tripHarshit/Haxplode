@@ -67,7 +67,7 @@ const OrganizerDashboard = () => {
     const fetchEvents = async () => {
       try {
         setIsLoadingEvents(true);
-        const rawEvents = await hackathonService.getMyEvents();
+        const rawEvents = await hackathonService.getMyEvents({ page: 1, limit: 500 });
         const mappedEvents = rawEvents.map(event => ({
           id: event.id,
           title: event.name,
@@ -285,20 +285,25 @@ const OrganizerDashboard = () => {
   };
 
   const handleCreateAnnouncement = async (announcementData) => {
-    if (!selectedEventId) return;
+    const eventIdToUse = announcementData.eventId || selectedEventId;
+    if (!eventIdToUse) return;
     try {
+      const target = announcementData.visibility === 'Both'
+        ? ['Participants', 'Judges']
+        : [announcementData.visibility || 'Participants'];
       const payload = {
-        eventId: selectedEventId,
+        eventId: eventIdToUse,
         title: announcementData.title,
         message: announcementData.content,
-        type: announcementData.isUrgent ? 'Urgent' : 'General',
-        priority: announcementData.isUrgent ? 'Critical' : (announcementData.isImportant ? 'High' : 'Medium'),
-        isPinned: !!announcementData.isImportant,
         isPublic: true,
-        targetAudience: [announcementData.targetAudience || 'All'],
+        targetAudience: target,
+        tags: Array.isArray(announcementData.tags) ? announcementData.tags : [],
+        visibility: announcementData.visibility || 'Participants',
+        type: 'General',
+        priority: 'Medium',
       };
       await announcementService.createAnnouncement(payload);
-      await loadAnnouncements(selectedEventId);
+      await loadAnnouncements(eventIdToUse);
     } catch (e) {
       console.error('Create announcement failed:', e);
     }
@@ -318,11 +323,17 @@ const OrganizerDashboard = () => {
   };
 
   const handleDeleteAnnouncement = async (announcementId) => {
+    const prev = announcements;
     try {
+      // Optimistic UI update
+      setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
       await announcementService.deleteAnnouncement(announcementId);
       if (selectedEventId) await loadAnnouncements(selectedEventId);
+      try { showSuccess('Announcement deleted'); } catch {}
     } catch (e) {
       console.error('Delete announcement failed:', e);
+      setAnnouncements(prev);
+      try { showError(e.message || 'Failed to delete announcement'); } catch {}
     }
   };
 
@@ -652,6 +663,8 @@ const OrganizerDashboard = () => {
                 onCreateNew={handleCreateAnnouncement}
                 onEdit={handleEditAnnouncement}
                 onDelete={handleDeleteAnnouncement}
+                events={events}
+                selectedEventId={selectedEventId}
               />
             </div>
           )}

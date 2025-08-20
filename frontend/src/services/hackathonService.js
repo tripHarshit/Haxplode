@@ -65,7 +65,7 @@ api.interceptors.response.use(
 
 export const hackathonService = {
   // Organizer: get events created by the logged-in user
-  async getMyEvents({ page = 1, limit = 100 } = {}) {
+  async getMyEvents({ page = 1, limit = 500 } = {}) {
     try {
       console.log('Fetching organizer events from backend...', { page, limit });
       const response = await api.get('/events/user/events', { params: { page, limit } });
