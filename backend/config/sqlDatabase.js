@@ -38,6 +38,38 @@ const sequelize = new Sequelize({
   },
 });
 
+async function ensureJudgeSubmissionAssignments() {
+  try {
+    console.log('🔄 Ensuring JudgeSubmissionAssignments exists (MSSQL)...');
+    await sequelize.query(`
+      IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='JudgeSubmissionAssignments' AND xtype='U')
+      CREATE TABLE [JudgeSubmissionAssignments] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [judgeId] INT NOT NULL,
+        [submissionId] VARCHAR(255) NOT NULL,
+        [eventId] INT NOT NULL,
+        [assignedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
+        [reviewedAt] DATETIME2 NULL,
+        [status] VARCHAR(20) NOT NULL DEFAULT 'assigned',
+        [score] DECIMAL(5,2) NULL,
+        [feedback] NVARCHAR(MAX) NULL,
+        [criteria] NVARCHAR(MAX) NULL,
+        [createdAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
+        [updatedAt] DATETIME2 NOT NULL DEFAULT GETDATE()
+      );
+      IF NOT EXISTS (SELECT name FROM sys.indexes WHERE name = 'UQ_JudgeSubmission')
+        CREATE UNIQUE INDEX [UQ_JudgeSubmission] ON [JudgeSubmissionAssignments]([judgeId], [submissionId]);
+      IF NOT EXISTS (SELECT name FROM sys.indexes WHERE name = 'IX_Event_Status')
+        CREATE INDEX [IX_Event_Status] ON [JudgeSubmissionAssignments]([eventId], [status]);
+      IF NOT EXISTS (SELECT name FROM sys.indexes WHERE name = 'IX_Judge_Status')
+        CREATE INDEX [IX_Judge_Status] ON [JudgeSubmissionAssignments]([judgeId], [status]);
+    `);
+    console.log('✅ JudgeSubmissionAssignments ensured');
+  } catch (e) {
+    console.error('❌ Failed ensuring JudgeSubmissionAssignments:', e.message);
+  }
+}
+
 async function connectSQL() {
   try {
     await sequelize.authenticate();
@@ -47,20 +79,23 @@ async function connectSQL() {
     if (process.env.NODE_ENV !== 'production') {
       try {
         console.log('🔄 Starting database sync...');
-        
-        // Force sync to ensure all tables are created (WARNING: This will drop existing tables in development)
-        // Use alter: true for production-like behavior
+        // Use alter to avoid destructive changes
         await sequelize.sync({ alter: true, force: false });
-        
         console.log('✅ Database models synchronized successfully.');
-        
-        // Verify critical tables exist
+
+        // Ensure critical custom tables that sync might skip
+        await ensureJudgeSubmissionAssignments();
+
+        // Verify tables
         const tables = await sequelize.query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'", { type: sequelize.QueryTypes.SELECT });
         console.log('📋 Available tables:', tables.map(t => t.TABLE_NAME));
         
       } catch (syncError) {
         console.error('❌ Model sync failed:', syncError.message);
         console.error('❌ Sync error details:', syncError);
+
+        // Fallback ensures
+        await ensureJudgeSubmissionAssignments();
         
         // Try to create just the Certificate table manually if sync fails
         try {

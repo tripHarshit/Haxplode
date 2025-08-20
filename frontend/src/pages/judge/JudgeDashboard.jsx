@@ -92,19 +92,40 @@ const JudgeDashboard = () => {
       setHackathonSubmissions([]);
       
       const eventId = assignment.eventId;
-      const [subs, teams] = await Promise.all([
-        judgeService.getSubmissionsByEvent(eventId),
-        teamService.getTeamsByEvent(eventId),
-      ]);
       
-      // Create team name map
-      const teamMap = new Map((teams || []).map(t => [t.id, t.teamName]));
-      setHackathonTeams(teamMap);
+      // Use the new API to get assigned submissions for this judge and event
+      const assignedSubmissions = await judgeService.getAssignedSubmissions(eventId);
       
-      // Map submissions to UI format
-      const mappedSubmissions = subs.map(s => 
-        mapBackendSubmissionToUI(s, teamMap, assignment.event?.name || `Event ${eventId}`)
-      );
+      // Map submissions to UI format with review status
+      const mappedSubmissions = assignedSubmissions.map(sub => ({
+        id: sub._id || sub.id,
+        projectTitle: sub.projectName || 'Project',
+        projectName: sub.projectName || 'Project',
+        eventTitle: assignment.event?.name || `Event ${eventId}`,
+        teamName: sub.teamName || 'Unknown Team',
+        description: sub.projectDescription || '',
+        projectDescription: sub.projectDescription || '',
+        technologies: Array.isArray(sub.technologies) ? sub.technologies : [],
+        submissionDate: sub.submissionDate || new Date().toISOString(),
+        reviewStatus: sub.reviewStatus || 'assigned',
+        priority: 'medium',
+        timeSpent: 0,
+        isUrgent: false,
+        isApproachingDeadline: false,
+        githubUrl: sub.githubLink,
+        githubLink: sub.githubLink,
+        demoUrl: sub.siteLink,
+        siteLink: sub.siteLink,
+        videoUrl: sub.videoLink,
+        videoLink: sub.videoLink,
+        docLink: sub.docLink,
+        // Review data if already reviewed
+        judgeScore: sub.judgeScore,
+        judgeFeedback: sub.judgeFeedback,
+        judgeCriteria: sub.judgeCriteria,
+        reviewedAt: sub.reviewedAt,
+        assignedAt: sub.assignedAt,
+      }));
       
       setHackathonSubmissions(mappedSubmissions);
     } catch (error) {
@@ -143,18 +164,25 @@ const JudgeDashboard = () => {
         window.navigationTester.logModalInteraction('Scoring Form Modal', 'submit');
       }
       
-      // Persist to backend
-      await judgeService.submitScore({
+      // Use the new API to submit review
+      await judgeService.submitReview({
         submissionId: reviewData.submissionId,
-        score: Math.round(reviewData.totalScore),
+        score: reviewData.score,
         feedback: reviewData.feedback,
-        criteria: reviewData.scores,
+        criteria: reviewData.criteria,
       });
 
       // Update local state
-      setSubmissions(prev => prev.map(sub =>
+      setHackathonSubmissions(prev => prev.map(sub =>
         sub.id === reviewData.submissionId
-          ? { ...sub, reviewStatus: 'completed', scores: reviewData.scores, feedback: reviewData.feedback }
+          ? { 
+              ...sub, 
+              reviewStatus: 'reviewed', 
+              judgeScore: reviewData.score,
+              judgeFeedback: reviewData.feedback,
+              judgeCriteria: reviewData.criteria,
+              reviewedAt: new Date().toISOString()
+            }
           : sub
       ));
       
