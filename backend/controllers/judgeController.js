@@ -952,72 +952,62 @@ const getEventResults = async (req, res) => {
       });
     }
 
-    // Get all submission assignments for this event
-    console.log('🔍 [getEventResults] Fetching submission assignments...');
-    const submissionAssignments = await JudgeSubmissionAssignment.findAll({
-      where: { eventId, status: 'reviewed' },
-    });
+    // Align with leaderboard: compute from MongoDB scores using event.rounds weighting
+    console.log('🔍 [getEventResults] Fetching submissions from MongoDB by event...');
+    const submissions = await Submission.find({ eventId });
+    console.log('🔍 [getEventResults] Found submissions:', submissions.length);
 
-    console.log('🔍 [getEventResults] Found reviewed submission assignments:', submissionAssignments.length);
+    console.log('🔍 [getEventResults] Calculating weighted averages (matching leaderboard)...');
+    const rounds = Array.isArray(event.rounds) ? event.rounds : [];
+    const submissionsWithScores = submissions.map((s) => {
+      const scores = Array.isArray(s.scores) ? s.scores : [];
 
-    // Get submissions from MongoDB
-    const submissionIds = [...new Set(submissionAssignments.map(assignment => assignment.submissionId))];
-    console.log('🔍 [getEventResults] Unique submission IDs:', submissionIds.length);
+      let averageScore = 0;
+      if (rounds.length > 0) {
+        let total = 0; let weightSum = 0;
+        for (const rd of rounds) {
+          const rdScores = scores.filter(sc => sc.roundId === rd.id);
+          if (rdScores.length) {
+            const avg = rdScores.reduce((sum, sc) => sum + (Number(sc.score) || 0), 0) / rdScores.length;
+            total += avg * (rd.weight || 1);
+            weightSum += (rd.weight || 1);
+          }
+        }
+        if (weightSum === 0) {
+          const flatAvg = scores.length ? (scores.reduce((sum, sc) => sum + (Number(sc.score) || 0), 0) / scores.length) : 0;
+          averageScore = flatAvg;
+        } else {
+          averageScore = total / weightSum;
+        }
+      } else {
+        averageScore = scores.length ? (scores.reduce((sum, sc) => sum + (Number(sc.score) || 0), 0) / scores.length) : 0;
+      }
 
-    if (submissionIds.length === 0) {
-      console.log('🔍 [getEventResults] No reviewed submissions found, returning empty array');
-      return res.status(200).json({
-        success: true,
-        data: {
-          submissions: [],
-          totalSubmissions: 0,
-          totalReviews: 0,
-        },
-      });
-    }
-
-    console.log('🔍 [getEventResults] Fetching submissions from MongoDB...');
-    const submissions = await Submission.find({ _id: { $in: submissionIds } });
-    console.log('🔍 [getEventResults] Found submissions from MongoDB:', submissions.length);
-
-    // Calculate average scores for each submission
-    console.log('🔍 [getEventResults] Calculating average scores...');
-    const submissionsWithScores = submissions.map(submission => {
-      const submissionAssignmentsForSubmission = submissionAssignments.filter(
-        assignment => assignment.submissionId === submission._id.toString()
-      );
-
-      const totalScore = submissionAssignmentsForSubmission.reduce((sum, assignment) => sum + assignment.score, 0);
-      const averageScore = submissionAssignmentsForSubmission.length > 0 
-        ? totalScore / submissionAssignmentsForSubmission.length 
-        : 0;
-
-      console.log('🔍 [getEventResults] Submission', submission._id, 'has', submissionAssignmentsForSubmission.length, 'reviews, average score:', averageScore);
+      const reviews = scores.map(sc => ({
+        judgeId: sc.judgeId,
+        score: sc.score,
+        feedback: sc.feedback,
+        reviewedAt: sc.submittedAt,
+      }));
 
       return {
-        ...submission.toObject(),
+        ...s.toObject(),
         averageScore: Math.round(averageScore * 100) / 100,
-        totalReviews: submissionAssignmentsForSubmission.length,
-        reviews: submissionAssignmentsForSubmission.map(assignment => ({
-          judgeId: assignment.judgeId,
-          score: assignment.score,
-          feedback: assignment.feedback,
-          reviewedAt: assignment.reviewedAt,
-        })),
+        totalReviews: reviews.length,
+        reviews,
       };
     });
 
-    // Sort by average score (descending)
     submissionsWithScores.sort((a, b) => b.averageScore - a.averageScore);
 
-    console.log('🔍 [getEventResults] Final submissions count:', submissionsWithScores.length);
+    const totalReviews = submissionsWithScores.reduce((sum, r) => sum + (r.totalReviews || 0), 0);
 
     res.status(200).json({
       success: true,
       data: {
         submissions: submissionsWithScores,
         totalSubmissions: submissions.length,
-        totalReviews: submissionAssignments.length,
+        totalReviews,
       },
     });
   } catch (error) {
