@@ -223,20 +223,18 @@ const getUserCertificates = async (userId) => {
       throw new Error('Certificate model not found');
     }
     
+    // Check if the table exists by trying to describe it
+    try {
+      await sequelize.query("SELECT TOP 1 * FROM Certificates", { type: sequelize.QueryTypes.SELECT });
+      console.log('Certificates table exists and is accessible');
+    } catch (tableError) {
+      console.error('Table access error:', tableError.message);
+      throw new Error(`Certificates table not accessible: ${tableError.message}`);
+    }
+    
+    // Simplified query without problematic includes
     const certificates = await Certificate.findAll({
       where: { userId },
-      include: [
-        {
-          model: Event,
-          as: 'event',
-          attributes: ['name', 'theme', 'description', 'location', 'isVirtual']
-        },
-        {
-          model: Team,
-          as: 'team',
-          attributes: ['name']
-        }
-      ],
       order: [['issuedAt', 'DESC']]
     });
 
@@ -253,19 +251,7 @@ const getUserCertificates = async (userId) => {
 const downloadCertificate = async (certificateId, userId) => {
   try {
     const certificate = await Certificate.findOne({
-      where: { id: certificateId, userId },
-      include: [
-        {
-          model: Event,
-          as: 'event',
-          attributes: ['name', 'theme', 'description', 'location', 'isVirtual']
-        },
-        {
-          model: Team,
-          as: 'team',
-          attributes: ['name']
-        }
-      ]
+      where: { id: certificateId, userId }
     });
 
     if (!certificate) {

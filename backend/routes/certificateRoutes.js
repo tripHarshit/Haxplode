@@ -10,19 +10,71 @@ const {
 // Test endpoint to check if Certificate model is working
 router.get('/test', async (req, res) => {
   try {
-    const { Certificate } = require('../models/sql');
-    const count = await Certificate.count();
-    res.json({ 
-      message: 'Certificate model is working',
-      tableExists: true,
-      recordCount: count
-    });
+    const { Certificate, sequelize } = require('../models/sql');
+    
+    // Check if we can connect to the database
+    await sequelize.authenticate();
+    
+    // Check if the Certificates table exists
+    const tableExists = await sequelize.query(
+      "SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Certificates'",
+      { type: sequelize.QueryTypes.SELECT }
+    );
+    
+    const hasTable = tableExists[0].count > 0;
+    
+    if (hasTable) {
+      // Check record count
+      const count = await Certificate.count();
+      res.json({ 
+        message: 'Certificate model is working',
+        tableExists: true,
+        recordCount: count,
+        databaseConnected: true
+      });
+    } else {
+      res.json({ 
+        message: 'Certificate table does not exist',
+        tableExists: false,
+        recordCount: 0,
+        databaseConnected: true
+      });
+    }
   } catch (error) {
     console.error('Certificate model test failed:', error);
     res.status(500).json({ 
       message: 'Certificate model test failed',
       error: error.message,
       stack: error.stack
+    });
+  }
+});
+
+// Create a test certificate (for testing purposes)
+router.post('/test/create', async (req, res) => {
+  try {
+    const { Certificate } = require('../models/sql');
+    
+    // Create a test certificate
+    const testCertificate = await Certificate.create({
+      userId: 1, // Assuming user ID 1 exists
+      eventId: 1, // Assuming event ID 1 exists
+      type: 'participation',
+      title: 'Test Certificate',
+      description: 'This is a test certificate for testing purposes',
+      certificateNumber: `TEST-${Date.now()}`,
+      issuedAt: new Date()
+    });
+    
+    res.json({ 
+      message: 'Test certificate created successfully',
+      certificate: testCertificate
+    });
+  } catch (error) {
+    console.error('Error creating test certificate:', error);
+    res.status(500).json({ 
+      message: 'Failed to create test certificate',
+      error: error.message
     });
   }
 });
