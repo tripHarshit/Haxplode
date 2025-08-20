@@ -7,17 +7,18 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
+const jwt = require('jsonwebtoken');
 
+// DB connections
 const { connectSQL } = require('./config/sqlDatabase');
-// Ensure all SQL models and associations are registered BEFORE syncing
-console.log('🔄 Loading SQL models...');
-require('./models/sql');
-console.log('✅ SQL models loaded');
 const { connectMongo } = require('./config/mongoDatabase');
+
+// Middleware
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
 
-// Import routes
+// Routes
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const teamRoutes = require('./routes/teams');
@@ -28,65 +29,72 @@ const chatRoutes = require('./routes/chats');
 const hackathonRoutes = require('./routes/hackathons');
 const participantRoutes = require('./routes/participant');
 const uploadRoutes = require('./routes/upload');
-const { setSocketServer } = require('./utils/socket');
-const { startSchedulers } = require('./utils/scheduler');
 const notificationsRoutes = require('./routes/notifications');
 const sponsorRoutes = require('./routes/sponsors');
 const certificateRoutes = require('./routes/certificateRoutes');
 
-const http = require('http');
-const jwt = require('jsonwebtoken');
+const { setSocketServer } = require('./utils/socket');
+const { startSchedulers } = require('./utils/scheduler');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 const server = http.createServer(app);
-let io; // initialized after DB connections
+let io; // Socket.io server
 
-// Security middleware
+// ---------------- Security & Middleware ----------------
 app.use(helmet());
 
-// CORS configuration
+// Allowed origins (local + Azure Static Web Apps)
+const allowedOrigins = [
+  process.env.FRONTEND_URL, // prod frontend URL
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000'
+].filter(Boolean);
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`❌ Blocked CORS request from: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
 }));
 
-// Explicitly handle preflight requests early
+// Preflight
 app.options('*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+  origin: allowedOrigins,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
 }));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Temporarily increased for testing
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
-  legacyHeaders: false,
+  legacyHeaders: false
 });
 app.use(limiter);
 
-// Body parsing middleware
+// Body parsing & compression
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Compression middleware
 app.use(compression());
-// Serve uploaded files statically (read-only)
 app.use('/uploads', express.static('uploads'));
 
-// Logging middleware
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined'));
-}
+// Logging
+if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
+else app.use(morgan('combined'));
 
-// Health check endpoint
+// ---------------- Health Check ----------------
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -96,7 +104,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
+// ---------------- API Routes ----------------
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/teams', teamRoutes);
@@ -113,30 +121,23 @@ app.use('/api/certificates', certificateRoutes);
 
 // 404 handler
 app.use(notFound);
-
 // Global error handler
 app.use(errorHandler);
 
-// Database connections and server startup
+// ---------------- Start Server ----------------
 async function startServer() {
   try {
-    // Connect to Azure SQL Database
     await connectSQL();
     console.log('✅ Connected to Azure SQL Database');
-    
-    // Verify Certificate table exists
+
     try {
       const { Certificate } = require('./models/sql');
-      
-      // Test if the table exists by doing a simple query
       await Certificate.count();
-      console.log('✅ Certificate table verified and accessible');
-    } catch (error) {
-      console.error('❌ Certificate table verification failed:', error.message);
-      console.error('❌ This will cause certificate-related features to fail');
+      console.log('✅ Certificate table verified');
+    } catch (err) {
+      console.error('❌ Certificate table verification failed:', err.message);
     }
 
-    // Connect to MongoDB
     await connectMongo();
     console.log('✅ Connected to MongoDB');
 
@@ -144,7 +145,7 @@ async function startServer() {
     const { Server } = require('socket.io');
     io = new Server(server, {
       cors: {
-        origin: 'http://localhost:5173', // Temporarily hardcoded for testing
+        origin: allowedOrigins,
         credentials: true,
       },
     });
@@ -162,32 +163,26 @@ async function startServer() {
     });
 
     io.on('connection', (socket) => {
-      // Rooms
       socket.on('join_room', ({ roomType, roomId }) => {
         if (!roomType || !roomId) return;
         socket.join(`${roomType}:${roomId}`);
       });
-
       socket.on('typing', ({ roomId, userId }) => {
         if (roomId) socket.to(roomId).emit('typing', { userId });
       });
-
       socket.on('disconnect', () => {});
     });
 
-    // Make io available to controllers
     setSocketServer(io);
-
-    // Start background schedulers (deadline reminders, scheduled announcements)
     startSchedulers();
 
-    // Start server
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-      console.log(`⚙️  CORS origins allowed: http://localhost:5173, http://localhost:5174, http://localhost:3000`);
+      console.log(`⚙️  CORS allowed origins: ${allowedOrigins.join(', ')}`);
     });
+
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
@@ -195,14 +190,7 @@ async function startServer() {
 }
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
-  process.exit(0);
-});
+process.on('SIGTERM', () => process.exit(0));
+process.on('SIGINT', () => process.exit(0));
 
 startServer();
