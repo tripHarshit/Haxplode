@@ -89,6 +89,18 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
     }
   };
 
+  // Prevent form submission on Enter key in input fields
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // Only allow Enter to submit if we're on the final step and user explicitly wants to submit
+      if (currentStep === totalSteps) {
+        // Don't auto-submit, let user click the submit button
+        return;
+      }
+    }
+  };
+
   const handleTechnologyAdd = () => {
     if (newTechnology.trim() && !formData.technologies.includes(newTechnology.trim())) {
       setFormData(prev => ({
@@ -107,6 +119,7 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
   };
 
   const handleFileUpload = (e) => {
+    e.preventDefault(); // Prevent any form submission
     const files = Array.from(e.target.files);
     const newFiles = files.map(file => ({
       name: file.name,
@@ -119,12 +132,41 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
       ...prev,
       files: [...prev.files, ...newFiles]
     }));
+    
+    // Clear the input value to allow re-uploading the same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleFileRemove = (fileToRemove) => {
     setFormData(prev => ({
       ...prev,
       files: prev.files.filter(file => file !== fileToRemove)
+    }));
+  };
+
+  // Handle drag and drop for file uploads
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = Array.from(e.dataTransfer.files);
+    const newFiles = files.map(file => ({
+      name: file.name,
+      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+      url: URL.createObjectURL(file),
+      file: file
+    }));
+    
+    setFormData(prev => ({
+      ...prev,
+      files: [...prev.files, ...newFiles]
     }));
   };
 
@@ -158,6 +200,7 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
         break;
       case 3:
         // Optional fields, no validation required
+        // But we can add a gentle reminder about file uploads
         break;
     }
     
@@ -177,6 +220,11 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent submission if not on the final step
+    if (currentStep !== totalSteps) {
+      return;
+    }
     
     if (!validateStep(currentStep)) {
       return;
@@ -375,6 +423,7 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                        name="projectName"
                        value={formData.projectName}
                        onChange={handleInputChange}
+                       onKeyPress={handleKeyPress}
                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 dark:placeholder-neutral-400 ${
                          errors.projectName ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
                        }`}
@@ -395,6 +444,7 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                        name="hackathonId"
                        value={formData.hackathonId}
                        onChange={handleInputChange}
+                       onKeyPress={handleKeyPress}
                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 ${
                          errors.hackathonId ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
                        }`}
@@ -422,6 +472,7 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                      name="description"
                      value={formData.description}
                      onChange={handleInputChange}
+                     onKeyPress={handleKeyPress}
                      rows={4}
                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 dark:placeholder-neutral-400 ${
                        errors.description ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
@@ -443,6 +494,7 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                      name="teamId"
                      value={formData.teamId}
                      onChange={handleInputChange}
+                     onKeyPress={handleKeyPress}
                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 ${
                        errors.teamId ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
                      }`}
@@ -483,6 +535,7 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                       name="githubUrl"
                       value={formData.githubUrl}
                       onChange={handleInputChange}
+                      onKeyPress={handleKeyPress}
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
                         errors.githubUrl ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -505,6 +558,7 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                         name="demoUrl"
                         value={formData.demoUrl}
                         onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                         placeholder="https://your-demo-site.com"
                         disabled={isSubmitting}
@@ -521,6 +575,7 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                         name="videoUrl"
                         value={formData.videoUrl}
                         onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                         placeholder="https://youtube.com/watch?v=..."
                         disabled={isSubmitting}
@@ -537,10 +592,10 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                         type="text"
                         value={newTechnology}
                         onChange={(e) => setNewTechnology(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleTechnologyAdd())}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                         placeholder="Add technology (e.g., React, Python)"
                         disabled={isSubmitting}
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleTechnologyAdd())}
                       />
                       <button
                         type="button"
@@ -589,7 +644,11 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Images (optional)
                   </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center"
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                  >
                     <PaperClipIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                     <div className="space-y-2">
                       <p className="text-sm text-gray-600">
@@ -646,6 +705,14 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                     <p><span className="font-medium">Technologies:</span> {formData.technologies.join(', ')}</p>
                     <p><span className="font-medium">Files:</span> {formData.files.length} file(s)</p>
                   </div>
+                  
+                  {formData.files.length === 0 && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        💡 <strong>Tip:</strong> Consider uploading screenshots or demo images to showcase your project!
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
