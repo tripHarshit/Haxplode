@@ -1,52 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trophy, Award, Download, Eye, Star, Medal, Crown, FileText } from 'lucide-react';
 import { useToast } from '../ui/Toast';
+import { useAuth } from '../../context/AuthContext';
+import { certificateService } from '../../services/certificateService';
 
 const Certificates = () => {
-  const [certificates, setCertificates] = useState([
-    {
-      id: 1,
-      type: 'winner',
-      title: 'First Place Winner',
-      event: 'Tech Innovation Hackathon 2024',
-      date: '2024-01-15',
-      participant: 'John Doe',
-      team: 'Team Innovators',
-      project: 'AI-Powered Healthcare Assistant',
-      score: 95,
-      downloadable: true,
-      badge: '🏆'
-    },
-    {
-      id: 2,
-      type: 'participation',
-      title: 'Participation Certificate',
-      event: 'Web Development Challenge',
-      date: '2024-01-10',
-      participant: 'John Doe',
-      team: 'Solo Participant',
-      project: 'E-commerce Platform',
-      score: null,
-      downloadable: true,
-      badge: '📜'
-    },
-    {
-      id: 3,
-      type: 'special',
-      title: 'Most Innovative Solution',
-      event: 'AI/ML Hackathon',
-      date: '2024-01-05',
-      participant: 'John Doe',
-      team: 'AI Pioneers',
-      project: 'Smart City Traffic Management',
-      score: 88,
-      downloadable: true,
-      badge: '💡'
-    }
-  ]);
-
+  const { user } = useAuth();
+  const [certificates, setCertificates] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const { success, error } = useToast();
+
+  useEffect(() => {
+    if (user?.id) {
+      loadCertificates();
+    }
+  }, [user?.id]);
+
+  const loadCertificates = async () => {
+    try {
+      setIsLoading(true);
+      const response = await certificateService.getUserCertificates(user.id);
+      setCertificates(response.certificates || []);
+    } catch (err) {
+      console.error('Failed to load certificates:', err);
+      error('Failed to load certificates', err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getCertificateIcon = (type) => {
     switch (type) {
@@ -78,19 +60,44 @@ const Certificates = () => {
     }
   };
 
-  const handleDownload = (certificate) => {
-    // Simulate PDF generation and download
-    success('Download Started', 'Certificate PDF is being generated...');
-    
-    // In a real app, this would generate and download a PDF
-    setTimeout(() => {
+  const getCertificateBadge = (type) => {
+    switch (type) {
+      case 'winner':
+        return '🏆';
+      case 'runner-up':
+        return '🥈';
+      case 'special':
+        return '💡';
+      case 'participation':
+        return '📜';
+      default:
+        return '🎖️';
+    }
+  };
+
+  const handleDownload = async (certificate) => {
+    try {
+      success('Download Started', 'Certificate PDF is being generated...');
+      await certificateService.downloadCertificate(certificate.id);
       success('Download Complete', 'Certificate has been downloaded successfully!');
-    }, 2000);
+    } catch (err) {
+      error('Download Failed', err.message);
+    }
   };
 
   const handlePreview = (certificate) => {
     setSelectedCertificate(certificate);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -109,113 +116,152 @@ const Certificates = () => {
       </div>
 
       {/* Achievement Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
-              <Trophy className="h-5 w-5 text-yellow-600" />
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg p-6">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">1</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Winners</div>
+              <p className="text-yellow-100">Winner Certificates</p>
+              <p className="text-2xl font-bold">
+                {certificates.filter(c => c.type === 'winner').length}
+              </p>
             </div>
+            <Trophy className="h-8 w-8 text-yellow-200" />
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
-              <Star className="h-5 w-5 text-purple-600" />
-            </div>
+
+        <div className="bg-gradient-to-r from-gray-400 to-gray-600 text-white rounded-lg p-6">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">1</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Special Awards</div>
+              <p className="text-gray-100">Runner-up</p>
+              <p className="text-2xl font-bold">
+                {certificates.filter(c => c.type === 'runner-up').length}
+              </p>
             </div>
+            <Medal className="h-8 w-8 text-gray-200" />
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-              <FileText className="h-5 w-5 text-blue-600" />
-            </div>
+
+        <div className="bg-gradient-to-r from-purple-400 to-pink-500 text-white rounded-lg p-6">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">1</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Participation</div>
+              <p className="text-purple-100">Special Awards</p>
+              <p className="text-2xl font-bold">
+                {certificates.filter(c => c.type === 'special').length}
+              </p>
             </div>
+            <Star className="h-8 w-8 text-purple-200" />
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-              <Crown className="h-5 w-5 text-green-600" />
-            </div>
+
+        <div className="bg-gradient-to-r from-blue-400 to-cyan-500 text-white rounded-lg p-6">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">91</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Avg Score</div>
+              <p className="text-blue-100">Participation</p>
+              <p className="text-2xl font-bold">
+                {certificates.filter(c => c.type === 'participation').length}
+              </p>
             </div>
+            <FileText className="h-8 w-8 text-blue-200" />
           </div>
         </div>
       </div>
 
+      {/* Empty State */}
+      {certificates.length === 0 && (
+        <div className="text-center py-16">
+          <div className="text-6xl mb-4">📜</div>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            No Certificates Yet
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Certificates will be automatically generated once the hackathons you participated in are completed.
+          </p>
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 max-w-md mx-auto">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              💡 <strong>Tip:</strong> Complete hackathons and wait for organizers to mark them as finished to receive your certificates.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Certificates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {certificates.map((certificate) => (
-          <div
-            key={certificate.id}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-300"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="text-3xl">{certificate.badge}</div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">{certificate.title}</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{certificate.event}</p>
+      {certificates.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {certificates.map((certificate) => (
+            <div
+              key={certificate.id}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-300"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="text-3xl">{getCertificateBadge(certificate.type)}</div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-gray-100">{certificate.title}</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{certificate.event?.name || 'Unknown Event'}</p>
+                  </div>
                 </div>
+                {getCertificateIcon(certificate.type)}
               </div>
-              {getCertificateIcon(certificate.type)}
-            </div>
 
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Date:</span>
-                <span className="text-gray-900 dark:text-gray-100">{new Date(certificate.date).toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Team:</span>
-                <span className="text-gray-900 dark:text-gray-100">{certificate.team}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Project:</span>
-                <span className="text-gray-900 dark:text-gray-100 line-clamp-1">{certificate.project}</span>
-              </div>
-              {certificate.score && (
+              <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Score:</span>
-                  <span className="text-gray-900 dark:text-gray-100">{certificate.score}/100</span>
+                  <span className="text-gray-600 dark:text-gray-400">Date:</span>
+                  <span className="text-gray-900 dark:text-gray-100">
+                    {new Date(certificate.issuedAt).toLocaleDateString()}
+                  </span>
                 </div>
-              )}
-            </div>
+                {certificate.team && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Team:</span>
+                    <span className="text-gray-900 dark:text-gray-100">{certificate.team.name}</span>
+                  </div>
+                )}
+                {certificate.projectName && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Project:</span>
+                    <span className="text-gray-900 dark:text-gray-100 line-clamp-1">{certificate.projectName}</span>
+                  </div>
+                )}
+                {certificate.score && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Score:</span>
+                    <span className="text-gray-900 dark:text-gray-100">{certificate.score}/100</span>
+                  </div>
+                )}
+                {certificate.rank && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Rank:</span>
+                    <span className="text-gray-900 dark:text-gray-100">#{certificate.rank}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Certificate #:</span>
+                  <span className="text-gray-900 dark:text-gray-100 font-mono text-xs">
+                    {certificate.certificateNumber}
+                  </span>
+                </div>
+              </div>
 
-            <div className="flex space-x-2">
-              <button
-                onClick={() => handlePreview(certificate)}
-                className="flex-1 btn-outline flex items-center justify-center space-x-2"
-              >
-                <Eye className="h-4 w-4" />
-                <span>Preview</span>
-              </button>
-              {certificate.downloadable && (
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handlePreview(certificate)}
+                  className="btn-secondary flex-1 flex items-center justify-center space-x-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  <span>Preview</span>
+                </button>
                 <button
                   onClick={() => handleDownload(certificate)}
-                  className="flex-1 btn-primary flex items-center justify-center space-x-2"
+                  className="btn-primary flex-1 flex items-center justify-center space-x-2"
                 >
                   <Download className="h-4 w-4" />
                   <span>Download</span>
                 </button>
-              )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Certificate Preview Modal */}
       {selectedCertificate && (
@@ -247,75 +293,77 @@ const CertificatePreviewModal = ({ certificate, onClose, onDownload }) => {
             </button>
           </div>
 
-          {/* Certificate Design */}
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
-            <div className="mb-6">
-              <div className="text-6xl mb-4">{certificate.badge}</div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          <div className="space-y-6">
+            {/* Certificate Header */}
+            <div className="text-center">
+              <div className="text-4xl mb-2">
+                {certificate.type === 'winner' && '🏆'}
+                {certificate.type === 'runner-up' && '🥈'}
+                {certificate.type === 'special' && '💡'}
+                {certificate.type === 'participation' && '📜'}
+              </div>
+              <h4 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                 {certificate.title}
-              </h2>
+              </h4>
               <p className="text-lg text-gray-600 dark:text-gray-400">
-                {certificate.event}
+                {certificate.event?.name || 'Unknown Event'}
               </p>
             </div>
 
-            <div className="mb-6">
-              <p className="text-lg text-gray-700 dark:text-gray-300 mb-4">
-                This is to certify that
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                {certificate.participant}
-              </p>
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
-                from <span className="font-semibold">{certificate.team}</span>
-              </p>
-              <p className="text-lg text-gray-700 dark:text-gray-300">
-                has successfully participated in the hackathon with the project
-              </p>
-              <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-2">
-                "{certificate.project}"
-              </p>
+            {/* Certificate Details */}
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Event Theme:</span>
+                <span className="text-gray-900 dark:text-gray-100">{certificate.event?.theme || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Event Location:</span>
+                <span className="text-gray-900 dark:text-gray-100">
+                  {certificate.event?.isVirtual ? 'Virtual Event' : (certificate.event?.location || 'N/A')}
+                </span>
+              </div>
+              {certificate.team && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Team:</span>
+                  <span className="text-gray-900 dark:text-gray-100">{certificate.team.name}</span>
+                </div>
+              )}
+              {certificate.projectName && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Project:</span>
+                  <span className="text-gray-900 dark:text-gray-100">{certificate.projectName}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Issued Date:</span>
+                <span className="text-gray-900 dark:text-gray-100">
+                  {new Date(certificate.issuedAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Certificate #:</span>
+                <span className="text-gray-900 dark:text-gray-100 font-mono text-sm">
+                  {certificate.certificateNumber}
+                </span>
+              </div>
             </div>
 
-            {certificate.score && (
-              <div className="mb-6">
-                <p className="text-lg text-gray-700 dark:text-gray-300">
-                  Achieved a score of
-                </p>
-                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                  {certificate.score}/100
-                </p>
+            {/* Certificate Description */}
+            {certificate.description && (
+              <div>
+                <h5 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Description</h5>
+                <p className="text-gray-600 dark:text-gray-400">{certificate.description}</p>
               </div>
             )}
 
-            <div className="mb-6">
-              <p className="text-lg text-gray-700 dark:text-gray-300">
-                Awarded on
-              </p>
-              <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {new Date(certificate.date).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
-            </div>
-
-            <div className="border-t border-gray-300 dark:border-gray-600 pt-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Certificate ID: {certificate.id.toString().padStart(6, '0')}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex space-x-3 mt-6">
-            <button
-              onClick={onClose}
-              className="btn-outline flex-1"
-            >
-              Close
-            </button>
-            {certificate.downloadable && (
+            {/* Action Buttons */}
+            <div className="flex space-x-3 pt-4">
+              <button
+                onClick={onClose}
+                className="btn-secondary flex-1"
+              >
+                Close
+              </button>
               <button
                 onClick={() => onDownload(certificate)}
                 className="btn-primary flex-1 flex items-center justify-center space-x-2"
@@ -323,7 +371,7 @@ const CertificatePreviewModal = ({ certificate, onClose, onDownload }) => {
                 <Download className="h-4 w-4" />
                 <span>Download PDF</span>
               </button>
-            )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,8 +1,13 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/sql/User');
+const { User } = require('../models/sql');
 
 const authMiddleware = async (req, res, next) => {
   try {
+    // Allow CORS preflight requests to pass through without auth
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -23,6 +28,15 @@ const authMiddleware = async (req, res, next) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Check if this is an access token, not a refresh token
+      if (decoded.type !== 'access') {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token type. Please use access token.',
+        });
+      }
+      
       req.user = decoded;
       
       // Fetch fresh user data from database
@@ -32,6 +46,15 @@ const authMiddleware = async (req, res, next) => {
           success: false,
           message: 'User not found or inactive.',
         });
+      }
+      
+      // If user is a judge, include judge profile
+      if (user.role === 'Judge') {
+        const { Judge } = require('../models/sql/Judge');
+        const judgeProfile = await Judge.findOne({ where: { userId: user.id } });
+        if (judgeProfile) {
+          user.judgeProfile = judgeProfile;
+        }
       }
       
       req.currentUser = user;
@@ -63,6 +86,10 @@ const authMiddleware = async (req, res, next) => {
 // Role-based authorization middleware
 const authorize = (...roles) => {
   return (req, res, next) => {
+    // Allow CORS preflight requests without auth/role checks
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
     if (!req.currentUser) {
       return res.status(401).json({
         success: false,

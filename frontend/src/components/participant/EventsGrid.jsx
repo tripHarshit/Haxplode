@@ -14,9 +14,10 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import EventCard from './EventCard';
 import EventDetailsModal from './EventDetailsModal';
-import { mockCategories, mockPrizeRanges, dataService } from '../../utils/mockData';
+import RegistrationModal from './RegistrationModal';
+import { mockCategories, mockPrizeRanges } from '../../utils/mockData';
 
-const EventsGrid = ({ events }) => {
+const EventsGrid = ({ events, onRefresh, onRequestSubmit }) => {
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -25,14 +26,16 @@ const EventsGrid = ({ events }) => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEvents, setCurrentEvents] = useState(events);
+  const [showRegistration, setShowRegistration] = useState(false);
 
   useEffect(() => {
     setCurrentEvents(events);
   }, [events]);
 
-  const handleEventUpdate = () => {
-    // Refresh events from data service
-    setCurrentEvents(dataService.getEvents());
+  const handleEventUpdate = async () => {
+    if (onRefresh) {
+      await onRefresh();
+    }
   };
 
   const filteredEvents = useMemo(() => {
@@ -67,6 +70,15 @@ const EventsGrid = ({ events }) => {
   const handleEventClick = (event) => {
     setSelectedEvent(event);
     setIsModalOpen(true);
+  };
+
+  const openRegistration = (event) => {
+    setSelectedEvent(event);
+    setShowRegistration(true);
+  };
+
+  const closeRegistration = () => {
+    setShowRegistration(false);
   };
 
   const closeModal = () => {
@@ -112,7 +124,7 @@ const EventsGrid = ({ events }) => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Events</h2>
-          <p className="text-gray-600">Discover and register for hackathons</p>
+          <p className="text-gray-600">Hackathons you are registered for</p>
         </div>
         
         {/* View Toggle */}
@@ -222,6 +234,8 @@ const EventsGrid = ({ events }) => {
               statusBadge={getStatusBadge(event)}
               onClick={() => handleEventClick(event)}
               onEventUpdate={handleEventUpdate}
+              onRequestRegister={() => openRegistration(event)}
+              onRequestSubmit={() => onRequestSubmit && onRequestSubmit(event)}
             />
           ))}
         </div>
@@ -239,6 +253,19 @@ const EventsGrid = ({ events }) => {
           event={selectedEvent}
           isOpen={isModalOpen}
           onClose={closeModal}
+          onRequestRegister={() => {
+            closeModal();
+            openRegistration(selectedEvent);
+          }}
+        />
+      )}
+
+      {showRegistration && selectedEvent && (
+        <RegistrationModal
+          isOpen={showRegistration}
+          onClose={closeRegistration}
+          event={selectedEvent}
+          onCompleted={handleEventUpdate}
         />
       )}
     </div>

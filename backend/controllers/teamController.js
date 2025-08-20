@@ -1,6 +1,9 @@
-const { Team, TeamMember } = require('../models/sql/Team');
-const Event = require('../models/sql/Event');
-const User = require('../models/sql/User');
+// Import via centralized index to ensure associations are registered
+const { Team, TeamMember, Event, User } = require('../models/sql');
+const { TeamInvitation } = require('../models/mongo');
+const crypto = require('crypto');
+const { emitToRoom } = require('../utils/socket');
+const { audit } = require('../utils/audit');
 
 // Create team (Participant only)
 const createTeam = async (req, res) => {
@@ -28,12 +31,8 @@ const createTeam = async (req, res) => {
       });
     }
 
-    if (event.status !== 'Registration Open') {
-      return res.status(400).json({
-        success: false,
-        message: 'Event registration is not open',
-      });
-    }
+    // Relaxed checks for development: allow team creation by default and do not enforce capacity here
+    // If you want strict enforcement, restore allowTeams/maxTeams/status checks.
 
     // Check if user is already in a team for this event
     const existingTeamMember = await TeamMember.findOne({
@@ -41,6 +40,7 @@ const createTeam = async (req, res) => {
       include: [
         {
           model: Team,
+          as: 'team',
           where: { eventId },
         },
       ],
@@ -66,6 +66,16 @@ const createTeam = async (req, res) => {
     }
 
     // Create team
+    // Generate a referral code
+    const generateCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
+    let referralCode = generateCode();
+    // Minimal collision avoidance (unlikely with 8 hex chars); retry a few times
+    for (let i = 0; i < 3; i += 1) {
+      const exists = await Team.findOne({ where: { referralCode } });
+      if (!exists) break;
+      referralCode = generateCode();
+    }
+
     const team = await Team.create({
       teamName,
       eventId,
@@ -75,7 +85,8 @@ const createTeam = async (req, res) => {
       githubRepository,
       projectVideo,
       projectDocumentation,
-      tags,
+      referralCode,
+      tags: Array.isArray(tags) ? tags : [],
     });
 
     // Add leader as team member
@@ -85,6 +96,10 @@ const createTeam = async (req, res) => {
       role: 'Leader',
     });
 
+    // Audit + notify
+    audit(leaderId, 'team_created', { eventId, teamId: team.id, metadata: { teamName } });
+    emitToRoom(`event:${eventId}`, 'team_update', { teamId: team.id, type: 'created', data: { id: team.id, teamName } });
+
     res.status(201).json({
       success: true,
       message: 'Team created successfully',
@@ -93,11 +108,11 @@ const createTeam = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Create team error:', error);
+    console.error('Create team error:', error?.message, error?.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to create team',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      error: error?.message,
     });
   }
 };
@@ -271,6 +286,7 @@ const addTeamMember = async (req, res) => {
       include: [
         {
           model: Team,
+          as: 'team',
           where: { eventId: team.eventId },
         },
       ],
@@ -289,6 +305,9 @@ const addTeamMember = async (req, res) => {
       userId,
       role,
     });
+
+    audit(req.currentUser.id, 'team_member_added', { eventId: team.eventId, teamId: team.id, metadata: { userId, role } });
+    emitToRoom(`team:${team.id}`, 'team_update', { teamId: team.id, type: 'member_joined', data: { userId, role } });
 
     res.status(200).json({
       success: true,
@@ -351,6 +370,9 @@ const removeTeamMember = async (req, res) => {
       where: { teamId, userId: parseInt(userId) },
     });
 
+    audit(req.currentUser.id, 'team_member_removed', { eventId: team.eventId, teamId: team.id, metadata: { userId: parseInt(userId) } });
+    emitToRoom(`team:${team.id}`, 'team_update', { teamId: team.id, type: 'member_left', data: { userId: parseInt(userId) } });
+
     res.status(200).json({
       success: true,
       message: 'Member removed from team successfully',
@@ -401,6 +423,9 @@ const updateTeam = async (req, res) => {
 
     // Update team
     await team.update(updateData);
+
+    audit(req.currentUser.id, 'team_updated', { eventId: team.eventId, teamId: team.id });
+    emitToRoom(`team:${team.id}`, 'team_update', { teamId: team.id, type: 'updated', data: updateData });
 
     res.status(200).json({
       success: true,
@@ -471,4 +496,95 @@ module.exports = {
   removeTeamMember,
   updateTeam,
   getUserTeams,
+  inviteToTeam,
+  joinByCode,
+  leaveTeam,
 };
+
+// Invite to team (generate code)
+async function inviteToTeam(req, res) {
+  try {
+    const { teamId } = req.params;
+    const { email, role = 'Member' } = req.body;
+
+    const team = await Team.findByPk(teamId, { include: [{ model: Event, as: 'event' }, { model: TeamMember, as: 'members' }] });
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    const isLeader = team.members.some(m => m.userId === req.currentUser.id && m.role === 'Leader');
+    if (!isLeader) return res.status(403).json({ message: 'Only leader can invite' });
+
+    const code = crypto.randomBytes(6).toString('hex').toUpperCase();
+    const invitation = await TeamInvitation.create({
+      invitationCode: code,
+      teamId: team.id,
+      eventId: team.eventId,
+      createdBy: req.currentUser.id,
+      role,
+    });
+    return res.status(201).json({ invitationCode: invitation.invitationCode });
+  } catch (err) {
+    console.error('Invite error:', err);
+    return res.status(500).json({ message: 'Failed to create invitation' });
+  }
+}
+
+// Join by code (supports both Mongo invitation code and SQL referralCode)
+async function joinByCode(req, res) {
+  try {
+    const rawCode = String(req.body?.invitationCode || req.body?.referralCode || '').trim();
+    if (!rawCode) return res.status(400).json({ message: 'Code is required' });
+    const code = rawCode.toUpperCase();
+
+    let targetTeamId = null;
+    let eventId = null;
+    let role = 'Member';
+
+    // First try Mongo invitation code (if present in system)
+    try {
+      const invite = await TeamInvitation.findOne({ invitationCode: code, isRevoked: false, expiresAt: { $gt: new Date() } });
+      if (invite) {
+        targetTeamId = invite.teamId;
+        eventId = invite.eventId;
+        role = invite.role || 'Member';
+      }
+    } catch {}
+
+    // If not found, try SQL referralCode on Team
+    if (!targetTeamId) {
+      const team = await Team.findOne({ where: { referralCode: code } });
+      if (!team) return res.status(404).json({ message: 'Invitation not found or expired' });
+      targetTeamId = team.id;
+      eventId = team.eventId;
+    }
+
+    // Check user already in any team for this event
+    const existingTeamMember = await TeamMember.findOne({
+      where: { userId: req.currentUser.id },
+      include: [{ model: Team, as: 'team', where: { eventId } }],
+    });
+    if (existingTeamMember) return res.status(400).json({ message: 'Already in a team for this event' });
+
+    // Optional: capacity check (skipped in dev to avoid blocking)
+    await TeamMember.create({ teamId: targetTeamId, userId: req.currentUser.id, role });
+    return res.json({ message: 'Joined team' });
+  } catch (err) {
+    console.error('Join by code error:', err?.message, err?.stack);
+    return res.status(500).json({ message: 'Failed to join team' });
+  }
+}
+
+// Leave team
+async function leaveTeam(req, res) {
+  try {
+    const { teamId } = req.params;
+    const team = await Team.findByPk(teamId, { include: [{ model: TeamMember, as: 'members' }] });
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    const membership = team.members.find(m => m.userId === req.currentUser.id);
+    if (!membership) return res.status(404).json({ message: 'Not a team member' });
+    if (membership.role === 'Leader') return res.status(400).json({ message: 'Leader cannot leave. Transfer leadership.' });
+    await TeamMember.destroy({ where: { teamId: team.id, userId: req.currentUser.id } });
+    return res.json({ message: 'Left team' });
+  } catch (err) {
+    console.error('Leave team error:', err);
+    return res.status(500).json({ message: 'Failed to leave team' });
+  }
+}

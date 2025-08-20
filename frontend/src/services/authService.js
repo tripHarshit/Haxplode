@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -31,182 +31,130 @@ api.interceptors.response.use(
     console.error('API Error:', error.response?.status, error.response?.data);
     
     if (error.response?.status === 401) {
+      // Guard against infinite refresh loops
+      const originalRequest = error.config || {};
+      if (originalRequest?.url?.includes('/auth/refresh')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        return Promise.reject(error);
+      }
+
+      if (originalRequest._retry) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        return Promise.reject(error);
+      }
+
+      originalRequest._retry = true;
+
       // Token expired, try to refresh
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
         try {
           const refreshResponse = await api.post('/auth/refresh', { refreshToken });
-          const { token } = refreshResponse.data;
+          const { token, refreshToken: newRefreshToken } = refreshResponse.data.data;
           localStorage.setItem('token', token);
+          if (newRefreshToken) {
+            localStorage.setItem('refreshToken', newRefreshToken);
+          }
           
           // Retry original request
-          const originalRequest = error.config;
+          originalRequest.headers = originalRequest.headers || {};
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return api(originalRequest);
         } catch (refreshError) {
           console.error('Token refresh failed:', refreshError);
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
-          window.location.href = '/login';
+          return Promise.reject(refreshError);
         }
       } else {
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        return Promise.reject(error);
       }
     }
     return Promise.reject(error);
   }
 );
 
-// Mock data for development
-const mockUsers = [
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john@example.com',
-    roles: ['participant'],
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-    createdAt: '2024-01-15T10:00:00Z'
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    roles: ['organizer'],
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-    createdAt: '2024-01-10T14:30:00Z'
-  },
-  {
-    id: 3,
-    name: 'Mike Johnson',
-    email: 'mike@example.com',
-    roles: ['judge'],
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-    createdAt: '2024-01-05T09:15:00Z'
-  }
-];
-
-// Simulate API delay
-const simulateDelay = (ms = 1000) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Mock authentication responses
-const generateMockToken = (user) => {
-  const payload = {
-    userId: user.id,
-    email: user.email,
-    roles: user.roles,
-    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
-  };
-  return btoa(JSON.stringify(payload)) + '.mock.signature';
-};
-
 export const authService = {
+  // normalize backend user shape to the UI shape expected across the app
+  _normalizeUser(raw) {
+    if (!raw) return null;
+    const name = raw.fullName || raw.name || '';
+    const role = raw.role || (Array.isArray(raw.roles) && raw.roles[0]) || undefined;
+    const roles = raw.roles || (role ? [role] : []);
+    return {
+      id: raw.id,
+      name,
+      fullName: name,
+      email: raw.email,
+      role,
+      roles,
+      profilePicture: raw.profilePicture,
+      emailVerified: raw.emailVerified,
+      lastLoginAt: raw.lastLoginAt,
+    };
+  },
   async login(credentials) {
     try {
       console.log('Login attempt for:', credentials.email);
       
-      // Simulate API call
-      await simulateDelay(1500);
+      const response = await api.post('/auth/login', credentials);
+      const { user, token, refreshToken } = response.data.data;
+      const normalizedUser = authService._normalizeUser(user);
       
-      // Find user in mock data
-      const user = mockUsers.find(u => u.email === credentials.email);
-      if (!user) {
-        throw new Error('Invalid email or password');
-      }
+      console.log('Login successful for user:', user.fullName);
       
-      // Mock password validation (in real app, this would be server-side)
-      if (credentials.password !== 'password123') {
-        throw new Error('Invalid email or password');
-      }
-      
-      const token = generateMockToken(user);
-      const refreshToken = 'mock.refresh.token.' + Date.now();
-      
-      // Store tokens
-      localStorage.setItem('token', token);
-      localStorage.setItem('refreshToken', refreshToken);
-      
-      console.log('Login successful for user:', user.name);
-      
-      return { user, token, refreshToken };
+      return { user: normalizedUser, token, refreshToken };
     } catch (error) {
       console.error('Login failed:', error.message);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Login failed');
     }
   },
 
-  async loginWithGoogle(googleToken) {
-    try {
-      console.log('Google OAuth login attempt');
-      
-      // Simulate API call
-      await simulateDelay(1200);
-      
-      // Mock Google user data
-      const mockGoogleUser = {
-        id: 4,
-        name: 'Google User',
-        email: 'google@example.com',
-        roles: ['participant'],
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
-        createdAt: new Date().toISOString()
-      };
-      
-      const token = generateMockToken(mockGoogleUser);
-      const refreshToken = 'google.refresh.token.' + Date.now();
-      
-      // Store tokens
-      localStorage.setItem('token', token);
-      localStorage.setItem('refreshToken', refreshToken);
-      
-      console.log('Google login successful for user:', mockGoogleUser.name);
-      
-      return { user: mockGoogleUser, token, refreshToken };
-    } catch (error) {
-      console.error('Google login failed:', error.message);
-      throw error;
-    }
-  },
+  async loginWithGoogle(idToken) {
+  try {
+    console.log('Google OAuth login attempt');
+
+    const response = await api.post('/auth/google', {
+      idToken,
+      role: 'Participant' // Default role, can be made configurable later
+    });
+
+    // Endpoint may return either { token, refreshToken } or { tokens: { accessToken, refreshToken } }
+    const data = response.data.data || {};
+    const accessToken = data.token || data.accessToken || data.tokens?.accessToken;
+    const refreshToken = data.refreshToken || data.tokens?.refreshToken;
+    const normalizedUser = authService._normalizeUser(data.user);
+
+    // Store tokens
+    if (accessToken) localStorage.setItem('token', accessToken);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
+    console.log('Google login successful for user:', normalizedUser?.fullName || normalizedUser?.name);
+
+    return { user: normalizedUser, token: accessToken, refreshToken };
+  } catch (error) {
+    console.error('Google login failed:', error.message);
+    throw new Error(error.response?.data?.message || 'Google login failed');
+  }
+},
 
   async register(userData) {
     try {
       console.log('Registration attempt for:', userData.email);
       
-      // Simulate API call
-      await simulateDelay(2000);
+      const response = await api.post('/auth/register', userData);
+      const { user, token, refreshToken } = response.data.data;
+      const normalizedUser = authService._normalizeUser(user);
       
-      // Check if user already exists
-      const existingUser = mockUsers.find(u => u.email === userData.email);
-      if (existingUser) {
-        throw new Error('User with this email already exists');
-      }
+      console.log('Registration successful for user:', user.fullName);
       
-      // Create new user
-      const newUser = {
-        id: mockUsers.length + 1,
-        name: userData.name,
-        email: userData.email,
-        roles: [userData.role],
-        avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face&${Date.now()}`,
-        createdAt: new Date().toISOString()
-      };
-      
-      // Add to mock users
-      mockUsers.push(newUser);
-      
-      const token = generateMockToken(newUser);
-      const refreshToken = 'new.refresh.token.' + Date.now();
-      
-      // Store tokens
-      localStorage.setItem('token', token);
-      localStorage.setItem('refreshToken', refreshToken);
-      
-      console.log('Registration successful for user:', newUser.name);
-      
-      return { user: newUser, token, refreshToken };
+      return { user: normalizedUser, token, refreshToken };
     } catch (error) {
       console.error('Registration failed:', error.message);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Registration failed');
     }
   },
 
@@ -214,31 +162,15 @@ export const authService = {
     try {
       console.log('Fetching current user');
       
-      // Simulate API call
-      await simulateDelay(800);
+      const response = await api.get('/auth/me');
+      const user = response.data?.data?.user || response.data?.user || response.data;
+      const normalizedUser = authService._normalizeUser(user);
       
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No token found');
-      }
-      
-      // Decode mock token (in real app, this would be server-side)
-      try {
-        const payload = JSON.parse(atob(token.split('.')[0]));
-        const user = mockUsers.find(u => u.id === payload.userId);
-        
-        if (!user) {
-          throw new Error('User not found');
-        }
-        
-        console.log('Current user fetched:', user.name);
-        return user;
-      } catch (decodeError) {
-        throw new Error('Invalid token');
-      }
+      console.log('Current user fetched:', normalizedUser?.fullName || normalizedUser?.name);
+      return normalizedUser;
     } catch (error) {
       console.error('Failed to get current user:', error.message);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to get current user');
     }
   },
 
@@ -246,30 +178,15 @@ export const authService = {
     try {
       console.log('Updating user profile');
       
-      // Simulate API call
-      await simulateDelay(1000);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No token found');
-      }
-      
-      // Find and update user
-      const payload = JSON.parse(atob(token.split('.')[0]));
-      const userIndex = mockUsers.findIndex(u => u.id === payload.userId);
-      
-      if (userIndex === -1) {
-        throw new Error('User not found');
-      }
-      
-      // Update user data
-      mockUsers[userIndex] = { ...mockUsers[userIndex], ...userData };
+      const response = await api.put('/auth/profile', userData);
+      const user = response.data?.data?.user || response.data?.user || response.data;
+      const normalizedUser = authService._normalizeUser(user);
       
       console.log('Profile updated successfully');
-      return mockUsers[userIndex];
+      return normalizedUser;
     } catch (error) {
       console.error('Profile update failed:', error.message);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Profile update failed');
     }
   },
 
@@ -277,23 +194,13 @@ export const authService = {
     try {
       console.log('Changing password');
       
-      // Simulate API call
-      await simulateDelay(1000);
-      
-      // Mock password change validation
-      if (passwordData.currentPassword !== 'password123') {
-        throw new Error('Current password is incorrect');
-      }
-      
-      if (passwordData.newPassword === passwordData.currentPassword) {
-        throw new Error('New password must be different from current password');
-      }
+      const response = await api.put('/auth/change-password', passwordData);
       
       console.log('Password changed successfully');
-      return { message: 'Password changed successfully' };
+      return response.data;
     } catch (error) {
       console.error('Password change failed:', error.message);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Password change failed');
     }
   },
 
@@ -301,20 +208,13 @@ export const authService = {
     try {
       console.log('Forgot password request for:', email);
       
-      // Simulate API call
-      await simulateDelay(1500);
-      
-      // Check if user exists
-      const user = mockUsers.find(u => u.email === email);
-      if (!user) {
-        throw new Error('No user found with this email address');
-      }
+      const response = await api.post('/auth/forgot-password', { email });
       
       console.log('Password reset email sent to:', email);
-      return { message: 'Password reset email sent successfully' };
+      return response.data;
     } catch (error) {
       console.error('Forgot password failed:', error.message);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Forgot password failed');
     }
   },
 
@@ -322,19 +222,13 @@ export const authService = {
     try {
       console.log('Resetting password');
       
-      // Simulate API call
-      await simulateDelay(1000);
-      
-      // Mock token validation
-      if (!token || token.length < 10) {
-        throw new Error('Invalid reset token');
-      }
+      const response = await api.post('/auth/reset-password', { token, password });
       
       console.log('Password reset successfully');
-      return { message: 'Password reset successfully' };
+      return response.data;
     } catch (error) {
       console.error('Password reset failed:', error.message);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Password reset failed');
     }
   },
 
@@ -342,23 +236,27 @@ export const authService = {
     try {
       console.log('Refreshing token');
       
-      // Simulate API call
-      await simulateDelay(500);
-      
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) {
         throw new Error('No refresh token found');
       }
       
-      // Mock token refresh
-      const newToken = 'refreshed.token.' + Date.now();
-      localStorage.setItem('token', newToken);
+      // Add a small delay to prevent rapid calls
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const response = await api.post('/auth/refresh', { refreshToken });
+      const { token, refreshToken: newRefreshToken } = response.data.data;
+      
+      localStorage.setItem('token', token);
+      if (newRefreshToken) {
+        localStorage.setItem('refreshToken', newRefreshToken);
+      }
       
       console.log('Token refreshed successfully');
-      return { token: newToken };
+      return { token, refreshToken: newRefreshToken };
     } catch (error) {
       console.error('Token refresh failed:', error.message);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Token refresh failed');
     }
   },
 
@@ -366,8 +264,7 @@ export const authService = {
     try {
       console.log('Logging out user');
       
-      // Simulate API call
-      await simulateDelay(500);
+      await api.post('/auth/logout');
       
       // Clear local storage
       localStorage.removeItem('token');
@@ -380,7 +277,7 @@ export const authService = {
       // Still clear local storage even if API call fails
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
-      throw error;
+      throw new Error(error.response?.data?.message || 'Logout failed');
     }
   },
 
@@ -390,10 +287,20 @@ export const authService = {
     if (!token) return false;
     
     try {
-      const payload = JSON.parse(atob(token.split('.')[0]));
-      const now = Math.floor(Date.now() / 1000);
-      return payload.exp > now;
-    } catch {
+      // Check if token is expired
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      
+      if (payload.exp && payload.exp < currentTime) {
+        // Token is expired, remove it
+        localStorage.removeItem('token');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      // Invalid token, remove it
+      localStorage.removeItem('token');
       return false;
     }
   },

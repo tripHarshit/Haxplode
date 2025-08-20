@@ -82,7 +82,7 @@ const TeamsList = ({ teams }) => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Teams</h2>
-          <p className="text-gray-600">Manage your hackathon teams and collaborations</p>
+          <p className="text-gray-600">Your registered hackathons and teams</p>
         </div>
         
         <div className="flex space-x-3">
@@ -92,13 +92,6 @@ const TeamsList = ({ teams }) => {
           >
             <UserPlusIcon className="h-4 w-4 mr-2" />
             Join Team
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Create Team
           </button>
         </div>
       </div>
@@ -130,7 +123,7 @@ const TeamsList = ({ teams }) => {
                 <div className="bg-blue-50 rounded-lg p-3">
                   <div className="flex items-center space-x-2 text-sm text-blue-800">
                     <DocumentTextIcon className="h-4 w-4" />
-                    <span className="font-medium">{team.hackathonTitle}</span>
+                    <span className="font-medium">{team.event?.name || team.hackathonTitle}</span>
                   </div>
                 </div>
 
@@ -163,25 +156,19 @@ const TeamsList = ({ teams }) => {
                   </div>
                   
                   <div className="flex -space-x-2">
-                    {team.members.slice(0, 4).map((member) => (
-                      <div
-                        key={member.id}
-                        className="w-8 h-8 rounded-full border-2 border-white overflow-hidden"
-                        title={`${member.name} - ${member.role}`}
-                      >
-                        <img
-                          src={member.avatar}
-                          alt={member.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                    {(team.members || []).slice(0, 6).map((member, idx) => (
+                      <img
+                        key={member.id || idx}
+                        className="inline-block h-8 w-8 rounded-full ring-2 ring-white"
+                        src={member.user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.user?.fullName || member.user?.email || 'U')}`}
+                        alt={member.user?.fullName || 'Member'}
+                        title={`${member.user?.fullName || member.user?.email || ''}${member.role ? ' • ' + member.role : ''}`}
+                      />
                     ))}
-                    {team.members.length > 4 && (
-                      <div className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center">
-                        <span className="text-xs text-gray-600 font-medium">
-                          +{team.members.length - 4}
-                        </span>
-                      </div>
+                    {(team.members || []).length > 6 && (
+                      <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-600 text-xs ring-2 ring-white">
+                        +{(team.members || []).length - 6}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -222,13 +209,6 @@ const TeamsList = ({ teams }) => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">No teams yet</h3>
           <p className="text-gray-600 mb-6">Create a team or join an existing one to get started</p>
           <div className="flex justify-center space-x-3">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Create Team
-            </button>
             <button
               onClick={() => setShowJoinModal(true)}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"

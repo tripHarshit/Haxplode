@@ -10,6 +10,7 @@ const {
   getEventScores,
   getJudgeProfile,
   updateJudgeProfile,
+  getJudgeAnalytics,
 } = require('../controllers/judgeController');
 
 const {
@@ -26,6 +27,7 @@ router.get('/profile', authMiddleware, authorizeJudge, getJudgeProfile);
 router.put('/profile', authMiddleware, authorizeJudge, updateJudgeProfile);
 router.get('/events', authMiddleware, authorizeJudge, getJudgeEvents);
 router.post('/score', authMiddleware, authorizeJudge, submitScore);
+router.get('/analytics', authMiddleware, authorizeJudge, getJudgeAnalytics);
 
 // Organizer only routes
 router.post('/assign', authMiddleware, authorizeOrganizer, assignJudgeToEvent);

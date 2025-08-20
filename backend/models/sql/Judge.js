@@ -21,7 +21,16 @@ const Judge = sequelize.define('Judge', {
     defaultValue: '[]',
     validate: {
       isValidExpertise(value) {
-        if (!Array.isArray(value)) {
+        // The value comes from the database as a string, so we need to parse it first
+        let parsedValue = value;
+        if (typeof value === 'string') {
+          try {
+            parsedValue = JSON.parse(value);
+          } catch (e) {
+            throw new Error('Expertise must be a valid JSON array');
+          }
+        }
+        if (!Array.isArray(parsedValue)) {
           throw new Error('Expertise must be an array');
         }
       },

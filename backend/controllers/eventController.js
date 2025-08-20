@@ -1,11 +1,16 @@
-const Event = require('../models/sql/Event');
-const User = require('../models/sql/User');
-const { Team, TeamMember } = require('../models/sql/Team');
+// Import via centralized index to ensure associations are registered
+const { Event, User, Team, TeamMember } = require('../models/sql');
+const { Registration } = require('../models/mongo');
 const { Op } = require('sequelize');
 
 // Create new event (Organizer only)
 const createEvent = async (req, res) => {
   try {
+    console.log('=== EVENT CREATION STARTED ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Current user ID:', req.currentUser.id);
+    console.log('Current user role:', req.currentUser.role);
+    
     const {
       name,
       theme,
@@ -25,7 +30,20 @@ const createEvent = async (req, res) => {
     } = req.body;
 
     const createdBy = req.currentUser.id;
+    
+    console.log('Extracted event data:');
+    console.log('- Name:', name);
+    console.log('- Theme:', theme);
+    console.log('- Description length:', description ? description.length : 'NULL');
+    console.log('- Max team size:', maxTeamSize);
+    console.log('- Max teams:', maxTeams);
+    console.log('- Registration fee:', registrationFee);
+    console.log('- Is public:', isPublic);
+    console.log('- Location:', location);
+    console.log('- Is virtual:', isVirtual);
 
+    console.log('About to create event in database...');
+    
     // Create event
     const event = await Event.create({
       name,
@@ -44,8 +62,17 @@ const createEvent = async (req, res) => {
       isVirtual,
       virtualMeetingLink,
       createdBy,
+      status: 'Published',
     });
+    
+    console.log('Event created successfully in database:');
+    console.log('- Event ID:', event.id);
+    console.log('- Event name:', event.name);
+    console.log('- Created at:', event.createdAt);
+    console.log('- Status:', event.status);
 
+    console.log('Sending success response...');
+    
     res.status(201).json({
       success: true,
       message: 'Event created successfully',
@@ -53,6 +80,8 @@ const createEvent = async (req, res) => {
         event,
       },
     });
+    
+    console.log('=== EVENT CREATION COMPLETED ===');
   } catch (error) {
     console.error('Create event error:', error);
     res.status(500).json({
@@ -277,9 +306,15 @@ const deleteEvent = async (req, res) => {
 // Get events by user (created by or participating in)
 const getEventsByUser = async (req, res) => {
   try {
+    console.log('=== GET EVENTS BY USER START ===');
     const userId = req.currentUser.id;
     const { page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
+    console.log('Requester userId:', userId, 'page:', page, 'limit:', limit);
+    try {
+      console.log('Event associations:', Object.keys(Event.associations || {}));
+      console.log('Team associations:', Object.keys(Team.associations || {}));
+    } catch {}
 
     // Get events created by user
     const createdEvents = await Event.findAndCountAll({
@@ -289,23 +324,46 @@ const getEventsByUser = async (req, res) => {
       offset: parseInt(offset),
     });
 
-    // Get events where user is a team member
-    const participatingEvents = await Event.findAll({
-      include: [
-        {
-          model: Team,
-          as: 'teams',
+    let participatingEvents = [];
+    if (req.currentUser.role !== 'Organizer') {
+      try {
+        // Find via team membership
+        const byTeamMembership = await Event.findAll({
           include: [
             {
-              model: TeamMember,
-              as: 'members',
-              where: { userId },
+              model: Team,
+              as: 'teams',
+              include: [
+                {
+                  model: TeamMember,
+                  as: 'members',
+                  where: { userId },
+                },
+              ],
             },
           ],
-        },
-      ],
-      order: [['createdAt', 'DESC']],
-    });
+          order: [['createdAt', 'DESC']],
+        });
+
+        // Find via individual Registration (Mongo)
+        const regs = await Registration.find({ userId, status: { $in: ['pending', 'confirmed'] } });
+        const registeredEventIds = regs.map(r => r.eventId);
+        const byRegistration = registeredEventIds.length
+          ? await Event.findAll({ where: { id: registeredEventIds } })
+          : [];
+
+        // Merge unique by id
+        const mapById = new Map();
+        for (const ev of byTeamMembership) mapById.set(ev.id, ev);
+        for (const ev of byRegistration) mapById.set(ev.id, ev);
+        participatingEvents = Array.from(mapById.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      } catch (assocErr) {
+        console.warn('Participating events query skipped due to association error:', assocErr?.message);
+        participatingEvents = [];
+      }
+    }
+
+    console.log('Created events count:', createdEvents.count, 'Participating events:', participatingEvents.length);
 
     res.status(200).json({
       success: true,
@@ -322,6 +380,7 @@ const getEventsByUser = async (req, res) => {
         participatingEvents,
       },
     });
+    console.log('=== GET EVENTS BY USER END ===');
   } catch (error) {
     console.error('Get events by user error:', error);
     res.status(500).json({
@@ -400,4 +459,55 @@ module.exports = {
   deleteEvent,
   getEventsByUser,
   changeEventStatus,
+  registerForEvent,
+  unregisterFromEvent,
 };
+
+// Register for event (Participant)
+async function registerForEvent(req, res) {
+  try {
+    const eventId = parseInt(req.params.id);
+    const userId = req.currentUser.id;
+    const event = await Event.findByPk(eventId);
+    if (!event) return res.status(404).json({ message: 'Event not found' });
+    // Capacity check
+    const regCount = await Registration.countDocuments({ eventId, status: { $in: ['pending', 'confirmed'] } });
+    const settings = event.settings || {};
+    const capacity = settings.registrationLimit || event.maxTeams * (event.maxTeamSize || 4) || 0;
+    if (capacity && regCount >= capacity) {
+      return res.status(400).json({ message: 'Registration capacity reached' });
+    }
+    // Individual-only / team-only enforcement
+    if (settings.allowIndividual === false) {
+      const existingTeamMember = await TeamMember.findOne({
+        where: { userId },
+        include: [{ model: Team, where: { eventId } }],
+      });
+      if (!existingTeamMember) {
+        return res.status(400).json({ message: 'Team membership required to register for this event' });
+      }
+    }
+    await Registration.findOneAndUpdate(
+      { eventId, userId },
+      { $setOnInsert: { status: 'confirmed', registeredAt: new Date() } },
+      { upsert: true, new: true }
+    );
+    return res.status(201).json({ message: 'Registered' });
+  } catch (error) {
+    console.error('Register for event error:', error);
+    return res.status(500).json({ message: 'Failed to register for event' });
+  }
+}
+
+// Unregister from event (Participant)
+async function unregisterFromEvent(req, res) {
+  try {
+    const eventId = parseInt(req.params.id);
+    const userId = req.currentUser.id;
+    await Registration.deleteOne({ eventId, userId });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Unregister from event error:', error);
+    return res.status(500).json({ message: 'Failed to unregister from event' });
+  }
+}

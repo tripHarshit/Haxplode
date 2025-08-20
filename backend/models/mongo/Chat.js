@@ -142,6 +142,7 @@ chatSchema.index({ eventId: 1, isQuestion: 1 });
 chatSchema.index({ eventId: 1, parentMessageId: 1 });
 chatSchema.index({ eventId: 1, isPinned: 1 });
 chatSchema.index({ parentMessageId: 1 });
+chatSchema.index({ message: 'text' });
 
 // Virtual for message age
 chatSchema.virtual('age').get(function() {

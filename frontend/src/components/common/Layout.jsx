@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Home, 
   Calendar, 
-  Users, 
   Trophy, 
   Settings, 
   LogOut, 
@@ -14,9 +13,11 @@ import {
   Bell
 } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
+import { useSocket } from '../../context/SocketContext';
 
-const Layout = ({ children }) => {
+const Layout = () => {
   const { user, logout, hasRole } = useAuth();
+  const { unreadCount, setUnreadCount, refreshUnreadCount } = useSocket();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,6 +41,27 @@ const Layout = ({ children }) => {
     return '/dashboard';
   };
 
+  const getProfileHref = () => {
+    if (hasRole('participant')) return '/participant/profile';
+    if (hasRole('organizer')) return '/organizer/profile';
+    if (hasRole('judge')) return '/judge/profile';
+    return '/profile';
+  };
+
+  const getSettingsHref = () => {
+    if (hasRole('participant')) return '/participant/settings';
+    if (hasRole('organizer')) return '/organizer/settings';
+    if (hasRole('judge')) return '/judge/settings';
+    return '/settings';
+  };
+
+  const getNotificationsHref = () => {
+    if (hasRole('participant')) return '/participant/notifications';
+    if (hasRole('organizer')) return '/organizer/notifications';
+    if (hasRole('judge')) return '/judge/notifications';
+    return '/notifications';
+  };
+
   const navigation = [
     { 
       name: 'Dashboard', 
@@ -48,21 +70,15 @@ const Layout = ({ children }) => {
     },
     ...(hasRole('participant') ? [
       { name: 'Hackathons', href: '/participant/hackathons', icon: Calendar },
-      { name: 'My Submissions', href: '/participant/submissions', icon: Trophy },
-      { name: 'My Teams', href: '/participant', icon: Users },
     ] : []),
     ...(hasRole('organizer') ? [
-      { name: 'My Hackathons', href: '/organizer', icon: Calendar },
       { name: 'Create Hackathon', href: '/organizer/create', icon: Calendar },
-      { name: 'Participants', href: '/organizer', icon: Users },
     ] : []),
     ...(hasRole('judge') ? [
       { name: 'Submissions', href: '/judge/submissions', icon: Trophy },
-      { name: 'Judging', href: '/judge', icon: Users },
-      { name: 'Leaderboard', href: '/judge', icon: Trophy },
     ] : []),
-    { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Profile', href: getProfileHref(), icon: User },
+    { name: 'Settings', href: getSettingsHref(), icon: Settings },
   ];
 
   const additionalLinks = [
@@ -225,21 +241,26 @@ const Layout = ({ children }) => {
                 
                 {/* Notifications */}
                 <Link
-                  to="/notifications"
-                  className="p-2 text-neutral-400 hover:text-neutral-500 dark:text-gray-500 dark:hover:text-gray-300"
+                  to={getNotificationsHref()}
+                  className="relative p-2 text-neutral-400 hover:text-neutral-500 dark:text-gray-500 dark:hover:text-gray-300"
+                  onClick={() => setUnreadCount(0)}
+                  title="Notifications"
                 >
                   <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 inline-flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800" />
+                  )}
                 </Link>
 
               {/* User menu */}
               <div className="flex items-center gap-x-4">
                 <div className="hidden sm:flex sm:flex-col sm:items-end">
-                  <p className="text-sm font-medium text-neutral-900 dark:text-gray-100">{user?.name}</p>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-gray-100">{user?.fullName || user?.name}</p>
                   <p className="text-xs text-neutral-500 dark:text-gray-400">{user?.email}</p>
                 </div>
                 <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
                   <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    {(user?.fullName || user?.name || 'U')?.charAt(0)?.toUpperCase()}
                   </span>
                 </div>
                 <button
@@ -257,7 +278,7 @@ const Layout = ({ children }) => {
         {/* Page content */}
         <main className="py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            {children}
+            <Outlet />
           </div>
         </main>
       </div>

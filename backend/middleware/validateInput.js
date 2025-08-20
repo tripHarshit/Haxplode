@@ -30,7 +30,7 @@ const validateInput = (schema) => {
 // Validation schemas
 const authSchemas = {
   signup: Joi.object({
-    fullName: Joi.string()
+    name: Joi.string()
       .min(2)
       .max(100)
       .required()
@@ -47,19 +47,19 @@ const authSchemas = {
         'any.required': 'Email is required',
       }),
     role: Joi.string()
-      .valid('Participant', 'Organizer', 'Judge')
+      .valid('participant', 'organizer', 'judge')
       .required()
       .messages({
-        'any.only': 'Role must be one of: Participant, Organizer, Judge',
+        'any.only': 'Role must be one of: participant, organizer, judge',
         'any.required': 'Role is required',
       }),
-    dob: Joi.object({
-      day: Joi.number().integer().min(1).max(31).required(),
-      month: Joi.number().integer().min(1).max(12).required(),
-      year: Joi.number().integer().min(1900).max(new Date().getFullYear()).required(),
-    }).required().messages({
-      'any.required': 'Date of birth is required',
-    }),
+    dateOfBirth: Joi.string()
+      .isoDate()
+      .required()
+      .messages({
+        'string.isoDate': 'Please provide a valid date of birth',
+        'any.required': 'Date of birth is required',
+      }),
     password: Joi.string()
       .min(8)
       .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
@@ -76,7 +76,7 @@ const authSchemas = {
         'any.only': 'Passwords do not match',
         'any.required': 'Please confirm your password',
       }),
-    acceptTerms: Joi.boolean()
+    termsAccepted: Joi.boolean()
       .valid(true)
       .required()
       .messages({
@@ -103,6 +103,20 @@ const authSchemas = {
         'any.required': 'Password is required',
       }),
     rememberMe: Joi.boolean().default(false),
+  }),
+
+  googleAuth: Joi.object({
+    idToken: Joi.string().required().messages({
+      'any.required': 'Google ID token is required',
+    }),
+    role: Joi.string().valid('Participant', 'Organizer', 'Judge').default('Participant'),
+  }),
+
+  updateProfile: Joi.object({
+    fullName: Joi.string().min(2).max(100).optional(),
+    bio: Joi.string().max(1000).allow('', null).optional(),
+    githubUsername: Joi.string().max(100).allow('', null).optional(),
+    linkedinProfile: Joi.string().uri().allow('', null).optional(),
   }),
 };
 
@@ -228,8 +242,9 @@ const submissionSchemas = {
         'string.pattern.base': 'Please provide a valid GitHub repository URL',
         'any.required': 'GitHub repository link is required',
       }),
-    docLink: Joi.string().uri().required(),
-    videoLink: Joi.string().uri().required(),
+    docLink: Joi.string().uri().optional().allow('', null),
+    videoLink: Joi.string().uri().optional().allow('', null),
+    siteLink: Joi.string().uri().optional().allow('', null),
     projectName: Joi.string().min(1).max(200).required(),
     projectDescription: Joi.string().min(10).max(2000).required(),
     technologies: Joi.array().items(Joi.string()).max(20).default([]),

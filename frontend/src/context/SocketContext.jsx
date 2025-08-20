@@ -1,66 +1,54 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { useNotifications } from './NotificationContext';
+import { hackathonService } from '../services/hackathonService';
+import { announcementService } from '../services/announcementService';
 
 const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, isAuthenticated } = useAuth();
+  const { showInfo } = useNotifications();
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      // In a real app, this would connect to your Socket.io server
-      // const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
-      //   auth: {
-      //     token: localStorage.getItem('token')
-      //   }
-      // });
-      
-      // For demo purposes, we'll simulate socket connection
-      const newSocket = {
-        on: (event, callback) => {
-          // Simulate real-time events
-          if (event === 'connect') {
-            setTimeout(() => callback(), 100);
-          } else if (event === 'team_update') {
-            // Simulate team updates every 30 seconds
-            setInterval(() => {
-              callback({
-                type: 'member_joined',
-                teamId: 1,
-                message: 'New team member joined',
-                timestamp: new Date().toISOString()
-              });
-            }, 30000);
-          } else if (event === 'event_announcement') {
-            // Simulate event announcements every 2 minutes
-            setInterval(() => {
-              callback({
-                type: 'deadline_reminder',
-                eventId: 1,
-                message: 'Submission deadline approaching',
-                timestamp: new Date().toISOString()
-              });
-            }, 120000);
-          }
-        },
-        emit: (event, data) => {
-          console.log('Socket emit:', event, data);
-        },
-        disconnect: () => {
-          console.log('Socket disconnected');
+    if (isAuthenticated && user && localStorage.getItem('token')) {
+      console.log('Socket: Attempting to connect with token:', localStorage.getItem('token') ? 'YES' : 'NO');
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || '';
+      const newSocket = io(socketUrl, {
+        auth: {
+          token: localStorage.getItem('token')
         }
-      };
+      });
 
       setSocket(newSocket);
       setIsConnected(true);
 
-      // Simulate connection
+      // Handle connection
       newSocket.on('connect', () => {
         console.log('Socket connected');
         setIsConnected(true);
+        // Join user-specific room for direct notifications
+        try {
+          if (user?.id) {
+            newSocket.emit('join_room', { roomType: 'user', roomId: user.id });
+          }
+        } catch {}
+      });
+
+      // Handle disconnection
+      newSocket.on('disconnect', () => {
+        console.log('Socket disconnected');
+        setIsConnected(false);
+      });
+
+      // Handle connection errors
+      newSocket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        setIsConnected(false);
       });
 
       // Listen for team updates
@@ -72,7 +60,34 @@ export const SocketProvider = ({ children }) => {
       // Listen for event announcements
       newSocket.on('event_announcement', (data) => {
         console.log('Event announcement received:', data);
-        // In a real app, this would show notifications or update the UI
+        try {
+          const title = data.title || 'New Announcement';
+          const msg = data.body || data.message || 'There is a new update.';
+          showInfo(`${title}: ${msg}`, 7000);
+          setUnreadCount((c) => c + 1);
+        } catch {}
+      });
+
+      // Listen for direct notifications
+      newSocket.on('notification', (data) => {
+        try {
+          const title = data.title || 'Notification';
+          const msg = data.body || data.message || '';
+          showInfo(`${title}${msg ? ': ' + msg : ''}`, 7000);
+          setUnreadCount((c) => c + 1);
+        } catch {}
+      });
+
+      // Listen for submission updates
+      newSocket.on('submission_update', (data) => {
+        console.log('Submission update received:', data);
+        // In a real app, this would update the UI or show notifications
+      });
+
+      // Listen for leaderboard updates
+      newSocket.on('leaderboard_update', (data) => {
+        console.log('Leaderboard update received:', data);
+        // In a real app, this would update the UI or show notifications
       });
 
       return () => {
@@ -80,6 +95,46 @@ export const SocketProvider = ({ children }) => {
         setSocket(null);
         setIsConnected(false);
       };
+    }
+  }, [isAuthenticated, user]);
+
+  // Join event rooms the user is participating in
+  useEffect(() => {
+    const joinEventRooms = async () => {
+      if (!socket || !isConnected || !user) return;
+      try {
+        const { participatingEvents } = await hackathonService.getUserEvents({ page: 1, limit: 100 });
+        const eventIds = (participatingEvents || []).map(e => e.id);
+        eventIds.forEach(eventId => {
+          socket.emit('join_room', { roomType: 'event', roomId: eventId });
+        });
+      } catch (err) {
+        console.warn('Failed to join event rooms:', err?.message || err);
+      }
+    };
+    joinEventRooms();
+  }, [socket, isConnected, user]);
+
+  // Refresh initial unread announcements count
+  const refreshUnreadCount = async () => {
+    if (!user) return;
+    try {
+      const { participatingEvents } = await hackathonService.getUserEvents({ page: 1, limit: 100 });
+      const eventIds = (participatingEvents || []).map(e => e.id);
+      const results = await Promise.all(
+        eventIds.map(eventId => announcementService.getEventAnnouncements(eventId))
+      );
+      const anns = results.flatMap(r => (r?.data?.announcements || r?.announcements || []));
+      const unread = anns.filter(a => !(Array.isArray(a.readBy) && a.readBy.some(rb => rb.userId === user.id))).length;
+      setUnreadCount(unread);
+    } catch (err) {
+      console.warn('Failed to refresh unread count:', err?.message || err);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      refreshUnreadCount();
     }
   }, [isAuthenticated, user]);
 
@@ -109,7 +164,10 @@ export const SocketProvider = ({ children }) => {
     socket,
     isConnected,
     emitTeamUpdate,
-    emitSubmissionUpdate
+    emitSubmissionUpdate,
+    unreadCount,
+    refreshUnreadCount,
+    setUnreadCount
   };
 
   return (

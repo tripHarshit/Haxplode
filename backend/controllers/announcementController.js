@@ -1,5 +1,7 @@
 const Announcement = require('../models/mongo/Announcement');
-const Event = require('../models/sql/Event');
+const { Event } = require('../models/sql');
+const { emitToRoom } = require('../utils/socket');
+const { audit } = require('../utils/audit');
 
 // Create announcement (Organizer only)
 const createAnnouncement = async (req, res) => {
@@ -53,6 +55,9 @@ const createAnnouncement = async (req, res) => {
       tags,
       status: scheduledFor && scheduledFor > new Date() ? 'Scheduled' : 'Published',
     });
+
+    audit(organizerId, 'announcement_created', { eventId, metadata: { title } });
+    emitToRoom(`event:${eventId}`, 'event_announcement', { eventId, type: 'announcement', message: title, title, body: message, timestamp: new Date().toISOString() });
 
     res.status(201).json({
       success: true,

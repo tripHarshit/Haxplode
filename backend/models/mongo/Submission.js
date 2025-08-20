@@ -23,22 +23,29 @@ const submissionSchema = new mongoose.Schema({
   },
   docLink: {
     type: String,
-    required: [true, 'Documentation link is required'],
     validate: {
       validator: function(v) {
-        return /^https?:\/\/.+/.test(v);
+        return !v || /^https?:\/\/.+/.test(v);
       },
-      message: 'Please provide a valid documentation URL',
+      message: 'Please provide a valid URL',
     },
   },
   videoLink: {
     type: String,
-    required: [true, 'Video link is required'],
     validate: {
       validator: function(v) {
-        return /^https?:\/\/.+/.test(v);
+        return !v || /^https?:\/\/.+/.test(v);
       },
       message: 'Please provide a valid video URL',
+    },
+  },
+  siteLink: {
+    type: String,
+    validate: {
+      validator: function(v) {
+        return !v || /^https?:\/\/.+/.test(v);
+      },
+      message: 'Please provide a valid URL',
     },
   },
   projectName: {
@@ -123,6 +130,17 @@ const submissionSchema = new mongoose.Schema({
     }],
     default: [],
   },
+  scores: {
+    type: [{
+      judgeId: Number,
+      roundId: String,
+      score: Number,
+      feedback: String,
+      criteria: Object,
+      submittedAt: { type: Date, default: Date.now },
+    }],
+    default: [],
+  },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -134,6 +152,7 @@ submissionSchema.index({ teamId: 1, eventId: 1 }, { unique: true });
 submissionSchema.index({ eventId: 1, status: 1 });
 submissionSchema.index({ submissionDate: -1 });
 submissionSchema.index({ status: 1 });
+submissionSchema.index({ projectName: 'text', projectDescription: 'text', technologies: 'text' });
 
 // Virtual for submission age
 submissionSchema.virtual('submissionAge').get(function() {

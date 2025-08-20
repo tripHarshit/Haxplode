@@ -1,6 +1,6 @@
 const Submission = require('../models/mongo/Submission');
-const { Team, TeamMember } = require('../models/sql/Team');
-const Event = require('../models/sql/Event');
+const { Team, TeamMember, Event } = require('../models/sql');
+const { audit } = require('../utils/audit');
 
 // Create submission (Participant only)
 const createSubmission = async (req, res) => {
@@ -11,6 +11,7 @@ const createSubmission = async (req, res) => {
       githubLink,
       docLink,
       videoLink,
+      siteLink,
       projectName,
       projectDescription,
       technologies,
@@ -58,11 +59,37 @@ const createSubmission = async (req, res) => {
       });
     }
 
-    if (event.status !== 'In Progress') {
+    // Allow submissions for events that are published, in progress, or have registration open
+    const allowedStatuses = ['Published', 'In Progress', 'Registration Open', 'Registration Closed'];
+    if (!allowedStatuses.includes(event.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Event is not in progress. Submissions are not open.',
+        message: `Event is not in a state that allows submissions. Current status: ${event.status}`,
       });
+    }
+
+    // Enforce deadline: endDate from timeline
+    try {
+      const timeline = event.timeline || {};
+      const endDate = timeline?.endDate ? new Date(timeline.endDate) : null;
+      if (endDate && Date.now() > endDate.getTime()) {
+        return res.status(400).json({ success: false, message: 'Submission deadline has passed.' });
+      }
+    } catch (_) {
+      // ignore timeline parsing issues
+    }
+
+    // Enforce team-only/individual-only
+    const eventSettings = event.settings || {};
+    if (eventSettings.allowIndividual === false) {
+      // must be in a team (already verified above), no extra action
+    }
+    if (eventSettings.allowTeams === false) {
+      // individual only: forbid team submissions
+      const memberCount = team.members.length;
+      if (memberCount > 1) {
+        return res.status(400).json({ success: false, message: 'This event does not allow team submissions' });
+      }
     }
 
     // Check if submission already exists for this team and event
@@ -81,6 +108,7 @@ const createSubmission = async (req, res) => {
       githubLink,
       docLink,
       videoLink,
+      siteLink,
       projectName,
       projectDescription,
       technologies,
@@ -90,6 +118,8 @@ const createSubmission = async (req, res) => {
       futurePlans,
       status: 'Submitted',
     });
+
+    audit(req.currentUser.id, 'submission_created', { eventId, teamId, submissionId: submission._id });
 
     res.status(201).json({
       success: true,
@@ -220,13 +250,34 @@ const updateSubmission = async (req, res) => {
       });
     }
 
-    // Check if event is still in progress
+    // Check if event is still in a state that allows submission updates
     const event = await Event.findByPk(submission.eventId);
-    if (event.status !== 'In Progress') {
+    const allowedStatuses = ['Published', 'In Progress', 'Registration Open', 'Registration Closed'];
+    if (!allowedStatuses.includes(event.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Event is not in progress. Submissions cannot be updated.',
+        message: `Event is not in a state that allows submission updates. Current status: ${event.status}`,
       });
+    }
+
+    // Enforce deadline based on event end date
+    try {
+      const timeline = event.timeline || {};
+      const endDate = timeline?.endDate ? new Date(timeline.endDate) : null;
+      if (endDate && Date.now() > endDate.getTime()) {
+        return res.status(400).json({ success: false, message: 'Submission deadline has passed. Cannot update.' });
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    // Validate against event criteria if present
+    if (event && Array.isArray(event.customCriteria) && req.body.criteriaScores) {
+      const critIds = new Set(event.customCriteria.map(c => c.id));
+      const invalid = Object.keys(req.body.criteriaScores).some(k => !critIds.has(k));
+      if (invalid) {
+        return res.status(400).json({ success: false, message: 'Invalid criteria keys' });
+      }
     }
 
     // Update submission
@@ -235,6 +286,8 @@ const updateSubmission = async (req, res) => {
       { ...updateData, lastModified: new Date() },
       { new: true, runValidators: true }
     );
+
+    audit(req.currentUser.id, 'submission_updated', { eventId: submission.eventId, teamId: submission.teamId, submissionId: submission._id });
 
     res.status(200).json({
       success: true,
@@ -272,9 +325,32 @@ const getUserSubmissions = async (req, res) => {
     const teamIds = userTeams.map(team => team.id);
 
     // Get submissions for user's teams
-    const submissions = await Submission.find({
+    const rawSubmissions = await Submission.find({
       teamId: { $in: teamIds },
     }).sort({ submissionDate: -1 });
+
+    // Enrich with event deadline and names
+    const teamIdToTeam = new Map(userTeams.map(t => [t.id, t]));
+    const eventIds = Array.from(new Set(rawSubmissions.map(s => s.eventId)));
+    const events = await Event.findAll({ where: { id: eventIds } });
+    const eventIdToEvent = new Map(events.map(ev => [ev.id, ev]));
+
+    const submissions = rawSubmissions.map(s => {
+      const event = eventIdToEvent.get(s.eventId);
+      const team = teamIdToTeam.get(s.teamId);
+      const timeline = event?.timeline || {};
+      const endDate = timeline?.endDate ? new Date(timeline.endDate) : null;
+      const deadline = endDate ? endDate.toISOString() : null;
+      const canEdit = endDate ? Date.now() < endDate.getTime() : event?.status === 'In Progress';
+      return {
+        ...s.toObject(),
+        eventName: event?.name,
+        hackathonTitle: event?.name,
+        teamName: team?.teamName || team?.name,
+        deadline,
+        canEdit,
+      };
+    });
 
     res.status(200).json({
       success: true,

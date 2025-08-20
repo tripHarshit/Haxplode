@@ -1,44 +1,44 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Crown, Star, Award, Building2, ExternalLink, Plus, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '../ui/Toast';
+import axios from 'axios';
 
 const SponsorShowcase = () => {
-  const [sponsors, setSponsors] = useState([
-    {
-      id: 1,
-      name: 'TechCorp',
-      logo: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=150&h=150&fit=crop',
-      tier: 'platinum',
-      website: 'https://techcorp.com',
-      description: 'Leading technology solutions provider',
-      contribution: '$50,000',
-      featured: true
-    },
-    {
-      id: 2,
-      name: 'InnovateLabs',
-      logo: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=150&h=150&fit=crop',
-      tier: 'gold',
-      website: 'https://innovatelabs.com',
-      description: 'Innovation and research company',
-      contribution: '$25,000',
-      featured: false
-    },
-    {
-      id: 3,
-      name: 'StartupHub',
-      logo: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150&h=150&fit=crop',
-      tier: 'silver',
-      website: 'https://startuphub.com',
-      description: 'Startup accelerator and incubator',
-      contribution: '$10,000',
-      featured: false
+  const [sponsors, setSponsors] = useState([]);
+  const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+  const api = axios.create({ baseURL: API_URL });
+  api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  });
+
+  const loadSponsors = async () => {
+    try {
+      const resp = await api.get('/sponsors');
+      setSponsors(resp.data?.sponsors || []);
+    } catch (e) {
+      error('Failed to load sponsors');
     }
-  ]);
+  };
+
+  useEffect(() => { loadSponsors(); }, []);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSponsor, setSelectedSponsor] = useState(null);
   const { success, error } = useToast();
+
+  const formatContribution = (value) => {
+    if (value == null) return '';
+    try {
+      const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
+      if (!Number.isFinite(numeric)) return String(value);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(numeric);
+    } catch {
+      return String(value);
+    }
+  };
 
   const getTierIcon = (tier) => {
     switch (tier) {
@@ -66,25 +66,54 @@ const SponsorShowcase = () => {
     }
   };
 
-  const handleAddSponsor = (sponsorData) => {
-    const newSponsor = {
-      id: Date.now(),
-      ...sponsorData
-    };
-    setSponsors(prev => [...prev, newSponsor]);
-    setShowAddModal(false);
-    success('Sponsor Added', 'New sponsor has been added successfully!');
+  const SponsorLogo = ({ src, alt, size = 'w-12 h-12' }) => {
+    const [errored, setErrored] = useState(false);
+    if (!src || errored) {
+      return (
+        <div className={`${size} rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700`}> 
+          <Building2 className="h-6 w-6 text-gray-400" />
+        </div>
+      );
+    }
+    return (
+      <img
+        src={src}
+        alt={alt}
+        className={`${size} rounded-lg object-cover border border-gray-200 dark:border-gray-700`}
+        onError={() => setErrored(true)}
+      />
+    );
   };
 
-  const handleDeleteSponsor = (id) => {
-    setSponsors(prev => prev.filter(sponsor => sponsor.id !== id));
-    success('Sponsor Removed', 'Sponsor has been removed successfully!');
+  const handleAddSponsor = async (sponsorData) => {
+    try {
+      await api.post('/sponsors', sponsorData);
+      await loadSponsors();
+      setShowAddModal(false);
+      success('Sponsor Added', 'New sponsor has been added successfully!');
+    } catch {
+      error('Failed to add sponsor');
+    }
   };
 
-  const handleToggleFeatured = (id) => {
-    setSponsors(prev => prev.map(sponsor => 
-      sponsor.id === id ? { ...sponsor, featured: !sponsor.featured } : sponsor
-    ));
+  const handleDeleteSponsor = async (id) => {
+    try {
+      await api.delete(`/sponsors/${id}`);
+      await loadSponsors();
+      success('Sponsor Removed', 'Sponsor has been removed successfully!');
+    } catch {
+      error('Failed to remove sponsor');
+    }
+  };
+
+  const handleToggleFeatured = async (id) => {
+    try {
+      const s = sponsors.find(x => x.id === id);
+      await api.put(`/sponsors/${id}`, { featured: !s?.featured });
+      await loadSponsors();
+    } catch {
+      error('Failed to update sponsor');
+    }
   };
 
   return (
@@ -111,32 +140,31 @@ const SponsorShowcase = () => {
           {sponsors.filter(s => s.featured).map((sponsor) => (
             <div
               key={sponsor.id}
-              className="flex-shrink-0 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-xl transition-all duration-300"
+              className="group relative flex-shrink-0 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-all duration-300"
             >
-              <div className="flex items-center space-x-3 mb-3">
-                <img
-                  src={sponsor.logo}
-                  alt={sponsor.name}
-                  className="w-12 h-12 rounded-lg object-cover"
-                />
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">{sponsor.name}</h4>
-                  <div className="flex items-center space-x-1">
+              <div className="flex items-center gap-3 mb-4">
+                <SponsorLogo src={sponsor.logo} alt={sponsor.name} size="w-14 h-14" />
+                <div className="min-w-0">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{sponsor.name}</h4>
+                  <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs border border-gray-200 dark:border-gray-700">
                     {getTierIcon(sponsor.tier)}
-                    <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{sponsor.tier}</span>
+                    <span className="capitalize text-gray-600 dark:text-gray-300">{sponsor.tier}</span>
                   </div>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{sponsor.description}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 h-12 overflow-hidden">{sponsor.description}</p>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">{sponsor.contribution}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTierColor(sponsor.tier)}`}>
+                  {formatContribution(sponsor.contribution)}
+                </span>
                 <a
                   href={sponsor.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"
                 >
-                  <ExternalLink className="h-4 w-4" />
+                  <span>Visit</span>
+                  <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
             </div>
@@ -149,59 +177,55 @@ const SponsorShowcase = () => {
         {sponsors.map((sponsor) => (
           <div
             key={sponsor.id}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-300"
+            className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all duration-300"
           >
             <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <img
-                  src={sponsor.logo}
-                  alt={sponsor.name}
-                  className="w-12 h-12 rounded-lg object-cover"
-                />
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">{sponsor.name}</h4>
-                  <div className="flex items-center space-x-1">
+              <div className="flex items-center gap-3 min-w-0">
+                <SponsorLogo src={sponsor.logo} alt={sponsor.name} />
+                <div className="min-w-0">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{sponsor.name}</h4>
+                  <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs border border-gray-200 dark:border-gray-700">
                     {getTierIcon(sponsor.tier)}
-                    <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{sponsor.tier}</span>
+                    <span className="capitalize text-gray-600 dark:text-gray-300">{sponsor.tier}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleToggleFeatured(sponsor.id)}
-                  className={`p-1 rounded ${sponsor.featured ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
+                  className={`p-1.5 rounded-md border border-transparent hover:border-yellow-400 ${sponsor.featured ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
                   title={sponsor.featured ? 'Remove from featured' : 'Add to featured'}
                 >
                   <Star className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setSelectedSponsor(sponsor)}
-                  className="p-1 text-gray-400 hover:text-blue-500"
+                  className="p-1.5 rounded-md text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   title="Edit sponsor"
                 >
                   <Edit className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => handleDeleteSponsor(sponsor.id)}
-                  className="p-1 text-gray-400 hover:text-red-500"
+                  className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                   title="Delete sponsor"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
-            
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{sponsor.description}</p>
-            
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 h-12 overflow-hidden">{sponsor.description}</p>
+
             <div className="flex items-center justify-between">
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTierColor(sponsor.tier)}`}>
-                {sponsor.contribution}
+                {formatContribution(sponsor.contribution)}
               </span>
               <a
                 href={sponsor.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm flex items-center space-x-1"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm inline-flex items-center gap-1"
               >
                 <span>Visit</span>
                 <ExternalLink className="h-3 w-3" />

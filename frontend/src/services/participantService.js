@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -70,9 +70,9 @@ export const participantService = {
     }
   },
 
-  async joinTeam(invitationCode) {
+  async joinTeam(invitationCodeOrReferral) {
     try {
-      const response = await api.post('/teams/join', { invitationCode });
+      const response = await api.post('/teams/join', { invitationCode: invitationCodeOrReferral });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to join team');
@@ -90,7 +90,9 @@ export const participantService = {
 
   async inviteTeamMember(teamId, email) {
     try {
-      const response = await api.post(`/teams/${teamId}/invite`, { email });
+      // Backend only needs an email shape but doesn't actually use it to send
+      // email right now; we request an invitation code for sharing.
+      const response = await api.post(`/teams/${teamId}/invite`, { email: email || 'invite@local' });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to invite team member');

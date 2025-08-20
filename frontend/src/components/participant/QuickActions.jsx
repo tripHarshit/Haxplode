@@ -4,7 +4,6 @@ import {
   MagnifyingGlassIcon, 
   UserGroupIcon, 
   RocketLaunchIcon,
-  CalendarIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
@@ -25,14 +24,6 @@ const QuickActions = ({ onActionClick }) => {
       action: 'browse-events'
     },
     {
-      id: 'create-team',
-      title: 'Create Team',
-      description: 'Form a new team for upcoming events',
-      icon: UserGroupIcon,
-      color: 'bg-green-500 hover:bg-green-600',
-      action: 'create-team'
-    },
-    {
       id: 'join-team',
       title: 'Join Team',
       description: 'Join an existing team with invitation code',
@@ -47,14 +38,6 @@ const QuickActions = ({ onActionClick }) => {
       icon: RocketLaunchIcon,
       color: 'bg-orange-500 hover:bg-orange-600',
       action: 'submit-project'
-    },
-    {
-      id: 'view-schedule',
-      title: 'View Schedule',
-      description: 'Check your upcoming event schedule',
-      icon: CalendarIcon,
-      color: 'bg-indigo-500 hover:bg-indigo-600',
-      action: 'view-schedule'
     },
     {
       id: 'manage-submissions',
@@ -76,11 +59,6 @@ const QuickActions = ({ onActionClick }) => {
 
     setIsLoading(true);
     try {
-      // Log navigation test
-      if (window.navigationTester) {
-        window.navigationTester.logButtonClick(action.title, 'quick_actions');
-      }
-      
       // Call the parent handler with the action
       if (onActionClick) {
         await onActionClick(action.action);

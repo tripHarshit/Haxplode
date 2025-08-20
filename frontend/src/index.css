@@ -39,6 +39,19 @@
     border: 2px solid #ffffff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
+
+  /* Dark mode slider styles */
+  .dark .slider::-webkit-slider-thumb {
+    background: #60A5FA;
+    border: 2px solid #1F2937;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .dark .slider::-moz-range-thumb {
+    background: #60A5FA;
+    border: 2px solid #1F2937;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
 }
 
 @layer base {

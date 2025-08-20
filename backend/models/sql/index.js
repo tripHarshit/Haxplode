@@ -3,6 +3,9 @@ const User = require('./User');
 const Event = require('./Event');
 const { Team, TeamMember } = require('./Team');
 const { Judge, JudgeEventAssignment } = require('./Judge');
+const Sponsor = require('./Sponsor');
+const Certificate = require('./Certificate');
+const { sequelize } = require('../../config/sqlDatabase');
 
 // Import associations
 require('./associations');
@@ -14,4 +17,7 @@ module.exports = {
   TeamMember,
   Judge,
   JudgeEventAssignment,
+  Sponsor,
+  Certificate,
+  sequelize,
 };
