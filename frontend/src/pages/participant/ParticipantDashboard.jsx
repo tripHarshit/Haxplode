@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
@@ -35,6 +36,8 @@ import { participantService } from '../../services/participantService';
 const ParticipantDashboard = () => {
   const { user } = useAuth();
   const { showError } = useNotifications();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState({
@@ -79,6 +82,22 @@ const ParticipantDashboard = () => {
 
     fetchDashboardData();
   }, []);
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      // Force a re-render when browser navigation occurs
+      setActiveTab(prev => prev);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Reset active tab when location changes (prevents caching issues)
+  useEffect(() => {
+    setActiveTab('overview');
+  }, [location.pathname]);
 
   const mapRegisteredHackathonsWithTeams = async (rawEvents = [], teams = []) => {
     const eventsById = new Map(rawEvents.map(ev => [ev.id, ev]));
@@ -128,7 +147,8 @@ const ParticipantDashboard = () => {
   const handleQuickAction = async (action) => {
     switch (action) {
       case 'browse-events':
-        setActiveTab('events');
+        // Use replace to prevent back button issues with trackpad gestures
+        navigate('/participant/hackathons', { replace: true });
         break;
       case 'join-team':
         setActiveTab('teams');
@@ -137,9 +157,6 @@ const ParticipantDashboard = () => {
       case 'submit-project':
         setActiveTab('submissions');
         // Could open submission form here
-        break;
-      case 'view-schedule':
-        setActiveTab('overview');
         break;
       case 'manage-submissions':
         setActiveTab('submissions');
@@ -172,7 +189,7 @@ const ParticipantDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" key={`dashboard-${activeTab}`}>
       {/* Page Header */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <div className="flex items-center justify-between">
@@ -234,7 +251,7 @@ const ParticipantDashboard = () => {
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <button 
-                    onClick={() => setActiveTab('events')}
+                    onClick={() => navigate('/participant/hackathons', { replace: true })}
                     className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
                   >
                     Browse Events

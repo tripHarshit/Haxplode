@@ -4,7 +4,6 @@ import {
   MagnifyingGlassIcon, 
   UserGroupIcon, 
   RocketLaunchIcon,
-  CalendarIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
@@ -39,14 +38,6 @@ const QuickActions = ({ onActionClick }) => {
       icon: RocketLaunchIcon,
       color: 'bg-orange-500 hover:bg-orange-600',
       action: 'submit-project'
-    },
-    {
-      id: 'view-schedule',
-      title: 'View Schedule',
-      description: 'Check your upcoming event schedule',
-      icon: CalendarIcon,
-      color: 'bg-indigo-500 hover:bg-indigo-600',
-      action: 'view-schedule'
     },
     {
       id: 'manage-submissions',

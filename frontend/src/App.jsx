@@ -5,6 +5,7 @@ import Register from "./pages/auth/RegisterPage";
 import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import ParticipantDashboard from "./pages/participant/ParticipantDashboard";
 import HackathonList from "./pages/participant/HackathonList";
 import HackathonDetails from "./pages/participant/HackathonDetails";
@@ -35,6 +36,7 @@ function App() {
           <Route index element={<ParticipantDashboard />} />
           <Route path="hackathons" element={<HackathonList />} />
           <Route path="hackathons/:id" element={<HackathonDetails />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
@@ -50,6 +52,7 @@ function App() {
         >
           <Route index element={<OrganizerDashboard />} />
           <Route path="create-hackathon" element={<CreateHackathon />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
@@ -64,6 +67,7 @@ function App() {
           }
         >
           <Route index element={<JudgeDashboard />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
