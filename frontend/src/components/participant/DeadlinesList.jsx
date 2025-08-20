@@ -19,13 +19,13 @@ const DeadlinesList = ({ deadlines }) => {
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high':
-        return 'border-l-red-500 bg-red-50 dark:bg-red-900/10';
+        return 'border-l-red-500 bg-red-50';
       case 'medium':
-        return 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/10';
+        return 'border-l-yellow-500 bg-yellow-50';
       case 'low':
-        return 'border-l-blue-500 bg-blue-50 dark:bg-blue-900/10';
+        return 'border-l-blue-500 bg-blue-50';
       default:
-        return 'border-l-gray-500 bg-gray-700/30';
+        return 'border-l-gray-500 bg-gray-50';
     }
   };
 
@@ -71,19 +71,19 @@ const DeadlinesList = ({ deadlines }) => {
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-2">
                 {getPriorityIcon(deadline.priority)}
-                <span className="text-sm font-medium text-slate-900 dark:text-white">
+                <span className="text-sm font-medium text-gray-900">
                   {deadline.title}
                 </span>
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">
+              <p className="text-sm text-gray-600 mb-2">
                 {deadline.description}
               </p>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500 dark:text-slate-400">
+                <span className="text-xs text-gray-500">
                   {format(new Date(deadline.deadline), 'MMM dd, yyyy')}
                 </span>
                 <span className={`text-xs font-medium ${
-                  isUrgent(deadline.deadline) ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-300'
+                  isUrgent(deadline.deadline) ? 'text-red-600' : 'text-gray-600'
                 }`}>
                   {getTimeRemaining(deadline.deadline)}
                 </span>

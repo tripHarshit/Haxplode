@@ -62,7 +62,7 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
   if (viewMode === 'list') {
     return (
       <div 
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
+        className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
         onClick={() => {
           // Log navigation test
           if (window.navigationTester) {
@@ -76,8 +76,8 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
           <div className="flex-1">
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">{event.title}</h3>
-                <p className="text-slate-600 dark:text-slate-300 mb-3 line-clamp-2">{event.description}</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{event.title}</h3>
+                <p className="text-gray-600 mb-3 line-clamp-2">{event.description}</p>
                 
                 <div className="flex items-center space-x-6 text-sm text-gray-500">
                   <div className="flex items-center space-x-2">
@@ -101,15 +101,15 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
               
               <div className="flex flex-col items-end space-y-3 ml-6">
                 {statusBadge}
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   {event.category}
                 </span>
               </div>
             </div>
             {/* Teammate avatars removed per requirement */}
             
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-700">
-              <span className="text-sm text-slate-500 dark:text-slate-400">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <span className="text-sm text-gray-500">
                 {(() => {
                   const deadline = parseValidDate(event.registrationDeadline);
                   return deadline
@@ -146,7 +146,7 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
   // Grid view
   return (
     <div 
-      className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
+      className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
       onClick={() => {
         // Log navigation test
         if (window.navigationTester) {
@@ -160,12 +160,12 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 line-clamp-2">{event.title}</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3">{event.description}</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">{event.title}</h3>
+            <p className="text-sm text-gray-600 line-clamp-3">{event.description}</p>
           </div>
           <div className="flex flex-col items-end space-y-2 ml-4">
             {statusBadge}
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               {event.category}
             </span>
           </div>
@@ -173,32 +173,32 @@ const EventCard = ({ event, viewMode, statusBadge, onClick, onEventUpdate, onReq
 
         {/* Event Details */}
         <div className="space-y-3">
-          <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
             {getLocationIcon()}
             <span className="truncate">{getLocationText()}</span>
           </div>
           
-          <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
             <CalendarIcon className="h-4 w-4" />
             <span>{format(new Date(event.startDate), 'MMM dd, yyyy')}</span>
           </div>
           
-          <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
             <UsersIcon className="h-4 w-4" />
             <span>{event.currentParticipants}/{event.maxParticipants} participants</span>
           </div>
           
-          <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
             <TrophyIcon className="h-4 w-4" />
-            <span className="font-medium text-green-600 dark:text-green-400">{event.prize}</span>
+            <span className="font-medium text-green-600">{event.prize}</span>
           </div>
           {/* Teammate avatars removed per requirement */}
         </div>
 
         {/* Footer */}
-        <div className="pt-4 border-t border-gray-100 dark:border-slate-700">
+        <div className="pt-4 border-t border-gray-100">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-gray-500">
               {(() => {
                 const deadline = parseValidDate(event.registrationDeadline);
                 return deadline
