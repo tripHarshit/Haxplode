@@ -1,70 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import { Crown, Star, Award, Building2, ExternalLink, Plus, Edit, Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Building2, Trash2 } from 'lucide-react';
 import { useToast } from '../ui/Toast';
-import axios from 'axios';
+import { hackathonService } from '../../services/hackathonService';
+import { sponsorService } from '../../services/sponsorService';
 
 const SponsorShowcase = () => {
   const [sponsors, setSponsors] = useState([]);
-  const API_URL = import.meta.env.VITE_API_URL || '/api';
-
-  const api = axios.create({ baseURL: API_URL });
-  api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-  });
+  const [events, setEvents] = useState([]);
 
   const loadSponsors = async () => {
     try {
-      const resp = await api.get('/sponsors');
-      setSponsors(resp.data?.sponsors || []);
+      const list = await sponsorService.list();
+      setSponsors(list);
     } catch (e) {
       error('Failed to load sponsors');
     }
   };
 
-  useEffect(() => { loadSponsors(); }, []);
-
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedSponsor, setSelectedSponsor] = useState(null);
-  const { success, error } = useToast();
-
-  const formatContribution = (value) => {
-    if (value == null) return '';
+  const loadEvents = async () => {
     try {
-      const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
-      if (!Number.isFinite(numeric)) return String(value);
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(numeric);
-    } catch {
-      return String(value);
+      const list = await hackathonService.getMyEvents({ limit: 200 });
+      setEvents(Array.isArray(list) ? list : []);
+    } catch (e) {
+      setEvents([]);
     }
   };
 
-  const getTierIcon = (tier) => {
-    switch (tier) {
-      case 'platinum':
-        return <Crown className="h-5 w-5 text-purple-500" />;
-      case 'gold':
-        return <Star className="h-5 w-5 text-yellow-500" />;
-      case 'silver':
-        return <Award className="h-5 w-5 text-gray-400" />;
-      default:
-        return <Building2 className="h-5 w-5 text-gray-500" />;
-    }
-  };
+  useEffect(() => { loadSponsors(); loadEvents(); }, []);
 
-  const getTierColor = (tier) => {
-    switch (tier) {
-      case 'platinum':
-        return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
-      case 'gold':
-        return 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white';
-      case 'silver':
-        return 'bg-gradient-to-r from-gray-400 to-gray-600 text-white';
-      default:
-        return 'bg-gray-500 text-white';
-    }
-  };
+  const { success, error } = useToast();
 
   const SponsorLogo = ({ src, alt, size = 'w-12 h-12' }) => {
     const [errored, setErrored] = useState(false);
@@ -85,20 +49,9 @@ const SponsorShowcase = () => {
     );
   };
 
-  const handleAddSponsor = async (sponsorData) => {
-    try {
-      await api.post('/sponsors', sponsorData);
-      await loadSponsors();
-      setShowAddModal(false);
-      success('Sponsor Added', 'New sponsor has been added successfully!');
-    } catch {
-      error('Failed to add sponsor');
-    }
-  };
-
   const handleDeleteSponsor = async (id) => {
     try {
-      await api.delete(`/sponsors/${id}`);
+      await sponsorService.remove(id);
       await loadSponsors();
       success('Sponsor Removed', 'Sponsor has been removed successfully!');
     } catch {
@@ -106,346 +59,84 @@ const SponsorShowcase = () => {
     }
   };
 
-  const handleToggleFeatured = async (id) => {
-    try {
-      const s = sponsors.find(x => x.id === id);
-      await api.put(`/sponsors/${id}`, { featured: !s?.featured });
-      await loadSponsors();
-    } catch {
-      error('Failed to update sponsor');
+  const eventNamesBySponsor = useMemo(() => {
+    if (!events?.length) return new Map();
+    const map = new Map();
+    for (const ev of events) {
+      const sponsorList = Array.isArray(ev.sponsors) ? ev.sponsors : [];
+      sponsorList.forEach((raw) => {
+        const key = String(typeof raw === 'string' ? raw : raw?.name || raw).trim().toLowerCase();
+        if (!key) return;
+        const list = map.get(key) || [];
+        list.push(ev.name || ev.title || `Event ${ev.id}`);
+        map.set(key, list);
+      });
     }
-  };
+    return map;
+  }, [events]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Sponsor Showcase</h2>
-          <p className="text-gray-600 dark:text-gray-400">Manage and showcase your event sponsors</p>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add Sponsor</span>
-        </button>
-      </div>
-
-      {/* Featured Sponsors Carousel */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Featured Sponsors</h3>
-        <div className="flex space-x-6 overflow-x-auto pb-4">
-          {sponsors.filter(s => s.featured).map((sponsor) => (
-            <div
-              key={sponsor.id}
-              className="group relative flex-shrink-0 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-all duration-300"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <SponsorLogo src={sponsor.logo} alt={sponsor.name} size="w-14 h-14" />
-                <div className="min-w-0">
-                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{sponsor.name}</h4>
-                  <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs border border-gray-200 dark:border-gray-700">
-                    {getTierIcon(sponsor.tier)}
-                    <span className="capitalize text-gray-600 dark:text-gray-300">{sponsor.tier}</span>
-                  </div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 h-12 overflow-hidden">{sponsor.description}</p>
-              <div className="flex items-center justify-between">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTierColor(sponsor.tier)}`}>
-                  {formatContribution(sponsor.contribution)}
-                </span>
-                <a
-                  href={sponsor.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"
-                >
-                  <span>Visit</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            </div>
-          ))}
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Sponsors</h2>
+          <p className="text-gray-600 dark:text-gray-400">All sponsors and their related hackathons</p>
         </div>
       </div>
 
-      {/* All Sponsors Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sponsors.map((sponsor) => (
-          <div
-            key={sponsor.id}
-            className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all duration-300"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <SponsorLogo src={sponsor.logo} alt={sponsor.name} />
-                <div className="min-w-0">
-                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{sponsor.name}</h4>
-                  <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs border border-gray-200 dark:border-gray-700">
-                    {getTierIcon(sponsor.tier)}
-                    <span className="capitalize text-gray-600 dark:text-gray-300">{sponsor.tier}</span>
+      <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-900/50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logo</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Website</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Related Hackathons</th>
+              <th className="px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {sponsors.map((s) => {
+              const key = String(s?.name || '').trim().toLowerCase();
+              const related = eventNamesBySponsor.get(key) || [];
+              return (
+                <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/30">
+                  <td className="px-4 py-3">
+                    <SponsorLogo src={s.logo} alt={s.name} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{s.name}</span>
                   </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
+                  </td>
+                  <td className="px-4 py-3">
+                    {s.website ? (
+                      <a href={s.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
+                        Visit
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                    {related.length ? related.join(', ') : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
                 <button
-                  onClick={() => handleToggleFeatured(sponsor.id)}
-                  className={`p-1.5 rounded-md border border-transparent hover:border-yellow-400 ${sponsor.featured ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
-                  title={sponsor.featured ? 'Remove from featured' : 'Add to featured'}
-                >
-                  <Star className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setSelectedSponsor(sponsor)}
-                  className="p-1.5 rounded-md text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                  title="Edit sponsor"
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleDeleteSponsor(sponsor.id)}
+                      onClick={() => handleDeleteSponsor(s.id)}
                   className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                   title="Delete sponsor"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
-              </div>
-            </div>
-
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 h-12 overflow-hidden">{sponsor.description}</p>
-
-            <div className="flex items-center justify-between">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTierColor(sponsor.tier)}`}>
-                {formatContribution(sponsor.contribution)}
-              </span>
-              <a
-                href={sponsor.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm inline-flex items-center gap-1"
-              >
-                <span>Visit</span>
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Add Sponsor Modal */}
-      {showAddModal && (
-        <AddSponsorModal
-          onClose={() => setShowAddModal(false)}
-          onAdd={handleAddSponsor}
-        />
-      )}
-
-      {/* Edit Sponsor Modal */}
-      {selectedSponsor && (
-        <EditSponsorModal
-          sponsor={selectedSponsor}
-          onClose={() => setSelectedSponsor(null)}
-          onUpdate={(updatedSponsor) => {
-            setSponsors(prev => prev.map(s => s.id === updatedSponsor.id ? updatedSponsor : s));
-            setSelectedSponsor(null);
-            success('Sponsor Updated', 'Sponsor information has been updated successfully!');
-          }}
-        />
-      )}
-    </div>
-  );
-};
-
-// Add Sponsor Modal Component
-const AddSponsorModal = ({ onClose, onAdd }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    logo: '',
-    tier: 'silver',
-    website: '',
-    description: '',
-    contribution: ''
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onAdd(formData);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Add New Sponsor</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="input"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Logo URL</label>
-            <input
-              type="url"
-              value={formData.logo}
-              onChange={(e) => setFormData(prev => ({ ...prev, logo: e.target.value }))}
-              className="input"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tier</label>
-            <select
-              value={formData.tier}
-              onChange={(e) => setFormData(prev => ({ ...prev, tier: e.target.value }))}
-              className="input"
-            >
-              <option value="platinum">Platinum</option>
-              <option value="gold">Gold</option>
-              <option value="silver">Silver</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Website</label>
-            <input
-              type="url"
-              value={formData.website}
-              onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-              className="input"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="input"
-              rows="3"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contribution</label>
-            <input
-              type="text"
-              value={formData.contribution}
-              onChange={(e) => setFormData(prev => ({ ...prev, contribution: e.target.value }))}
-              className="input"
-              placeholder="$10,000"
-              required
-            />
-          </div>
-          <div className="flex space-x-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-outline flex-1">
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary flex-1">
-              Add Sponsor
-            </button>
-          </div>
-        </form>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 };
-
-// Edit Sponsor Modal Component
-const EditSponsorModal = ({ sponsor, onClose, onUpdate }) => {
-  const [formData, setFormData] = useState(sponsor);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onUpdate(formData);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Edit Sponsor</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="input"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Logo URL</label>
-            <input
-              type="url"
-              value={formData.logo}
-              onChange={(e) => setFormData(prev => ({ ...prev, logo: e.target.value }))}
-              className="input"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tier</label>
-            <select
-              value={formData.tier}
-              onChange={(e) => setFormData(prev => ({ ...prev, tier: e.target.value }))}
-              className="input"
-            >
-              <option value="platinum">Platinum</option>
-              <option value="gold">Gold</option>
-              <option value="silver">Silver</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Website</label>
-            <input
-              type="url"
-              value={formData.website}
-              onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-              className="input"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="input"
-              rows="3"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contribution</label>
-            <input
-              type="text"
-              value={formData.contribution}
-              onChange={(e) => setFormData(prev => ({ ...prev, contribution: e.target.value }))}
-              className="input"
-              placeholder="$10,000"
-              required
-            />
-          </div>
-          <div className="flex space-x-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-outline flex-1">
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary flex-1">
-              Update Sponsor
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 export default SponsorShowcase;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import { useForceLightMode } from '../context/ThemeContext';
 import { 
   Code, 
@@ -18,6 +19,7 @@ const HomePage = () => {
   useForceLightMode();
   const { isAuthenticated, user, getRedirectPath } = useAuth();
   const navigate = useNavigate();
+  const { showWarning } = useNotifications();
 
   const features = [
     {
@@ -56,6 +58,15 @@ const HomePage = () => {
     } else {
       navigate('/dashboard');
     }
+  };
+
+  const handleBrowseHackathons = () => {
+    if (!isAuthenticated) {
+      showWarning('You need to log in first to browse hackathons.');
+      navigate('/login');
+      return;
+    }
+    navigate('/participant/hackathons');
   };
 
   return (
@@ -133,12 +144,12 @@ const HomePage = () => {
                   Browse Hackathons
                 </Link>
               ) : (
-                <Link
-                  to="/hackathons"
+                <button
+                  onClick={handleBrowseHackathons}
                   className="btn-outline text-lg px-8 py-3"
                 >
                   Browse Hackathons
-                </Link>
+                </button>
               )}
             </div>
           </div>

@@ -10,8 +10,10 @@ import {
   CheckCircleIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
+import { Crown } from 'lucide-react';
 import { format } from 'date-fns';
 import { hackathonService } from '../../services/hackathonService';
+import QnA from './QnA';
 
 const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -214,6 +216,19 @@ const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
                       })()}
                     </div>
                   )}
+                  {Array.isArray(event.sponsors) && event.sponsors.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-sm text-gray-700 font-medium flex items-center gap-2"><Crown className="h-4 w-4 text-yellow-600" /> Sponsors</div>
+                      <div className="flex flex-wrap gap-2">
+                        {event.sponsors.map((s, idx) => (
+                          <span key={`${String(s)}-${idx}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-50 text-yellow-800 border border-yellow-200">
+                            <Crown className="h-3 w-3" />
+                            {typeof s === 'string' ? s : s?.name || String(s)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {event.isRegistered && (
                     <div className="flex items-center space-x-3">
                       <CheckCircleIcon className="h-5 w-5 text-green-500" />
@@ -255,6 +270,11 @@ const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              {/* Q&A */}
+              <div>
+                <QnA eventId={event.id} />
               </div>
             </div>
           </div>

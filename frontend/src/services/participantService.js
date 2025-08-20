@@ -88,6 +88,15 @@ export const participantService = {
     }
   },
 
+  async deleteTeam(teamId) {
+    try {
+      const response = await api.delete(`/teams/${teamId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to delete team');
+    }
+  },
+
   async inviteTeamMember(teamId, email) {
     try {
       // Backend only needs an email shape but doesn't actually use it to send

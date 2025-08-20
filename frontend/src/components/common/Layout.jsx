@@ -71,7 +71,7 @@ const Layout = () => {
       { name: 'Hackathons', href: '/participant/hackathons', icon: Calendar },
     ] : []),
     ...(hasRole('organizer') ? [
-      { name: 'Create Hackathon', href: '/organizer/create', icon: Calendar },
+      { name: 'Create Hackathon', href: '/organizer/create-hackathon', icon: Calendar },
     ] : []),
     { name: 'Profile', href: getProfileHref(), icon: User },
     { name: 'Settings', href: getSettingsHref(), icon: Settings },

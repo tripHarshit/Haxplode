@@ -1,5 +1,6 @@
 const Chat = require('../models/mongo/Chat');
 const { Event, Team, TeamMember } = require('../models/sql');
+const { emitToRoom } = require('../utils/socket');
 
 // Create chat message
 const createChatMessage = async (req, res) => {
@@ -35,6 +36,7 @@ const createChatMessage = async (req, res) => {
         include: [
           {
             model: Team,
+            as: 'team',
             where: { eventId },
           },
         ],
@@ -58,6 +60,45 @@ const createChatMessage = async (req, res) => {
       parentMessageId,
       tags,
     });
+
+    // Emit real-time Q&A message to the event room
+    emitToRoom(`event:${eventId}`, 'qna_message', {
+      eventId,
+      message: chatMessage,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Also notify the event organizer directly
+    if (event.createdBy) {
+      emitToRoom(`user:${event.createdBy}`, 'notification', {
+        type: 'qna',
+        title: 'New Q&A message',
+        body: message,
+        eventId,
+        messageId: chatMessage._id?.toString?.() || chatMessage.id,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // If this is a reply to a question, notify the original asker
+    if (parentMessageId) {
+      try {
+        const parent = await Chat.findById(parentMessageId);
+        if (parent && parent.senderId && parent.senderId !== senderId) {
+          emitToRoom(`user:${parent.senderId}`, 'notification', {
+            type: 'qna_reply',
+            title: 'Reply to your question',
+            body: message,
+            eventId,
+            messageId: chatMessage._id?.toString?.() || chatMessage.id,
+            questionId: parent._id?.toString?.() || parent.id,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (e) {
+        // best effort
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -213,6 +254,13 @@ const updateChatMessage = async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    // Emit update
+    emitToRoom(`event:${chatMessage.eventId}`, 'qna_update', {
+      eventId: chatMessage.eventId,
+      message: updatedMessage,
+      timestamp: new Date().toISOString(),
+    });
+
     res.status(200).json({
       success: true,
       message: 'Message updated successfully',
@@ -258,6 +306,13 @@ const deleteChatMessage = async (req, res) => {
       deletedBy: req.currentUser.id,
     });
 
+    // Emit delete
+    emitToRoom(`event:${chatMessage.eventId}`, 'qna_delete', {
+      eventId: chatMessage.eventId,
+      messageId: id,
+      timestamp: new Date().toISOString(),
+    });
+
     res.status(200).json({
       success: true,
       message: 'Message deleted successfully',
@@ -290,6 +345,16 @@ const addReaction = async (req, res) => {
     // Add reaction
     await chatMessage.addReaction(userId, reactionType);
 
+    // Emit reaction add
+    emitToRoom(`event:${chatMessage.eventId}`, 'qna_reaction', {
+      eventId: chatMessage.eventId,
+      messageId: id,
+      action: 'added',
+      reactionType,
+      userId,
+      timestamp: new Date().toISOString(),
+    });
+
     res.status(200).json({
       success: true,
       message: 'Reaction added successfully',
@@ -321,6 +386,15 @@ const removeReaction = async (req, res) => {
     // Remove reaction
     await chatMessage.removeReaction(userId);
 
+    // Emit reaction remove
+    emitToRoom(`event:${chatMessage.eventId}`, 'qna_reaction', {
+      eventId: chatMessage.eventId,
+      messageId: id,
+      action: 'removed',
+      userId,
+      timestamp: new Date().toISOString(),
+    });
+
     res.status(200).json({
       success: true,
       message: 'Reaction removed successfully',
@@ -351,6 +425,14 @@ const markMessageAsRead = async (req, res) => {
 
     // Mark as read
     await chatMessage.markAsRead(userId);
+
+    // Emit read receipt
+    emitToRoom(`event:${chatMessage.eventId}`, 'qna_read', {
+      eventId: chatMessage.eventId,
+      messageId: id,
+      userId,
+      timestamp: new Date().toISOString(),
+    });
 
     res.status(200).json({
       success: true,
@@ -389,6 +471,14 @@ const togglePinMessage = async (req, res) => {
 
     // Toggle pin
     await chatMessage.togglePin(req.currentUser.id);
+
+    // Emit pin toggle
+    emitToRoom(`event:${chatMessage.eventId}`, 'qna_pin', {
+      eventId: chatMessage.eventId,
+      messageId: id,
+      isPinned: chatMessage.isPinned,
+      timestamp: new Date().toISOString(),
+    });
 
     res.status(200).json({
       success: true,
