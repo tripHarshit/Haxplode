@@ -132,7 +132,7 @@ export const authService = {
 
       // Existing user flow: tokens present under data or nested tokens
       const data = response.data.data || {};
-      const accessToken = data.token || data.accessToken || data.tokens?.accessToken;
+      const accessToken = data.token || data.accessToken || data.tokens?.accessToken || data.tokens?.token;
       const refreshToken = data.refreshToken || data.tokens?.refreshToken;
       const normalizedUser = authService._normalizeUser(data.user);
 
@@ -158,7 +158,7 @@ export const authService = {
         role,
       });
       const data = response.data.data || {};
-      const accessToken = data.token || data.accessToken || data.tokens?.accessToken;
+      const accessToken = data.token || data.accessToken || data.tokens?.accessToken || data.tokens?.token;
       const refreshToken = data.refreshToken || data.tokens?.refreshToken;
       const normalizedUser = authService._normalizeUser(data.user);
 

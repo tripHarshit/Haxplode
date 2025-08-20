@@ -21,7 +21,7 @@ const LoginPage = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
-  const { login, loginWithGoogle, error: authError, clearError, user, getRedirectPath, isAuthenticated, updateProfile, startGoogleSignIn } = useAuth();
+  const { login, loginWithGoogle, error: authError, clearError, user, getRedirectPath, isAuthenticated, startGoogleSignIn } = useAuth();
   const { success, error: showError } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,74 +52,7 @@ const LoginPage = () => {
     }
   }, [successMessage]);
 
-  // Initialize Google Sign-In (keep existing for compatibility)
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = initializeGoogleSignIn;
-    document.head.appendChild(script);
 
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
-  }, []);
-
-  const initializeGoogleSignIn = () => {
-    if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredentialResponse,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
-    }
-  };
-
-  const handleGoogleCredentialResponse = async (response) => {
-    try {
-      setIsGoogleLoading(true);
-      setErrors({});
-      
-      if (window.navigationTester) {
-        window.navigationTester.logAuthEvent('google_oauth_attempt', true);
-        window.navigationTester.logButtonClick('Continue with Google', 'login_page');
-      }
-
-      const result = await loginWithGoogle(response.credential);
-      
-      if (result?.requiresRegistration) {
-        // Navigation to registration handled in context
-        return;
-      }
-
-      if (result.success) {
-        setSuccessMessage('Google login successful! Redirecting...');
-        
-        if (window.navigationTester) {
-          window.navigationTester.logAuthEvent('google_oauth_attempt', false);
-        }
-
-        setTimeout(() => {
-          const redirectPath = getRedirectPath(user, from);
-          navigate(redirectPath, { replace: true });
-        }, 1500);
-      }
-    } catch (error) {
-      console.error('Google login failed:', error);
-      
-      if (window.navigationTester) {
-        window.navigationTester.logAuthEvent('google_oauth_attempt', false, { error: error.message });
-      }
-      
-      setErrors({ general: error.message || 'Google login failed' });
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -189,54 +122,51 @@ const LoginPage = () => {
     }
   };
 
-  // New handler using Firebase popup
+  // Firebase Google login implementation
   const handleGoogleLogin = async () => {
     try {
       setIsGoogleLoading(true);
+      setErrors({});
+      
       if (!isFirebaseConfigured || !auth || !googleProvider) {
-        if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-          window.google.accounts.id.prompt();
-          return;
-        }
-        throw new Error('Google Sign-In is not available. Missing Firebase configuration.');
+        throw new Error('Firebase Google authentication not configured');
       }
+
       const result = await signInWithPopup(auth, googleProvider);
-      // Extract Google ID token from OAuth credential (preferred for backend validation)
+      
+      // Extract Google ID token from OAuth credential
       const credential = GoogleAuthProvider.credentialFromResult(result);
-      let googleIdToken = credential?.idToken || null;
+      let googleIdToken = credential?.idToken;
+      
       if (!googleIdToken) {
-        // Fallback: Firebase user token (may not be accepted by backend expecting Google issuer)
-        googleIdToken = await getIdToken(result.user, true);
+        // Fallback: get ID token from Firebase user
+        googleIdToken = await result.user.getIdToken(true);
       }
+
+      if (!googleIdToken) {
+        throw new Error('Failed to get Google ID token');
+      }
+
+      console.log('Google ID token obtained, calling backend...');
+      
+      // Call backend with Google ID token
       const apiResult = await loginWithGoogle(googleIdToken);
+      
       if (apiResult?.requiresRegistration) {
-        // Navigation to /register/google is handled inside loginWithGoogle
+        // Navigation to registration handled in context
         return;
       }
-      if (apiResult.success) {
-        // Post-login name sync if needed
-        const displayName = (result.user?.displayName || '').trim();
-        try {
-          if (displayName && (!user?.name || /google user/i.test(user.name))) {
-            await updateProfile({ name: displayName });
-          }
-        } catch {}
 
+      if (apiResult.success) {
         setSuccessMessage('Google login successful! Redirecting...');
-        const redirectPath = getRedirectPath(user, from);
-        navigate(redirectPath, { replace: true });
-      } else {
-        setErrors({ general: apiResult.error || 'Failed to login with Google' });
+        setTimeout(() => {
+          const redirectPath = getRedirectPath(user, from);
+          navigate(redirectPath, { replace: true });
+        }, 1500);
       }
     } catch (err) {
       console.error('Firebase Google login failed:', err);
-      // Attempt fallback using Google Identity Services (works without popup blockers)
-      try {
-        await startGoogleSignIn();
-        return;
-      } catch (fallbackError) {
-        setErrors({ general: fallbackError.message || err.message || 'Google login failed' });
-      }
+      setErrors({ general: err.message || 'Google login failed' });
     } finally {
       setIsGoogleLoading(false);
     }

@@ -9,7 +9,6 @@ const {
   updateProfile,
   changePassword,
   logout,
-  loginWithGoogle,
   forgotPassword,
   resetPassword,
 } = require('../controllers/authController');

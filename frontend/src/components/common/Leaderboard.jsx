@@ -193,8 +193,6 @@ const Leaderboard = ({ events = [] }) => {
           Select a hackathon to view its leaderboard.
         </div>
       )}
-        </div>
-      )}
 
       {/* Leaderboard Table */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
