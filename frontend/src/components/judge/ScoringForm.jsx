@@ -184,13 +184,13 @@ const ScoringForm = ({
   const daysUntilDeadline = Math.ceil((new Date(submission.deadline) - new Date()) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-gray-900 dark:bg-opacity-75 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-gray-900">Review Submission</h3>
-            <p className="text-sm text-gray-600">{submission.projectTitle} - {submission.teamName}</p>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Review Submission</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{submission.projectTitle} - {submission.teamName}</p>
           </div>
           <button
             onClick={() => {
@@ -201,23 +201,23 @@ const ScoringForm = ({
               }
               onClose();
             }}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
 
         {/* Project Overview */}
-        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">Project Details</h4>
-              <p className="text-sm text-gray-600 line-clamp-3">{submission.description}</p>
+              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Project Details</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">{submission.description}</p>
               <div className="mt-2 flex flex-wrap gap-1">
                 {submission.technologies.slice(0, 5).map((tech, index) => (
                   <span
                     key={index}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
                   >
                     {tech}
                   </span>
@@ -225,13 +225,13 @@ const ScoringForm = ({
               </div>
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">Quick Links</h4>
+              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Quick Links</h4>
               <div className="space-y-2">
                 <a
                   href={submission.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-sm text-blue-600 hover:text-blue-800"
+                  className="block text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                 >
                   📁 GitHub Repository
                 </a>
@@ -239,7 +239,7 @@ const ScoringForm = ({
                   href={submission.demoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-sm text-blue-600 hover:text-blue-800"
+                  className="block text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                 >
                   🚀 Live Demo
                 </a>
@@ -248,7 +248,7 @@ const ScoringForm = ({
                     href={submission.videoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block text-sm text-blue-600 hover:text-blue-800"
+                    className="block text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                   >
                     🎥 Demo Video
                   </a>
@@ -260,10 +260,10 @@ const ScoringForm = ({
 
         {/* Deadline Warning */}
         {daysUntilDeadline <= 2 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4 mb-6">
             <div className="flex items-center space-x-2">
-              <ExclamationTriangleIcon className="h-5 w-5 text-orange-600" />
-              <span className="text-orange-800 font-medium">
+              <ExclamationTriangleIcon className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <span className="text-orange-800 dark:text-orange-200 font-medium">
                 Deadline approaching! {daysUntilDeadline} day{daysUntilDeadline !== 1 ? 's' : ''} remaining.
               </span>
             </div>
@@ -272,15 +272,15 @@ const ScoringForm = ({
 
         {/* Scoring Form */}
         <div className="space-y-6">
-          <h4 className="text-lg font-medium text-gray-900">Scoring Criteria</h4>
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">Scoring Criteria</h4>
           
           {scoringCriteria.map((criteria) => (
-            <div key={criteria.id} className="border border-gray-200 rounded-lg p-4">
+            <div key={criteria.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-700">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h5 className="font-medium text-gray-900">{criteria.name}</h5>
-                  <p className="text-sm text-gray-600">{criteria.description}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <h5 className="font-medium text-gray-900 dark:text-gray-100">{criteria.name}</h5>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{criteria.description}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Weight: {criteria.weight}% | Max Score: {criteria.maxScore}
                   </p>
                 </div>
@@ -288,14 +288,14 @@ const ScoringForm = ({
                   <div className={`text-2xl font-bold ${getScoreColor(scores[criteria.id] || 0)}`}>
                     {scores[criteria.id] || 0}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     {getScoreLabel(scores[criteria.id] || 0)}
                   </div>
                 </div>
               </div>
               
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm text-gray-600">
+                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
                   <span>0</span>
                   <span>5</span>
                   <span>10</span>
@@ -307,9 +307,9 @@ const ScoringForm = ({
                   step="0.5"
                   value={scores[criteria.id] || 0}
                   onChange={(e) => handleScoreChange(criteria.id, parseFloat(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
                 />
-                <div className="flex justify-between text-xs text-gray-500">
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                   <span>Poor</span>
                   <span>Average</span>
                   <span>Excellent</span>
@@ -317,23 +317,23 @@ const ScoringForm = ({
               </div>
               
               {errors[criteria.id] && (
-                <p className="mt-1 text-sm text-red-600">{errors[criteria.id]}</p>
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors[criteria.id]}</p>
               )}
             </div>
           ))}
 
           {/* Total Score Display */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h5 className="font-medium text-blue-900">Total Score</h5>
-                <p className="text-sm text-blue-600">Weighted average based on criteria importance</p>
+                <h5 className="font-medium text-blue-900 dark:text-blue-100">Total Score</h5>
+                <p className="text-sm text-blue-600 dark:text-blue-300">Weighted average based on criteria importance</p>
               </div>
               <div className="text-right">
-                <div className="text-3xl font-bold text-blue-600">
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                   {totalScore}/{maxScore}
                 </div>
-                <div className="text-sm text-blue-600">
+                <div className="text-sm text-blue-600 dark:text-blue-300">
                   {Math.round((totalScore / maxScore) * 100)}%
                 </div>
               </div>
@@ -342,38 +342,38 @@ const ScoringForm = ({
 
           {/* Feedback Section */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Detailed Feedback *
             </label>
             <textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={6}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.feedback ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                errors.feedback ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-gray-600'
               }`}
               placeholder="Provide detailed feedback on the project, including strengths, areas for improvement, and specific recommendations..."
             />
             {errors.feedback && (
-              <p className="mt-1 text-sm text-red-600">{errors.feedback}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.feedback}</p>
             )}
           </div>
 
           {/* Time Tracking */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex items-center justify-between text-sm text-gray-600">
+          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+            <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
               <span>Time spent on this review: {timeSpent} minute{timeSpent !== 1 ? 's' : ''}</span>
               <span>Deadline: {format(new Date(submission.deadline), 'MMM dd, yyyy HH:mm')}</span>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-between items-center pt-4 border-t">
+          <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-600">
             <div className="flex space-x-3">
               <button
                 onClick={handleSaveDraft}
                 disabled={isSaving}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
               >
                 <DocumentArrowDownIcon className="h-4 w-4 inline mr-1" />
                 {isSaving ? 'Saving...' : 'Save Draft'}
@@ -381,7 +381,7 @@ const ScoringForm = ({
               
               <button
                 onClick={() => {/* TODO: Implement flag functionality */}}
-                className="px-4 py-2 border border-red-300 rounded-md text-sm font-medium text-red-700 hover:bg-red-50"
+                className="px-4 py-2 border border-red-300 dark:border-red-600 rounded-md text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
               >
                 <FlagIcon className="h-4 w-4 inline mr-1" />
                 Flag for Review
@@ -391,7 +391,7 @@ const ScoringForm = ({
             <div className="flex space-x-3">
               <button
                 onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>
@@ -399,7 +399,7 @@ const ScoringForm = ({
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
               >
                 <PaperAirplaneIcon className="h-4 w-4 inline mr-1" />
                 {isSubmitting ? 'Submitting...' : 'Submit Review'}

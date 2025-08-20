@@ -3,6 +3,11 @@ const { User } = require('../models/sql');
 
 const authMiddleware = async (req, res, next) => {
   try {
+    // Allow CORS preflight requests to pass through without auth
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -43,6 +48,15 @@ const authMiddleware = async (req, res, next) => {
         });
       }
       
+      // If user is a judge, include judge profile
+      if (user.role === 'Judge') {
+        const { Judge } = require('../models/sql/Judge');
+        const judgeProfile = await Judge.findOne({ where: { userId: user.id } });
+        if (judgeProfile) {
+          user.judgeProfile = judgeProfile;
+        }
+      }
+      
       req.currentUser = user;
       next();
     } catch (error) {
@@ -72,6 +86,10 @@ const authMiddleware = async (req, res, next) => {
 // Role-based authorization middleware
 const authorize = (...roles) => {
   return (req, res, next) => {
+    // Allow CORS preflight requests without auth/role checks
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
     if (!req.currentUser) {
       return res.status(401).json({
         success: false,

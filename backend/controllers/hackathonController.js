@@ -144,7 +144,7 @@ async function createHackathon(req, res) {
 			maxTeamSize: settings.teamSizeMax || 4,
 			maxTeams: Math.ceil((maxParticipants || 100) / (settings.teamSizeMax || 4)),
 			isPublic: true,
-			status: 'Draft',
+			status: 'Published',
 			tags: tags || [],
 			coverImage: req.body.bannerUrl || null,
 			location: location || 'TBD',
@@ -210,18 +210,151 @@ async function updateHackathon(req, res) {
 // DELETE /hackathons/:id
 async function deleteHackathon(req, res) {
 	try {
+		console.log('Delete hackathon request:', { eventId: req.params.id, userId: req.currentUser.id, userRole: req.currentUser.role });
+		
 		const event = await Event.findByPk(req.params.id);
-		if (!event) return res.status(404).json({ message: 'Hackathon not found' });
+		if (!event) {
+			console.log('Event not found:', req.params.id);
+			return res.status(404).json({ message: 'Hackathon not found' });
+		}
+		
+		console.log('Found event:', { id: event.id, name: event.name, createdBy: event.createdBy });
+		
 		if (event.createdBy !== req.currentUser.id && req.currentUser.role !== 'Organizer') {
+			console.log('Access denied:', { eventCreator: event.createdBy, currentUser: req.currentUser.id, userRole: req.currentUser.role });
 			return res.status(403).json({ message: 'Forbidden' });
 		}
+		
+		// Get all dependencies for cascade deletion
+		const { Team, JudgeEventAssignment } = require('../models/sql');
+		const { Registration, Chat, AnalyticsEvent, TeamInvitation, FileMeta, Announcement, Submission } = require('../models/mongo');
+		
+		console.log('Starting cascade deletion of all event dependencies...');
+		
+		// Delete SQL dependencies first (due to foreign key constraints)
+		let teamCount = 0;
+		let judgeAssignmentCount = 0;
+		
+		try {
+			// Delete judge assignments
+			judgeAssignmentCount = await JudgeEventAssignment.count({ where: { eventId: req.params.id } });
+			if (judgeAssignmentCount > 0) {
+				console.log(`Deleting ${judgeAssignmentCount} judge assignments...`);
+				await JudgeEventAssignment.destroy({ where: { eventId: req.params.id } });
+			}
+			
+			// Get team IDs first, then delete team members, then teams
+			const teams = await Team.findAll({ where: { eventId: req.params.id }, attributes: ['id'] });
+			teamCount = teams.length;
+			
+			if (teamCount > 0) {
+				console.log(`Found ${teamCount} teams, deleting team members first...`);
+				const teamIds = teams.map(t => t.id);
+				
+				// Delete team members
+				const { TeamMember } = require('../models/sql');
+				const teamMemberCount = await TeamMember.count({ where: { teamId: { [require('sequelize').Op.in]: teamIds } } });
+				if (teamMemberCount > 0) {
+					console.log(`Deleting ${teamMemberCount} team members...`);
+					await TeamMember.destroy({ where: { teamId: { [require('sequelize').Op.in]: teamIds } } });
+				}
+				
+				// Delete teams
+				console.log(`Deleting ${teamCount} teams...`);
+				await Team.destroy({ where: { eventId: req.params.id } });
+			}
+		} catch (sqlErr) {
+			console.error('Failed to delete SQL dependencies:', sqlErr);
+			console.error('SQL Error details:', {
+				message: sqlErr.message,
+				stack: sqlErr.stack,
+				sql: sqlErr.sql
+			});
+			return res.status(500).json({ message: 'Failed to delete hackathon dependencies', error: sqlErr.message });
+		}
+		
+		// Delete MongoDB dependencies
+		try {
+			const eventId = parseInt(req.params.id);
+			
+			// Delete registrations
+			const registrationCount = await Registration.countDocuments({ eventId });
+			if (registrationCount > 0) {
+				console.log(`Deleting ${registrationCount} registrations...`);
+				await Registration.deleteMany({ eventId });
+			}
+			
+			// Delete submissions
+			const submissionCount = await Submission.countDocuments({ eventId });
+			if (submissionCount > 0) {
+				console.log(`Deleting ${submissionCount} submissions...`);
+				await Submission.deleteMany({ eventId });
+			}
+			
+			// Delete other dependencies
+			const chatCount = await Chat.countDocuments({ eventId });
+			if (chatCount > 0) {
+				console.log(`Deleting ${chatCount} chat messages...`);
+				await Chat.deleteMany({ eventId });
+			}
+			
+			const announcementCount = await Announcement.countDocuments({ eventId });
+			if (announcementCount > 0) {
+				console.log(`Deleting ${announcementCount} announcements...`);
+				await Announcement.deleteMany({ eventId });
+			}
+			
+			const teamInvitationCount = await TeamInvitation.countDocuments({ eventId });
+			if (teamInvitationCount > 0) {
+				console.log(`Deleting ${teamInvitationCount} team invitations...`);
+				await TeamInvitation.deleteMany({ eventId });
+			}
+			
+			const fileMetaCount = await FileMeta.countDocuments({ eventId });
+			if (fileMetaCount > 0) {
+				console.log(`Deleting ${fileMetaCount} file metadata...`);
+				await FileMeta.deleteMany({ eventId });
+			}
+			
+			const analyticsCount = await AnalyticsEvent.countDocuments({ eventId });
+			if (analyticsCount > 0) {
+				console.log(`Deleting ${analyticsCount} analytics events...`);
+				await AnalyticsEvent.deleteMany({ eventId });
+			}
+			
+			console.log(`Cascade deletion completed: ${teamCount} teams, ${judgeAssignmentCount} judge assignments, ${registrationCount} registrations, ${submissionCount} submissions, ${chatCount} chats, ${announcementCount} announcements, ${teamInvitationCount} team invitations, ${fileMetaCount} file metadata, ${analyticsCount} analytics events`);
+		} catch (mongoErr) {
+			console.error('Failed to delete MongoDB dependencies:', mongoErr);
+			console.error('MongoDB Error details:', {
+				message: mongoErr.message,
+				stack: mongoErr.stack,
+				code: mongoErr.code
+			});
+			return res.status(500).json({ message: 'Failed to delete hackathon dependencies', error: mongoErr.message });
+		}
+		
+		console.log('All dependencies removed, proceeding with event deletion...');
 		await event.destroy();
-		audit(req.currentUser.id, 'event_deleted', { eventId: event.id });
-		emitToRoom(`event:${event.id}`, 'event_announcement', { eventId: event.id, type: 'announcement', message: 'Event deleted', timestamp: new Date().toISOString() });
+		console.log('Event deleted successfully');
+		
+
+		
+		try {
+			audit(req.currentUser.id, 'event_deleted', { eventId: event.id });
+		} catch (auditErr) {
+			console.warn('Audit failed:', auditErr.message);
+		}
+		try {
+			emitToRoom(`event:${event.id}`, 'event_announcement', { eventId: event.id, type: 'announcement', message: 'Event deleted', timestamp: new Date().toISOString() });
+		} catch (socketErr) {
+			console.warn('Socket emit failed:', socketErr.message);
+		}
+		
 		return res.json({ ok: true });
 	} catch (err) {
 		console.error('Delete hackathon error:', err);
-		return res.status(500).json({ message: 'Failed to delete hackathon' });
+		console.error('Error stack:', err.stack);
+		return res.status(500).json({ message: 'Failed to delete hackathon', error: err.message });
 	}
 }
 

@@ -7,7 +7,7 @@ const { audit } = require('../utils/audit');
 // Assign judge to event (Organizer only)
 const assignJudgeToEvent = async (req, res) => {
   try {
-    const { judgeId, eventId, role = 'Secondary' } = req.body;
+    const { judgeId, eventId, role = 'Secondary', email } = req.body;
 
     // Check if event exists
     const event = await Event.findByPk(eventId);
@@ -26,18 +26,36 @@ const assignJudgeToEvent = async (req, res) => {
       });
     }
 
-    // Check if judge exists
-    const judge = await Judge.findByPk(judgeId);
+    // Resolve judge by id or email
+    let resolvedJudgeId = judgeId;
+    if (!resolvedJudgeId && email) {
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User with this email not found' });
+      }
+      // Ensure role is Judge
+      if (user.role !== 'Judge') {
+        // Optionally promote to Judge or create Judge profile
+        await user.update({ role: 'Judge' });
+      }
+      // Ensure Judge profile exists
+      let judgeProfile = await Judge.findOne({ where: { userId: user.id } });
+      if (!judgeProfile) {
+        // Provide defaults that satisfy model validation (expertise expects an array)
+        judgeProfile = await Judge.create({ userId: user.id, expertise: [] });
+      }
+      resolvedJudgeId = judgeProfile.id;
+    }
+
+    // Check if judge exists by id
+    const judge = await Judge.findByPk(resolvedJudgeId);
     if (!judge) {
-      return res.status(404).json({
-        success: false,
-        message: 'Judge not found',
-      });
+      return res.status(404).json({ success: false, message: 'Judge not found' });
     }
 
     // Check if assignment already exists
     const existingAssignment = await JudgeEventAssignment.findOne({
-      where: { judgeId, eventId },
+      where: { judgeId: resolvedJudgeId, eventId },
     });
 
     if (existingAssignment) {
@@ -49,13 +67,13 @@ const assignJudgeToEvent = async (req, res) => {
 
     // Create assignment
     const assignment = await JudgeEventAssignment.create({
-      judgeId,
+      judgeId: resolvedJudgeId,
       eventId,
       role,
     });
 
-    audit(req.currentUser.id, 'judge_assigned', { eventId, metadata: { judgeId, role } });
-    emitToRoom(`event:${eventId}`, 'judge_assignment', { judgeId, assignment: { eventId, role } });
+    audit(req.currentUser.id, 'judge_assigned', { eventId, metadata: { judgeId: resolvedJudgeId, role } });
+    emitToRoom(`event:${eventId}`, 'judge_assignment', { judgeId: resolvedJudgeId, assignment: { eventId, role } });
 
     res.status(201).json({
       success: true,
@@ -66,10 +84,16 @@ const assignJudgeToEvent = async (req, res) => {
     });
   } catch (error) {
     console.error('Assign judge to event error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     res.status(500).json({
       success: false,
       message: 'Failed to assign judge to event',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }
 };
@@ -174,7 +198,9 @@ const getJudgeEvents = async (req, res) => {
         {
           model: Event,
           as: 'event',
-          attributes: ['id', 'name', 'status', 'theme', 'timeline'],
+
+          attributes: ['id', 'name', 'description', 'timeline'],
+
         },
       ],
       order: [['assignedAt', 'DESC']],

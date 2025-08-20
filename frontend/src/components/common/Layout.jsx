@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   Home, 
   Calendar, 
-  Users, 
   Trophy, 
   Settings, 
   LogOut, 
@@ -77,8 +76,6 @@ const Layout = () => {
     ] : []),
     ...(hasRole('judge') ? [
       { name: 'Submissions', href: '/judge/submissions', icon: Trophy },
-      { name: 'Judging', href: '/judge', icon: Users },
-      { name: 'Leaderboard', href: '/judge', icon: Trophy },
     ] : []),
     { name: 'Profile', href: getProfileHref(), icon: User },
     { name: 'Settings', href: getSettingsHref(), icon: Settings },

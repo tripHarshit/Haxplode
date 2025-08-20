@@ -62,6 +62,7 @@ const createEvent = async (req, res) => {
       isVirtual,
       virtualMeetingLink,
       createdBy,
+      status: 'Published',
     });
     
     console.log('Event created successfully in database:');

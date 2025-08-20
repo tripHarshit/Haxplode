@@ -17,7 +17,8 @@ const Sponsor = sequelize.define('Sponsor', {
     allowNull: false,
   },
   logo: {
-    type: DataTypes.STRING(500),
+    // Use TEXT to allow data URLs or long CDN URLs
+    type: DataTypes.TEXT,
   },
   tier: {
     type: DataTypes.ENUM('platinum', 'gold', 'silver', 'bronze', 'community'),
