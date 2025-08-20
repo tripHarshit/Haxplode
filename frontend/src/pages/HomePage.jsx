@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { useForceLightMode } from '../context/ThemeContext';
+import ThemeToggle from '../components/ui/ThemeToggle';
 import { 
   Code, 
   Users, 
@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 
 const HomePage = () => {
-  useForceLightMode();
   const { isAuthenticated, user, getRedirectPath } = useAuth();
   const navigate = useNavigate();
   const { showWarning } = useNotifications();
@@ -79,6 +78,7 @@ const HomePage = () => {
               <h1 className="text-2xl font-black headline-gradient drop-shadow">Haxplode</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <ThemeToggle />
               {isAuthenticated ? (
                 <>
                   <span className="text-slate-700 dark:text-white">Welcome, {user?.fullName || user?.name}!</span>
@@ -115,14 +115,14 @@ const HomePage = () => {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="text-center">
             <div className="flex items-center justify-center mb-6 animate-float">
-              <Sparkles className="h-8 w-8 text-emerald-600 mr-2" />
-              <span className="text-emerald-600 font-bold tracking-wide">The Ultimate Hackathon Platform</span>
+              <Sparkles className="h-8 w-8 text-emerald-400 mr-2 drop-shadow" />
+              <span className="font-bold tracking-wide text-emerald-500 dark:text-emerald-400 drop-shadow">The Ultimate Hackathon Platform</span>
             </div>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white">
               Build, Compete, and{' '}
               <span className="headline-gradient">Innovate</span>
             </h1>
-            <p className="mt-6 text-lg leading-relaxed text-white max-w-3xl mx-auto">
+            <p className="mt-6 text-lg leading-relaxed text-white/90 dark:text-white max-w-3xl mx-auto">
               Join thousands of developers, designers, and innovators in the most exciting hackathons. 
               Create amazing projects, win prizes, and build your network.
             </p>

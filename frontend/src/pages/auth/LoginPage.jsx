@@ -4,12 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { isValidEmail } from '../../utils/helpers';
-import { useForceLightMode } from '../../context/ThemeContext';
+import ThemeToggle from '../../components/ui/ThemeToggle';
 import { signInWithPopup, getIdToken, GoogleAuthProvider } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from '../../services/firebase';
 
 const LoginPage = () => {
-  useForceLightMode();
+  // Allow theme toggle; no forced light mode
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -240,13 +240,16 @@ const LoginPage = () => {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <Link to="/" className="inline-block">
-            <h1 className="text-3xl font-bold text-gradient">Haxplode</h1>
-          </Link>
-          <h2 className="mt-6 text-3xl font-bold tracking-tight text-neutral-900">
+          <div className="flex items-center justify-center gap-3">
+            <Link to="/" className="inline-block">
+              <h1 className="text-3xl font-bold text-gradient">Haxplode</h1>
+            </Link>
+            <ThemeToggle />
+          </div>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
             Welcome back
           </h2>
-          <p className="mt-2 text-sm text-neutral-600">
+          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
             Sign in to your account to continue
           </p>
         </div>
@@ -264,10 +267,10 @@ const LoginPage = () => {
         {/* Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {errors.general && (
-            <div className="rounded-lg bg-error-50 border border-error-200 p-4">
+            <div className="rounded-lg bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-700 p-4">
               <div className="flex items-center">
                 <AlertCircle className="h-5 w-5 text-error-600 mr-2" />
-                <p className="text-sm text-error-700">{errors.general}</p>
+                <p className="text-sm text-error-700 dark:text-error-400">{errors.general}</p>
               </div>
             </div>
           )}
@@ -275,7 +278,7 @@ const LoginPage = () => {
           <div className="space-y-4">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Email address
               </label>
               <div className="relative">
@@ -309,7 +312,7 @@ const LoginPage = () => {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -339,9 +342,9 @@ const LoginPage = () => {
                   disabled={isLoading}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-neutral-400 hover:text-neutral-600" />
+                    <EyeOff className="h-5 w-5 text-neutral-400 hover:text-neutral-200" />
                   ) : (
-                    <Eye className="h-5 w-5 text-neutral-400 hover:text-neutral-600" />
+                    <Eye className="h-5 w-5 text-neutral-400 hover:text-neutral-200" />
                   )}
                 </button>
               </div>
@@ -404,7 +407,7 @@ const LoginPage = () => {
 
           {/* Sign up link */}
           <div className="text-center">
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-neutral-600 dark:text-neutral-300">
               Don't have an account?{' '}
               <Link
                 to="/register"

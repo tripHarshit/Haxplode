@@ -96,14 +96,14 @@ const TeamsList = ({ teams }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Teams</h2>
-          <p className="text-gray-600">Your registered hackathons and teams</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Teams</h2>
+          <p className="text-slate-600 dark:text-slate-300">Your registered hackathons and teams</p>
         </div>
         
         <div className="flex space-x-3">
           <button
             onClick={() => setShowJoinModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
           >
             <UserPlusIcon className="h-4 w-4 mr-2" />
             Join Team
@@ -117,18 +117,18 @@ const TeamsList = ({ teams }) => {
                       {currentTeams.map((team) => (
             <div
               key={team.id}
-              className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
+              className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-[1.02]"
               onClick={() => handleTeamClick(team)}
             >
               <div className="space-y-4">
                 {/* Team Header */}
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{team.name}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{team.description}</p>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{team.name}</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">{team.description}</p>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
-                    <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <button className="p-2 text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
                       <CogIcon className="h-4 w-4" />
                     </button>
                   </div>
@@ -146,16 +146,16 @@ const TeamsList = ({ teams }) => {
                 {team.progress && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Project Progress</span>
-                      <span className="font-medium text-gray-900">{team.progress.completion}%</span>
+                      <span className="text-slate-600 dark:text-slate-300">Project Progress</span>
+                      <span className="font-medium text-slate-900 dark:text-white">{team.progress.completion}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(team.progress.completion)}`}
                         style={{ width: `${team.progress.completion}%` }}
                       ></div>
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {team.progress.projectName}
                     </p>
                   </div>
@@ -164,8 +164,8 @@ const TeamsList = ({ teams }) => {
                 {/* Members */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Team Members</span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Team Members</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
                       {team.members.length}/{team.maxMembers}
                     </span>
                   </div>
@@ -181,7 +181,7 @@ const TeamsList = ({ teams }) => {
                       />
                     ))}
                     {(team.members || []).length > 6 && (
-                      <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-600 text-xs ring-2 ring-white">
+                      <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 text-xs ring-2 ring-white dark:ring-slate-800">
                         +{(team.members || []).length - 6}
                       </span>
                     )}
@@ -189,15 +189,15 @@ const TeamsList = ({ teams }) => {
                 </div>
 
                 {/* Team Actions */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-700">
+                  <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
                     <CalendarIcon className="h-4 w-4" />
                     <span>Created {format(new Date(team.createdAt), 'MMM dd')}</span>
                   </div>
                   
                   <div className="flex space-x-2">
                     <button 
-                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                      className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleTeamClick(team);
@@ -206,7 +206,7 @@ const TeamsList = ({ teams }) => {
                       <ChatBubbleLeftRightIcon className="h-4 w-4" />
                     </button>
                     <button 
-                      className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                      className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
                       onClick={(e) => handleDeleteTeam(team.id, e)}
                       disabled={isDeleting}
                     >
@@ -220,13 +220,13 @@ const TeamsList = ({ teams }) => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <UserGroupIcon className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No teams yet</h3>
-          <p className="text-gray-600 mb-6">Create a team or join an existing one to get started</p>
+          <UserGroupIcon className="h-12 w-12 mx-auto text-gray-300 dark:text-slate-600 mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">No teams yet</h3>
+          <p className="text-slate-600 dark:text-slate-300 mb-6">Create a team or join an existing one to get started</p>
           <div className="flex justify-center space-x-3">
             <button
               onClick={() => setShowJoinModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
             >
               <UserPlusIcon className="h-4 w-4 mr-2" />
               Join Team

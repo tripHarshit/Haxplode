@@ -90,13 +90,13 @@ const Layout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-gray-900 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 transition-colors duration-300">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-neutral-900/80" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-xl transition-colors duration-300">
           <div className="flex h-16 items-center justify-between px-6 border-b border-neutral-200 dark:border-gray-700">
-            <h1 className="text-xl font-bold text-gradient">Haxplode</h1>
+            <h1 className="text-xl font-bold text-emerald-500">Haxplode</h1>
             <button
               onClick={() => setSidebarOpen(false)}
               className="text-neutral-500 hover:text-neutral-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -119,7 +119,7 @@ const Layout = () => {
                 }}
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg mb-2 transition-colors ${
                   isActive(item.href)
-                    ? 'bg-primary-50 text-primary-700 border border-primary-200 dark:bg-primary-900 dark:text-primary-300 dark:border-primary-700'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900 dark:text-emerald-300 dark:border-emerald-700'
                     : 'text-neutral-700 hover:bg-neutral-100 dark:text-gray-300 dark:hover:bg-gray-700'
                 }`}
               >
@@ -155,7 +155,7 @@ const Layout = () => {
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-neutral-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 pb-4 transition-colors duration-300">
           <div className="flex h-16 shrink-0 items-center">
-            <h1 className="text-xl font-bold text-gradient">Haxplode</h1>
+            <h1 className="text-xl font-bold text-emerald-500">Haxplode</h1>
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -174,7 +174,7 @@ const Layout = () => {
                         }}
                         className={`flex items-center px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
                           isActive(item.href)
-                            ? 'bg-primary-50 text-primary-700 border border-primary-200 dark:bg-primary-900 dark:text-primary-300 dark:border-primary-700'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900 dark:text-emerald-300 dark:border-emerald-700'
                             : 'text-neutral-700 hover:bg-neutral-100 dark:text-gray-300 dark:hover:bg-gray-700'
                         }`}
                       >

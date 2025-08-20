@@ -14,13 +14,12 @@ import { Crown } from 'lucide-react';
 const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSubmissions, onEdit, onAddJudge, onDelete, onManageSponsors, isDeleting }) => {
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'upcoming': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      case 'draft': return 'bg-yellow-100 text-yellow-800';
-      case 'full': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active':
+        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
+      case 'cancelled':
+        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+      default:
+        return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
     }
   };
 
@@ -37,11 +36,11 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
   };
 
   const getProgressColor = (current, max) => {
-    if (!max || max <= 0) return 'bg-green-500';
+    if (!max || max <= 0) return 'bg-emerald-500';
     const percentage = (current / max) * 100;
     if (percentage >= 90) return 'bg-red-500';
-    if (percentage >= 75) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (percentage >= 75) return 'bg-amber-500';
+    return 'bg-emerald-500';
   };
 
   const getProgressWidth = (current, max) => {
@@ -58,20 +57,20 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
     : 0;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
       {/* Header with Status Badge */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-6 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-start justify-between mb-3">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">{event.title || event.name}</h3>
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white line-clamp-2">{event.title || event.name}</h3>
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
             {getStatusText(event.status)}
           </span>
         </div>
         
-        <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-4">{event.description}</p>
+        <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-2 mb-4">{event.description}</p>
         
         {/* Event Details */}
-        <div className="grid grid-cols-2 gap-4 text-sm text-gray-500 dark:text-gray-400">
+        <div className="grid grid-cols-2 gap-4 text-sm text-slate-600 dark:text-slate-300">
           <div className="flex items-center space-x-2">
             <CalendarIcon className="h-4 w-4" />
             <span>
@@ -94,19 +93,19 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
       </div>
 
       {/* Participant Progress */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-6 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
-            <UsersIcon className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Participants</span>
+            <UsersIcon className="h-4 w-4 text-slate-500" />
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Participants</span>
           </div>
-          <span className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="text-sm text-slate-600 dark:text-slate-300">
             {currentParticipants}/{maxParticipants}
           </span>
         </div>
         
         {/* Progress Bar */}
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
           <div
             className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(currentParticipants, maxParticipants)}`}
             style={{ width: `${getProgressWidth(currentParticipants, maxParticipants)}%` }}
@@ -114,7 +113,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
         </div>
         
         {/* Progress Text */}
-        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mt-1">
           <span>{percentFilled}% filled</span>
           {maxParticipants > 0 && currentParticipants >= maxParticipants && (
             <span className="text-red-600 font-medium">Event Full!</span>
@@ -123,31 +122,31 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
       </div>
 
       {/* Event Statistics */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Event Statistics</h4>
+      <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Event Statistics</h4>
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-emerald-600">
               {Math.ceil(event.currentParticipants / 3)}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Teams Formed</div>
+            <div className="text-xs text-slate-600 dark:text-slate-300">Teams Formed</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-emerald-600">
               {Math.floor(event.currentParticipants * 0.3)}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Submissions</div>
+            <div className="text-xs text-slate-600 dark:text-slate-300">Submissions</div>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="p-6">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Actions</h4>
+        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Quick Actions</h4>
         <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => onViewParticipants(event.id)}
-            className="flex flex-col items-center p-3 text-gray-600 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+            className="flex flex-col items-center p-3 text-slate-600 dark:text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors duration-200"
             title="View Participants"
           >
             <UsersIcon className="h-5 w-5 mb-1" />
@@ -156,7 +155,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
           
           <button
             onClick={() => onSendMessage(event.id)}
-            className="flex flex-col items-center p-3 text-gray-600 dark:text-gray-300 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
+            className="flex flex-col items-center p-3 text-slate-600 dark:text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors duration-200"
             title="Send Message"
           >
             <ChatBubbleLeftRightIcon className="h-5 w-5 mb-1" />
@@ -165,7 +164,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
           
           <button
             onClick={() => onViewSubmissions(event.id)}
-            className="flex flex-col items-center p-3 text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200"
+            className="flex flex-col items-center p-3 text-slate-600 dark:text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors duration-200"
             title="View Submissions"
           >
             <DocumentTextIcon className="h-5 w-5 mb-1" />
@@ -174,7 +173,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
 
           <button
             onClick={() => onEdit?.(event)}
-            className="flex flex-col items-center p-3 text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors duration-200"
+            className="flex flex-col items-center p-3 text-slate-600 dark:text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors duration-200"
             title="Edit Event"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 mb-1">
@@ -186,7 +185,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
 
           <button
             onClick={() => onAddJudge?.(event)}
-            className="flex flex-col items-center p-3 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors duration-200"
+            className="flex flex-col items-center p-3 text-slate-600 dark:text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors duration-200"
             title="Add Judge"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 mb-1">
@@ -199,7 +198,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
 
           <button
             onClick={() => onManageSponsors?.(event)}
-            className="flex flex-col items-center p-3 text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition-colors duration-200"
+            className="flex flex-col items-center p-3 text-slate-600 dark:text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors duration-200"
             title="Manage Sponsors"
           >
             <Crown className="h-5 w-5 mb-1" />
@@ -211,13 +210,13 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
             disabled={isDeleting}
             className={`flex flex-col items-center p-3 rounded-lg transition-colors duration-200 ${
               isDeleting 
-                ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                : 'text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                ? 'opacity-60 cursor-not-allowed bg-red-500 text-white' 
+                : 'bg-red-500 hover:bg-red-600 text-white'
             }`}
             title={isDeleting ? 'Deleting...' : 'Delete Event'}
           >
             {isDeleting ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600 mb-1"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mb-1"></div>
             ) : (
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 mb-1">
                 <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.149-2.365.2A.75.75 0 014.5 5.5v.75h-.75A2.75 2.75 0 001 9v6.75A2.75 2.75 0 003.75 18.5h12.5A2.75 2.75 0 0021 15.75V9A2.75 2.75 0 0018.25 6.25h-.75V5.5a.75.75 0 00-.885-.75A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM4.5 6.5V9A1.25 1.25 0 003.75 10.25h12.5A1.25 1.25 0 0017.25 9V6.5H4.5z" clipRule="evenodd" />
@@ -229,15 +228,15 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 rounded-b-lg">
+      <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900 rounded-b-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Prize Pool:</span>
-            <span className="text-sm text-green-600 font-semibold">{Array.isArray(event.prizes) ? event.prizes.join(', ') : (event.prize || '')}</span>
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Prize Pool:</span>
+            <span className="text-sm text-emerald-600 font-semibold">{Array.isArray(event.prizes) ? event.prizes.join(', ') : (event.prize || '')}</span>
           </div>
           
           {event.currentParticipants >= event.maxParticipants * 0.9 && (
-            <div className="flex items-center space-x-1 text-orange-600">
+            <div className="flex items-center space-x-1 text-amber-600">
               <ExclamationTriangleIcon className="h-4 w-4" />
               <span className="text-xs font-medium">Filling Fast</span>
             </div>
