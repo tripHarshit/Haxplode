@@ -93,7 +93,7 @@ const HomePage = () => {
                 <>
                   <Link
                     to="/login"
-                    className="btn-ghost"
+                    className="btn-ghost-invert"
                   >
                     Sign In
                   </Link>
@@ -139,14 +139,14 @@ const HomePage = () => {
               {isAuthenticated ? (
                 <Link
                   to="/participant/hackathons"
-                  className="btn-secondary text-lg px-8 py-3"
+                  className="btn-secondary-invert text-lg px-8 py-3"
                 >
                   Browse Hackathons
                 </Link>
               ) : (
                 <button
                   onClick={handleBrowseHackathons}
-                  className="btn-secondary text-lg px-8 py-3"
+                  className="btn-secondary-invert text-lg px-8 py-3"
                 >
                   Browse Hackathons
                 </button>

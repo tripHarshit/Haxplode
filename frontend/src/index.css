@@ -81,12 +81,24 @@
     @apply btn border-2 border-slate-700 text-slate-700 bg-transparent hover:bg-slate-700 hover:text-white;
   }
   
+  /* Secondary button for dark/hero backgrounds */
+  .btn-secondary-invert {
+    @apply btn border-2 border-white text-white/90 bg-transparent hover:bg-white hover:text-slate-900;
+  }
+  
   .btn-outline {
     @apply btn border-2 border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
   }
   
   .btn-ghost {
     @apply btn text-slate-700 hover:bg-slate-100;
+  }
+  
+  .btn-ghost-invert {
+    @apply btn text-slate-700 hover:bg-slate-100;
+  }
+  .dark .btn-ghost-invert {
+    @apply text-white/90 border border-white/20 hover:bg-white/10;
   }
   
   .input {
@@ -129,9 +141,9 @@
     @apply bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900;
   }
 
-  /* Navigation glass effect */
+  /* Navigation glass effect - soften border in dark mode */
   .nav-glass {
-    @apply bg-white/80 dark:bg-slate-900/60 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-lg;
+    @apply bg-white/80 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/60 shadow-lg;
   }
 
   /* Icon gradient background */
