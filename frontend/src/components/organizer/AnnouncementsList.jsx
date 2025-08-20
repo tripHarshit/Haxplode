@@ -26,10 +26,10 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete, event
 
   const getTargetAudienceColor = (audience) => {
     switch (audience) {
-      case 'All': return 'bg-purple-100 text-purple-800';
-      case 'Participants': return 'bg-blue-100 text-blue-800';
-      case 'Judges': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'All': return 'bg-slate-100 text-slate-700';
+      case 'Participants': return 'bg-emerald-100 text-emerald-700';
+      case 'Judges': return 'bg-emerald-100 text-emerald-700';
+      default: return 'bg-slate-100 text-slate-700';
     }
   };
 
@@ -37,13 +37,13 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete, event
     <div className="space-y-6">
       {/* Header with Create Button */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Announcements</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Announcements</h2>
         <button
           onClick={() => {
             setEditingAnnouncement(null);
             setShowCreateModal(true);
           }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2"
+          className="btn-primary flex items-center space-x-2"
         >
           <PlusIcon className="h-4 w-4" />
           <span>Create New Announcement</span>
@@ -51,31 +51,31 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete, event
       </div>
 
       {/* Announcements List */}
-      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden sm:rounded-lg">
+        <ul className="divide-y divide-slate-200 dark:divide-slate-700">
           {announcements.map((announcement) => (
             <li key={announcement.id}>
               <div className="px-4 py-4 sm:px-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{announcement.title}</h3>
+                      <h3 className="text-lg font-medium text-slate-900 dark:text-white">{announcement.title}</h3>
                       {announcement.isUrgent && (
                         <ExclamationTriangleIcon className="h-5 w-5 text-red-500" title="Urgent" />
                       )}
                       {announcement.isImportant && (
-                        <StarIcon className="h-5 w-5 text-yellow-500" title="Important" />
+                        <StarIcon className="h-5 w-5 text-amber-500" title="Important" />
                       )}
                     </div>
                     
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 line-clamp-2">
                       {announcement.content}
                     </p>
                     
-                    <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center space-x-4 text-sm text-slate-600 dark:text-slate-300">
                       <span className="flex items-center space-x-1">
                         <BellIcon className="h-4 w-4" />
-                        <span>{announcement.targetAudience}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTargetAudienceColor(announcement.targetAudience)}`}>{announcement.targetAudience}</span>
                       </span>
                       <span>{format(new Date(announcement.date), 'MMM dd, yyyy')}</span>
                       <span>By: {announcement.createdBy}</span>
@@ -85,14 +85,14 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete, event
                   <div className="flex items-center space-x-2 ml-4">
                     <button
                       onClick={() => handleEdit(announcement)}
-                      className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md"
+                      className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md"
                       title="Edit"
                     >
                       <PencilIcon className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(announcement.id)}
-                      className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md"
+                      className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md"
                       title="Delete"
                     >
                       <TrashIcon className="h-4 w-4" />
@@ -180,15 +180,15 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit, events
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white dark:bg-gray-800 dark:border-gray-700">
+    <div className="fixed inset-0 bg-black/40 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+          <h3 className="text-lg font-medium text-slate-900 dark:text-white">
             {announcement ? 'Edit Announcement' : 'Create New Announcement'}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 text-2xl"
+            className="text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white text-2xl"
           >
             ×
           </button>
@@ -196,6 +196,7 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit, events
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Hackathon
             </label>
@@ -213,37 +214,41 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit, events
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+
               Title *
             </label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md ${
-                errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100`}
+              className={`input ${errors.title ? 'border-red-500 focus:ring-red-500' : ''}`}
               placeholder="Enter announcement title"
             />
             {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
           </div>
 
           <div>
+
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Description *
+
             </label>
             <textarea
               value={formData.content}
               onChange={(e) => handleInputChange('content', e.target.value)}
               rows={4}
+
               className={`w-full px-3 py-2 border rounded-md ${
                 errors.content ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
               } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100`}
               placeholder="Write your announcement description..."
+
             />
             {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content}</p>}
           </div>
 
           <div>
+
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Visibility
             </label>
@@ -287,6 +292,7 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit, events
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Tags
+
             </label>
             <div className="flex items-center space-x-6">
               {['important','urgent','mandatory'].map(tag => (
@@ -313,13 +319,13 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit, events
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="btn-secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+              className="btn-primary"
             >
               {announcement ? 'Update Announcement' : 'Create Announcement'}
             </button>

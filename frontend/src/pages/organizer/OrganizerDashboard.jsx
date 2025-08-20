@@ -395,10 +395,10 @@ const OrganizerDashboard = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'upcoming': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-      case 'completed': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      case 'active': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
+      case 'upcoming': return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
+      case 'completed': return 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
+      default: return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
     }
   };
 
@@ -421,22 +421,46 @@ const OrganizerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
+      <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Organizer Dashboard</h1>
-              <p className="text-gray-600 dark:text-gray-400">Manage your hackathons and events</p>
+          <div className="flex items-center justify-between py-6">
+            <div className="flex items-center space-x-3">
+              <h1 className="text-2xl font-black text-emerald-500">Haxplode</h1>
+              <div className="h-6 w-px bg-slate-200" />
+              <div>
+                <p className="text-sm font-medium text-slate-600">Organizer Dashboard</p>
+                <p className="text-xs text-slate-500">Manage your hackathons and events</p>
+              </div>
+            </div>
+            <div className="text-slate-600">
+              Welcome, {user?.fullName || user?.name || 'Organizer'}!
             </div>
           </div>
         </div>
       </div>
 
+      {/* Organizer Hero Section */}
+      <section className="bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-700 py-10 lg:py-14 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Manage Your Events</h2>
+              <p className="mt-2 text-lg text-slate-600 dark:text-slate-300">Create, monitor, and grow your hackathons</p>
+            </div>
+            <div className="flex-shrink-0">
+              <button onClick={handleCreateEvent} className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium">
+                Create New Event
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="flex">
         {/* Sidebar Navigation */}
-        <div className="w-64 bg-white dark:bg-gray-800 shadow-sm min-h-screen">
+        <div className="w-64 bg-white dark:bg-slate-800 shadow-sm min-h-screen">
           <nav className="mt-8">
             <div className="px-4 space-y-2">
               {[
@@ -450,11 +474,11 @@ const OrganizerDashboard = () => {
                   onClick={() => handleTabChange(tab.id)}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-400'
-                      : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'
+                      ? 'bg-emerald-500 text-white'
+                      : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 dark:text-slate-300 dark:hover:bg-slate-700'
                   }`}
                 >
-                  <tab.icon className="h-5 w-5" />
+                  <tab.icon className={`h-5 w-5 ${activeTab === tab.id ? 'text-white' : 'text-emerald-500'}`} />
                   <span className="font-medium">{tab.label}</span>
                 </button>
               ))}
@@ -465,118 +489,78 @@ const OrganizerDashboard = () => {
         {/* Main Content */}
         <div className="flex-1 p-8">
           {activeTab === 'overview' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h2>
-              
-              {/* Stats Cards (aggregated live) */}
+            <div className="space-y-8">
+              {/* Organizer Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <CalendarIcon className="h-8 w-8 text-blue-600" />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Events</dt>
-                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">{events.length}</dd>
-                      </dl>
-                    </div>
+                {[
+                  {
+                    label: 'Active Events',
+                    value: events.filter(e => e.status === 'active').length,
+                  },
+                  {
+                    label: 'Total Participants',
+                    value: events.reduce((sum, event) => sum + (event.currentParticipants || 0), 0),
+                  },
+                  {
+                    label: 'Submissions Received',
+                    value: events.reduce((sum, ev) => sum + (ev._stats?.submissions || 0), 0),
+                  },
+                  {
+                    label: 'Revenue Generated',
+                    value: '$0',
+                  },
+                ].map((stat, idx) => (
+                  <div key={idx} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+                    <div className="text-emerald-500 text-4xl font-bold">{stat.value}</div>
+                    <div className="mt-1 text-slate-600 dark:text-slate-300 text-sm font-medium">{stat.label}</div>
                   </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <UsersIcon className="h-8 w-8 text-green-600" />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Participants</dt>
-                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                          {events.reduce((sum, event) => sum + event.currentParticipants, 0)}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <ChartBarIcon className="h-8 w-8 text-purple-600" />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Active Submissions</dt>
-                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                          {events.reduce((sum, ev) => sum + (ev._stats?.submissions || 0), 0)}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <BellIcon className="h-8 w-8 text-orange-600" />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Pending Reviews</dt>
-                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                          {events.reduce((sum, ev) => sum + (ev._stats?.totalReviews || 0), 0)}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* Per-event Live Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {events.map((ev) => (
-                  <div key={ev.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                  <div key={ev.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{ev.title}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{ev.category} • {ev.isOnline ? 'Online' : (ev.location || 'Onsite')}</p>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{ev.title}</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">{ev.category} • {ev.isOnline ? 'Online' : (ev.location || 'Onsite')}</p>
                       </div>
                       <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(ev.status)}`}>{ev.status}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 mt-4">
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Participants</p>
-                        <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{ev._stats?.participants ?? '—'}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Participants</p>
+                        <p className="text-xl font-semibold text-slate-900 dark:text-white">{ev._stats?.participants ?? '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Teams</p>
-                        <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{ev._stats?.teams ?? '—'}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Teams</p>
+                        <p className="text-xl font-semibold text-slate-900 dark:text-white">{ev._stats?.teams ?? '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Submissions</p>
-                        <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{ev._stats?.submissions ?? '—'}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Submissions</p>
+                        <p className="text-xl font-semibold text-slate-900 dark:text-white">{ev._stats?.submissions ?? '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Avg. Score</p>
-                        <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{ev._stats?.averageScore ?? '—'}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Avg. Score</p>
+                        <p className="text-xl font-semibold text-slate-900 dark:text-white">{ev._stats?.averageScore ?? '—'}</p>
                       </div>
                     </div>
                     <div className="mt-4 flex items-center justify-between text-sm">
                       <button
                         onClick={() => loadStatsForEvents([ev])}
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                        className="text-emerald-600 hover:text-emerald-700"
                       >Refresh stats</button>
-                      <span className="text-gray-500 dark:text-gray-400">Max: {ev.maxParticipants || 0}</span>
+                      <span className="text-slate-600 dark:text-slate-300">Max: {ev.maxParticipants || 0}</span>
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Analytics Charts with real data */}
-              <div className="mt-8">
+              <div className="mt-2">
                 {isLoadingStats ? (
-                  <div className="text-gray-500 dark:text-gray-400">Loading charts...</div>
+                  <div className="text-slate-600 dark:text-slate-300">Loading charts...</div>
                 ) : (
                   <AnalyticsCharts eventStats={eventStatsMap} />
                 )}
@@ -587,13 +571,13 @@ const OrganizerDashboard = () => {
           {activeTab === 'events' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Events Management</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Events Management</h2>
                 <button
                   onClick={handleCreateEvent}
-                  className="inline-flex items-center space-x-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
+                  className="inline-flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium"
                 >
                   <PlusIcon className="h-5 w-5" />
-                  <span>Create Hackathon</span>
+                  <span>Create New Event</span>
                 </button>
               </div>
               
@@ -601,10 +585,10 @@ const OrganizerDashboard = () => {
               {/* Events Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {isLoadingEvents && (
-                  <div className="text-gray-500">Loading your events...</div>
+                  <div className="text-slate-600">Loading your events...</div>
                 )}
                 {!isLoadingEvents && events.length === 0 && (
-                  <div className="text-gray-500">No events created yet.</div>
+                  <div className="text-slate-600">No events created yet.</div>
                 )}
                 {!isLoadingEvents && events.map((event) => (
                   <EnhancedEventCard
@@ -655,7 +639,7 @@ const OrganizerDashboard = () => {
 
           {activeTab === 'participants' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Participant Management</h2>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Participant Management</h2>
               <ParticipantsList 
                 participants={participants}
                 onViewDetails={handleViewParticipantDetails}
@@ -769,15 +753,15 @@ const OrganizerDashboard = () => {
       {/* QnA Modal for organizers */}
       {showQnaModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Event Q&A</h3>
-              <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowQnaModal(false)}>✕</button>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Event Q&A</h3>
+              <button className="text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white" onClick={() => setShowQnaModal(false)}>✕</button>
             </div>
             {qnaEventId ? (
               <QnA eventId={qnaEventId} />
             ) : (
-              <div className="text-sm text-gray-500">Select an event</div>
+              <div className="text-sm text-slate-600 dark:text-slate-300">Select an event</div>
             )}
           </div>
         </div>

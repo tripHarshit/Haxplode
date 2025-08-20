@@ -190,38 +190,61 @@ const ParticipantDashboard = () => {
 
   return (
     <div className="space-y-6" key={`dashboard-${activeTab}`}>
-      {/* Page Header */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      {/* Header - align with HomePage */}
+      <div className="bg-white dark:bg-slate-800 shadow-sm rounded-lg border border-slate-200 dark:border-slate-700 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Participant Dashboard</h1>
-            <p className="text-lg text-gray-600 mt-2">Welcome back, {user?.name || 'Participant'}!</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Participant Dashboard</h1>
+            <p className="text-lg text-slate-600 dark:text-slate-300 mt-2">Welcome, {user?.fullName || user?.name || 'Participant'}!</p>
           </div>
-          <div className="flex items-center space-x-4">
-            <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+          <div className="flex items-center space-x-3">
+            <button className="p-2 text-slate-400 hover:text-slate-600 dark:text-slate-300 dark:hover:text-white transition-colors">
               <BellIcon className="h-6 w-6" />
             </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+            <button className="p-2 text-slate-400 hover:text-slate-600 dark:text-slate-300 dark:hover:text-white transition-colors">
               <CogIcon className="h-6 w-6" />
             </button>
           </div>
         </div>
       </div>
 
+      {/* Hero section */}
+      <section className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-700 p-8">
+        <div className="max-w-3xl">
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Welcome back, {user?.fullName || user?.name || 'Participant'}!</h2>
+          <p className="mt-2 text-lg text-slate-600 dark:text-slate-300">Ready to build something amazing?</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button 
+              onClick={() => navigate('/participant/hackathons', { replace: true })}
+              className="btn-primary bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium"
+            >
+              Browse Hackathons
+            </button>
+            <button 
+              onClick={() => setActiveTab('submissions')}
+              className="border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-emerald-500 hover:text-emerald-500 px-6 py-3 rounded-lg font-medium"
+            >
+              Go to Submissions
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Navigation Tabs */}
-      <div className="bg-white rounded-lg shadow-sm border">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="px-6">
           <nav className="flex space-x-8">
             {tabs.map((tab) => {
               const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    isActive
+                      ? 'border-emerald-500 text-emerald-500'
+                      : 'border-transparent text-slate-600 hover:text-slate-800 hover:border-slate-300 dark:text-slate-400 dark:hover:text-white'
                   }`}
                 >
                   <div className="flex items-center space-x-2">
@@ -239,56 +262,27 @@ const ParticipantDashboard = () => {
       <div className="space-y-6">
         {activeTab === 'overview' && (
           <div className="space-y-8">
-            {/* Welcome Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
-              <div className="max-w-3xl">
-                <h2 className="text-3xl font-bold mb-4">
-                  Ready to build something amazing? 🚀
-                </h2>
-                <p className="text-xl text-blue-100 mb-6">
-                  You're registered for {dashboardData.stats.registeredEvents} events and have {dashboardData.stats.activeTeams} active teams. 
-                  Keep up the great work!
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  <button 
-                    onClick={() => navigate('/participant/hackathons', { replace: true })}
-                    className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
-                  >
-                    Browse Events
-                  </button>
-                </div>
-              </div>
-            </div>
-
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatsCard
-                title="Registered Events"
+                title="Active Registrations"
                 value={dashboardData.stats.registeredEvents}
                 icon={CalendarIcon}
-                color="blue"
-                change="+2 this month"
               />
               <StatsCard
-                title="Active Teams"
+                title="Teams Joined"
                 value={dashboardData.stats.activeTeams}
                 icon={UserGroupIcon}
-                color="green"
-                change="+1 this month"
               />
               <StatsCard
-                title="Submissions"
+                title="Projects Submitted"
                 value={dashboardData.stats.completedSubmissions}
                 icon={TrophyIcon}
-                color="purple"
-                change="+1 this month"
               />
               <StatsCard
-                title="Upcoming Deadlines"
-                value={dashboardData.stats.upcomingDeadlines}
+                title="Events Won"
+                value={0}
                 icon={ClockIcon}
-                color="orange"
-                change="3 due this week"
               />
             </div>
 
@@ -299,10 +293,10 @@ const ParticipantDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Recent Activities */}
               <div className="lg:col-span-2">
-                <div className="bg-white rounded-xl shadow-sm border p-6">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Activities</h3>
+                    <button className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
                       View All
                     </button>
                   </div>
@@ -312,10 +306,10 @@ const ParticipantDashboard = () => {
 
               {/* Upcoming Deadlines */}
               <div className="lg:col-span-1">
-                <div className="bg-white rounded-xl shadow-sm border p-6">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h3>
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Upcoming Deadlines</h3>
+                    <button className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
                       View All
                     </button>
                   </div>

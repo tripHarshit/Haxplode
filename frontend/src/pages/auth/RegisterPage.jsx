@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, Calendar, ArrowRight, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { isValidEmail, isValidPassword } from '../../utils/helpers';
-import { useForceLightMode } from '../../context/ThemeContext';
+
+import ThemeToggle from '../../components/ui/ThemeToggle';
 import { signInWithPopup, GoogleAuthProvider, getIdToken } from "firebase/auth";
 import { auth, googleProvider } from "../../services/firebase";
 
+
 const RegisterPage = () => {
-  useForceLightMode();
+  // Allow theme toggle; no forced light mode
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -289,13 +291,16 @@ const RegisterPage = () => {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <Link to="/" className="inline-block">
-            <h1 className="text-3xl font-bold text-gradient">Haxplode</h1>
-          </Link>
-          <h2 className="mt-6 text-3xl font-bold tracking-tight text-neutral-900">
+          <div className="flex items-center justify-center gap-3">
+            <Link to="/" className="inline-block">
+              <h1 className="text-3xl font-bold text-gradient">Haxplode</h1>
+            </Link>
+            <ThemeToggle />
+          </div>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
             Create your account
           </h2>
-          <p className="mt-2 text-sm text-neutral-600">
+          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
             Join thousands of innovators and start building amazing projects
           </p>
         </div>
@@ -313,10 +318,10 @@ const RegisterPage = () => {
         {/* Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {errors.general && (
-            <div className="rounded-lg bg-error-50 border border-error-200 p-4">
+            <div className="rounded-lg bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-700 p-4">
               <div className="flex items-center">
                 <AlertCircle className="h-5 w-5 text-error-600 mr-2" />
-                <p className="text-sm text-error-700">{errors.general}</p>
+                <p className="text-sm text-error-700 dark:text-error-400">{errors.general}</p>
               </div>
             </div>
           )}
@@ -324,7 +329,7 @@ const RegisterPage = () => {
           <div className="space-y-4">
             {/* Full Name Field */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Full Name
               </label>
               <div className="relative">
@@ -358,7 +363,7 @@ const RegisterPage = () => {
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Email address
               </label>
               <div className="relative">
@@ -392,7 +397,7 @@ const RegisterPage = () => {
 
             {/* Role Selection */}
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label htmlFor="role" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 I want to join as a
               </label>
               <select
@@ -419,8 +424,8 @@ const RegisterPage = () => {
               )}
               
               {/* Role descriptions */}
-              <div className="mt-2 p-3 bg-neutral-50 rounded-lg border border-neutral-200">
-                <div className="text-xs text-neutral-600 space-y-1">
+              <div className="mt-2 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                <div className="text-xs text-neutral-600 dark:text-neutral-300 space-y-1">
                   <p><strong>Participant:</strong> Join hackathons, build projects, win prizes</p>
                   <p><strong>Organizer:</strong> Create and manage hackathon events</p>
                   <p><strong>Judge:</strong> Review submissions and provide feedback</p>
@@ -430,7 +435,7 @@ const RegisterPage = () => {
 
             {/* Date of Birth */}
             <div>
-              <label htmlFor="dateOfBirth" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label htmlFor="dateOfBirth" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Date of Birth
               </label>
               <div className="relative">
@@ -462,7 +467,7 @@ const RegisterPage = () => {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -503,12 +508,12 @@ const RegisterPage = () => {
               {formData.password && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-neutral-600">Password strength:</span>
+                    <span className="text-neutral-600 dark:text-neutral-300">Password strength:</span>
                     <span className={`font-medium text-${passwordStrength.color}-600`}>
                       {passwordStrength.label}
                     </span>
                   </div>
-                  <div className="mt-1 w-full bg-neutral-200 rounded-full h-2">
+                  <div className="mt-1 w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
                     <div 
                       className={`h-2 rounded-full transition-all duration-300 ${
                         passwordStrength.strength >= 4 ? 'bg-success-500' :
@@ -532,7 +537,7 @@ const RegisterPage = () => {
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Confirm Password
               </label>
               <div className="relative">
@@ -588,7 +593,7 @@ const RegisterPage = () => {
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded mt-1"
               disabled={isLoading}
             />
-            <label htmlFor="terms" className="ml-2 block text-sm text-neutral-700">
+            <label htmlFor="terms" className="ml-2 block text-sm text-neutral-700 dark:text-neutral-300">
               I agree to the{' '}
               <a href="#" className="font-medium text-primary-600 hover:text-primary-500 transition-colors">
                 Terms of Service
@@ -629,7 +634,7 @@ const RegisterPage = () => {
 
           {/* Sign in link */}
           <div className="text-center">
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-neutral-600 dark:text-neutral-300">
               Already have an account?{' '}
               <Link
                 to="/login"
