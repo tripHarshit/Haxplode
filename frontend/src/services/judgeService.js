@@ -66,8 +66,8 @@ export const judgeService = {
     return res.data?.data?.submissions || [];
   },
 
-  async submitReview({ submissionId, score, feedback, criteria }) {
-    const res = await api.post('/judges/review', { submissionId, score, feedback, criteria });
+  async submitReview({ submissionId, score, feedback, criteria, timeSpent }) {
+    const res = await api.post('/judges/review', { submissionId, score, feedback, criteria, timeSpent });
     return res.data;
   },
 

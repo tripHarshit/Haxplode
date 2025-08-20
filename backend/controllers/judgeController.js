@@ -444,22 +444,71 @@ const updateJudgeProfile = async (req, res) => {
   }
 };
 
-// Judge analytics (basic)
+// Judge analytics (enhanced with real data)
 const getJudgeAnalytics = async (req, res) => {
   try {
     const judgeId = req.currentUser.judgeProfile?.id;
+    const userId = req.currentUser.id;
     if (!judgeId) {
       return res.status(404).json({ success: false, message: 'Judge profile not found' });
     }
+
+    // Totals from MongoDB scores (backward compatible)
     const countAgg = await Submission.aggregate([
       { $unwind: { path: '$scores', preserveNullAndEmptyArrays: false } },
       { $match: { 'scores.judgeId': judgeId } },
       { $group: { _id: null, total: { $sum: 1 }, avgScore: { $avg: '$scores.score' } } },
     ]);
-    const totals = countAgg[0] || { total: 0, avgScore: 0 };
-    const recent = await AnalyticsEvent.find({ userId: req.currentUser.id }).sort({ ts: -1 }).limit(20);
+    const totalsAgg = countAgg[0] || { total: 0, avgScore: 0 };
+    const totals = { reviews: totalsAgg.total || 0, averageScore: Math.round((totalsAgg.avgScore || 0) * 100) / 100 };
+
+    // Completion from SQL assignments
+    const totalAssigned = await JudgeSubmissionAssignment.count({ where: { judgeId } });
+    const totalReviewed = await JudgeSubmissionAssignment.count({ where: { judgeId, status: 'reviewed' } });
+    const completion = {
+      assigned: totalAssigned,
+      reviewed: totalReviewed,
+      rate: totalAssigned > 0 ? Math.round((totalReviewed / totalAssigned) * 100) : 0,
+    };
+
+    // Average time per review from AnalyticsEvent durationMs
+    const timeEvents = await AnalyticsEvent.find({ userId, type: 'submission_reviewed', durationMs: { $ne: null } }).select('durationMs');
+    const averageMs = timeEvents.length > 0 ? Math.round(timeEvents.reduce((s, e) => s + (e.durationMs || 0), 0) / timeEvents.length) : 0;
+    const time = { averageMs };
+
+    // Score distribution (bucketed by 10)
+    const reviewedAssignments = await JudgeSubmissionAssignment.findAll({ where: { judgeId, status: 'reviewed' }, attributes: ['score', 'reviewedAt'] });
+    const scoreDistribution = {};
+    for (const a of reviewedAssignments) {
+      const numericScore = Number(a.score) || 0;
+      const bucket = Math.floor(numericScore / 10) * 10; // 0,10,20,...,100
+      const key = String(bucket);
+      scoreDistribution[key] = (scoreDistribution[key] || 0) + 1;
+    }
+
+    // Monthly stats: reviews count and average score per month (YYYY-MM)
+    const monthlyMap = new Map();
+    for (const a of reviewedAssignments) {
+      const dt = a.reviewedAt ? new Date(a.reviewedAt) : null;
+      const monthKey = dt ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}` : 'unknown';
+      if (!monthlyMap.has(monthKey)) monthlyMap.set(monthKey, { month: monthKey, reviews: 0, totalScore: 0 });
+      const entry = monthlyMap.get(monthKey);
+      entry.reviews += 1;
+      entry.totalScore += Number(a.score) || 0;
+    }
+    const monthlyStats = Array.from(monthlyMap.values())
+      .filter(m => m.month !== 'unknown')
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .map(m => ({ month: m.month, reviews: m.reviews, avgScore: m.reviews ? Math.round((m.totalScore / m.reviews) * 100) / 100 : 0 }));
+
+    const recent = await AnalyticsEvent.find({ userId }).sort({ ts: -1 }).limit(20);
+
     return res.json({
-      totals: { reviews: totals.total, averageScore: Math.round((totals.avgScore || 0) * 100) / 100 },
+      totals,
+      completion,
+      time,
+      scoreDistribution,
+      monthlyStats,
       recent,
     });
   } catch (error) {
@@ -774,7 +823,7 @@ const submitReview = async (req, res) => {
     console.log('🔍 [submitReview] Request body:', req.body);
     console.log('🔍 [submitReview] Current user:', req.currentUser);
     
-    const { submissionId, score, feedback, criteria } = req.body;
+    const { submissionId, score, feedback, criteria, timeSpent } = req.body;
     const judgeId = req.currentUser.judgeProfile?.id;
 
     console.log('🔍 [submitReview] Judge ID:', judgeId);
@@ -844,7 +893,9 @@ const submitReview = async (req, res) => {
 
     audit(req.currentUser.id, 'submission_reviewed', { 
       submissionId, 
-      metadata: { judgeId, score, eventId: assignment.eventId } 
+      eventId: assignment.eventId,
+      metadata: { judgeId, score, timeSpentMinutes: typeof timeSpent === 'number' ? timeSpent : undefined },
+      durationMs: typeof timeSpent === 'number' ? Math.max(0, Math.round(timeSpent * 60 * 1000)) : undefined,
     });
 
     console.log('🔍 [submitReview] Audit log created');

@@ -231,16 +231,6 @@ const SubmissionCard = ({ submission, onViewSubmission, onStartReview, getStatus
               Start Review
             </button>
           )}
-          
-          {submission.reviewStatus === 'reviewed' && (
-            <button
-              disabled
-              className="flex-1 px-3 py-2 text-sm font-medium text-gray-400 bg-gray-200 dark:bg-gray-700 rounded-md cursor-not-allowed"
-            >
-              <CheckBadgeIcon className="h-4 w-4 inline mr-1" />
-              Review Complete
-            </button>
-          )}
         </div>
       </div>
     </div>

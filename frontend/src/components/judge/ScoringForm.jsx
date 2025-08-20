@@ -43,10 +43,10 @@ const ScoringForm = ({
   // Track time spent
   useEffect(() => {
     if (isOpen) {
-      const interval = setInterval(() => {
-        setTimeSpent(Math.floor((Date.now() - startTime) / 1000 / 60)); // minutes
-      }, 60000); // Update every minute
-
+      const tick = () => setTimeSpent(Math.round((Date.now() - startTime) / 1000 / 60));
+      // immediate update and every 10s for better granularity
+      tick();
+      const interval = setInterval(tick, 10000);
       return () => clearInterval(interval);
     }
   }, [isOpen, startTime]);
