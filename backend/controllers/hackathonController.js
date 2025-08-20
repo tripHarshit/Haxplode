@@ -550,7 +550,12 @@ async function getLeaderboard(req, res) {
 						weightSum += (rd.weight || 1);
 					}
 				}
-				const finalScore = weightSum ? total / weightSum : 0;
+				// If no round-specific scores were found, fall back to averaging all scores
+				if (!weightSum) {
+					const avgAll = scores.length ? (scores.reduce((sum, sc) => sum + (sc.score || 0), 0) / scores.length) : 0;
+					return { teamId: s.teamId, submissionId: s._id, score: Math.round(avgAll * 100) / 100 };
+				}
+				const finalScore = total / weightSum;
 				return { teamId: s.teamId, submissionId: s._id, score: Math.round(finalScore * 100) / 100 };
 			}
 			const avg = scores.length ? (scores.reduce((sum, sc) => sum + (sc.score || 0), 0) / scores.length) : 0;

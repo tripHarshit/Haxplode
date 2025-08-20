@@ -130,6 +130,16 @@ export const hackathonService = {
     }
   },
 
+  // Update event via events controller (strict validation)
+  async updateEvent(id, eventData) {
+    try {
+      const response = await api.put(`/events/${id}`, eventData);
+      return response.data?.data?.event || response.data?.event || response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to update event');
+    }
+  },
+
   // Delete hackathon (organizer only)
   async deleteHackathon(id) {
     try {

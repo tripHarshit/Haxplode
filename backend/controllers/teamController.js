@@ -488,6 +488,36 @@ const getUserTeams = async (req, res) => {
   }
 };
 
+// Delete team (Leader only)
+const deleteTeam = async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const team = await Team.findByPk(teamId, {
+      include: [{ model: TeamMember, as: 'members' }],
+    });
+    if (!team) {
+      return res.status(404).json({ success: false, message: 'Team not found' });
+    }
+    // Check if current user is the leader
+    const isLeader = team.members.some(
+      (member) => member.userId === req.currentUser.id && member.role === 'Leader'
+    );
+    if (!isLeader) {
+      return res.status(403).json({ success: false, message: 'Only the team leader can delete the team' });
+    }
+    // Remove all team members
+    await TeamMember.destroy({ where: { teamId: team.id } });
+    // Delete the team
+    await team.destroy();
+    audit(req.currentUser.id, 'team_deleted', { teamId: team.id });
+    emitToRoom(`team:${team.id}`, 'team_update', { teamId: team.id, type: 'deleted' });
+    return res.json({ success: true, message: 'Team deleted successfully' });
+  } catch (error) {
+    console.error('Delete team error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to delete team' });
+  }
+};
+
 module.exports = {
   createTeam,
   getTeamsByEvent,
@@ -496,6 +526,7 @@ module.exports = {
   removeTeamMember,
   updateTeam,
   getUserTeams,
+  deleteTeam,
   inviteToTeam,
   joinByCode,
   leaveTeam,

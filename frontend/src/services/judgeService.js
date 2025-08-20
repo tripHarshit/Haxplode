@@ -59,6 +59,27 @@ export const judgeService = {
     const res = await api.post('/judges/assign', { eventId, email, role });
     return res.data;
   },
+
+  // New methods for submission assignment system
+  async getAssignedSubmissions(eventId) {
+    const res = await api.get(`/judges/submissions/${eventId}`);
+    return res.data?.data?.submissions || [];
+  },
+
+  async submitReview({ submissionId, score, feedback, criteria, timeSpent }) {
+    const res = await api.post('/judges/review', { submissionId, score, feedback, criteria, timeSpent });
+    return res.data;
+  },
+
+  async assignSubmissionsToJudges(eventId) {
+    const res = await api.post(`/judges/assign-submissions/${eventId}`);
+    return res.data;
+  },
+
+  async getEventResults(eventId) {
+    const res = await api.get(`/judges/results/${eventId}`);
+    return res.data?.data || {};
+  },
 };
 
 

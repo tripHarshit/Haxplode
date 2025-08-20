@@ -16,12 +16,19 @@ import AnnouncementsList from '../../components/organizer/AnnouncementsList';
 import EnhancedEventCard from '../../components/organizer/EnhancedEventCard';
 import AnalyticsCharts from '../../components/organizer/AnalyticsCharts';
 import SponsorShowcase from '../../components/organizer/SponsorShowcase';
+import SponsorManagementModal from '../../components/organizer/SponsorManagementModal';
 import EventCreationWizard from '../../components/organizer/EventCreationWizard';
+import { sponsorService } from '../../services/sponsorService';
 import { hackathonService } from '../../services/hackathonService';
 import { announcementService } from '../../services/announcementService';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import JudgeAssignmentModal from '../../components/organizer/JudgeAssignmentModal';
+
+import QnA from '../../components/participant/QnA';
+
+import OrganizerSubmissionsModal from '../../components/organizer/OrganizerSubmissionsModal';
+
 
 const OrganizerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -48,6 +55,14 @@ const OrganizerDashboard = () => {
   const [showJudgeModal, setShowJudgeModal] = useState(false);
   const [judgeModalEventId, setJudgeModalEventId] = useState(null);
   const [deletingEventId, setDeletingEventId] = useState(null);
+  const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
+
+  const [showSponsorModal, setShowSponsorModal] = useState(false);
+  const [sponsorEvent, setSponsorEvent] = useState(null);
+  
+  const [showQnaModal, setShowQnaModal] = useState(false);
+  const [qnaEventId, setQnaEventId] = useState(null);
+
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -75,6 +90,7 @@ const OrganizerDashboard = () => {
           rules: typeof event.rules === 'string' ? event.rules.split('\n') : (event.rules || []),
           timeline: event.timeline || [],
           isRegistered: false,
+          sponsors: Array.isArray(event.sponsors) ? event.sponsors : [],
         }));
         setEvents(mappedEvents);
         // Select first event by default and load its announcements
@@ -222,7 +238,8 @@ const OrganizerDashboard = () => {
       status: newEvent.status ? String(newEvent.status).toLowerCase() : 'draft',
       rules: typeof newEvent.rules === 'string' ? newEvent.rules.split('\n') : (newEvent.rules || []),
       timeline: newEvent.timeline || [],
-      isRegistered: false
+      isRegistered: false,
+      sponsors: Array.isArray(newEvent.sponsors) ? newEvent.sponsors : [],
     };
     setEvents(prev => [...prev, mapped]);
     setShowEventModal(false);
@@ -354,11 +371,13 @@ const OrganizerDashboard = () => {
   };
 
   const handleSendMessage = (eventId) => {
-    // TODO: Implement message functionality
+    setQnaEventId(eventId);
+    setShowQnaModal(true);
   };
 
   const handleViewSubmissions = (eventId) => {
-    // TODO: Implement submissions view
+    setSelectedEventId(eventId);
+    setShowSubmissionsModal(true);
   };
 
   const getStatusColor = (status) => {
@@ -581,6 +600,10 @@ const OrganizerDashboard = () => {
                     onViewParticipants={handleViewParticipants}
                     onSendMessage={handleSendMessage}
                     onViewSubmissions={handleViewSubmissions}
+                    onManageSponsors={(ev) => {
+                      setSponsorEvent(ev);
+                      setShowSponsorModal(true);
+                    }}
                     onEdit={(ev) => {
                       setShowEventModal(true);
                       // Pre-fill wizard by setting defaults via window event (simple approach), or adjust wizard to accept initial values
@@ -675,6 +698,64 @@ const OrganizerDashboard = () => {
           setJudgeModalEventId(null);
         }}
       />
+
+
+
+      <SponsorManagementModal
+        isOpen={showSponsorModal}
+        event={sponsorEvent}
+        onClose={() => {
+          setShowSponsorModal(false);
+          setSponsorEvent(null);
+        }}
+        onSave={async (eventId, sponsors) => {
+          try {
+            await hackathonService.updateHackathon(eventId, { sponsors });
+            // Sync to Sponsors catalog so the Sponsors tab reflects new entries
+            try {
+              const existing = await sponsorService.list();
+              const existingNamesLc = new Set(existing.map(s => String(s.name || '').trim().toLowerCase()));
+              const normalized = (sponsors || []).map(s => (typeof s === 'string' ? { name: s } : s)).filter(Boolean);
+              const toCreate = normalized.filter(s => s.name && !existingNamesLc.has(String(s.name).trim().toLowerCase()));
+              for (const sp of toCreate) {
+                await sponsorService.create({ name: sp.name, website: sp.website || '' });
+              }
+            } catch (catalogErr) {
+              console.warn('Sponsor catalog sync failed:', catalogErr?.message);
+            }
+            setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, sponsors } : e)));
+            showSuccess('Sponsors updated successfully.');
+          } catch (e) {
+            console.error('Failed to update sponsors', e);
+            showError(e.message || 'Failed to update sponsors');
+            throw e;
+          }
+        }}
+      />
+      
+      {/* QnA Modal for organizers */}
+      {showQnaModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Event Q&A</h3>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowQnaModal(false)}>✕</button>
+            </div>
+            {qnaEventId ? (
+              <QnA eventId={qnaEventId} />
+            ) : (
+              <div className="text-sm text-gray-500">Select an event</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <OrganizerSubmissionsModal
+        isOpen={showSubmissionsModal}
+        eventId={selectedEventId}
+        onClose={() => setShowSubmissionsModal(false)}
+      />
+
     </div>
   );
 };

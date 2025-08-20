@@ -5,6 +5,8 @@ import { useToast } from '../../components/ui/Toast';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { isValidEmail } from '../../utils/helpers';
 import { useForceLightMode } from '../../context/ThemeContext';
+import { signInWithPopup, getIdToken, GoogleAuthProvider } from 'firebase/auth';
+import { auth, googleProvider } from '../../services/firebase';
 
 const LoginPage = () => {
   useForceLightMode();
@@ -19,7 +21,7 @@ const LoginPage = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
-  const { login, loginWithGoogle, error: authError, clearError, user, getRedirectPath, isAuthenticated } = useAuth();
+  const { login, loginWithGoogle, error: authError, clearError, user, getRedirectPath, isAuthenticated, updateProfile } = useAuth();
   const { success, error: showError } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,9 +52,8 @@ const LoginPage = () => {
     }
   }, [successMessage]);
 
-  // Initialize Google Sign-In
+  // Initialize Google Sign-In (keep existing for compatibility)
   useEffect(() => {
-    // Load Google Sign-In API
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
@@ -61,7 +62,6 @@ const LoginPage = () => {
     document.head.appendChild(script);
 
     return () => {
-      // Cleanup
       if (document.head.contains(script)) {
         document.head.removeChild(script);
       }
@@ -98,7 +98,6 @@ const LoginPage = () => {
           window.navigationTester.logAuthEvent('google_oauth_attempt', false);
         }
 
-        // Redirect to dashboard
         setTimeout(() => {
           const redirectPath = getRedirectPath(user, from);
           navigate(redirectPath, { replace: true });
@@ -143,7 +142,6 @@ const LoginPage = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -161,7 +159,6 @@ const LoginPage = () => {
     setErrors({});
     
     try {
-      // Log navigation test
       if (window.navigationTester) {
         window.navigationTester.logAuthEvent('login_attempt', true, { email: formData.email });
       }
@@ -170,7 +167,6 @@ const LoginPage = () => {
       if (result.success) {
         setSuccessMessage('Login successful! Redirecting...');
         success('Welcome Back!', 'You have successfully logged in.');
-        // Navigation is handled by the AuthContext
       } else {
         setErrors({ general: result.error });
         showError('Login Failed', result.error);
@@ -188,11 +184,39 @@ const LoginPage = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-      window.google.accounts.id.prompt();
-    } else {
-      setErrors({ general: 'Google Sign-In is not configured. Please check your environment variables.' });
+  // New handler using Firebase popup
+  const handleGoogleLogin = async () => {
+    try {
+      setIsGoogleLoading(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      // Extract Google ID token from OAuth credential (preferred for backend validation)
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      let googleIdToken = credential?.idToken || null;
+      if (!googleIdToken) {
+        // Fallback: Firebase user token (may not be accepted by backend expecting Google issuer)
+        googleIdToken = await getIdToken(result.user, true);
+      }
+      const apiResult = await loginWithGoogle(googleIdToken);
+      if (apiResult.success) {
+        // Post-login name sync if needed
+        const displayName = (result.user?.displayName || '').trim();
+        try {
+          if (displayName && (!user?.name || /google user/i.test(user.name))) {
+            await updateProfile({ name: displayName });
+          }
+        } catch {}
+
+        setSuccessMessage('Google login successful! Redirecting...');
+        const redirectPath = getRedirectPath(user, from);
+        navigate(redirectPath, { replace: true });
+      } else {
+        setErrors({ general: apiResult.error || 'Failed to login with Google' });
+      }
+    } catch (err) {
+      console.error('Firebase Google login failed:', err);
+      setErrors({ general: err.message || 'Google login failed' });
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -249,7 +273,7 @@ const LoginPage = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className={`h-5 w-5 ${hasFieldError('email') ? 'text-error-500' : 'text-neutral-400'}`} />
+                  <Mail className={`${hasFieldError('email') ? 'text-error-500' : 'text-neutral-400'} h-5 w-5`} />
                 </div>
                 <input
                   id="email"
@@ -283,7 +307,7 @@ const LoginPage = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className={`h-5 w-5 ${hasFieldError('password') ? 'text-error-500' : 'text-neutral-400'}`} />
+                  <Lock className={`${hasFieldError('password') ? 'text-error-500' : 'text-neutral-400'} h-5 w-5`} />
                 </div>
                 <input
                   id="password"
@@ -433,7 +457,6 @@ const LoginPage = () => {
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );
