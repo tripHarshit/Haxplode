@@ -19,7 +19,7 @@ const LoginPage = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
-  const { login, loginWithGoogle, error: authError, clearError } = useAuth();
+  const { login, loginWithGoogle, error: authError, clearError, user, getRedirectPath, isAuthenticated } = useAuth();
   const { success, error: showError } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,6 +32,15 @@ const LoginPage = () => {
       clearError();
     }
   }, [authError, clearError]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('User already authenticated, redirecting to dashboard');
+      const redirectPath = getRedirectPath(user, from);
+      navigate(redirectPath, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate, getRedirectPath, from]);
 
   // Clear success message after 5 seconds
   useEffect(() => {
@@ -91,7 +100,8 @@ const LoginPage = () => {
 
         // Redirect to dashboard
         setTimeout(() => {
-          navigate('/dashboard');
+          const redirectPath = getRedirectPath(user, from);
+          navigate(redirectPath, { replace: true });
         }, 1500);
       }
     } catch (error) {

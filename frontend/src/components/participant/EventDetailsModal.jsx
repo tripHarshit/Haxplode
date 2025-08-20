@@ -19,6 +19,22 @@ const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
 
   if (!isOpen || !event) return null;
 
+  const parseSafeDate = (value) => {
+    if (!value) return null;
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const title = event.title || event.name || 'Hackathon';
+  const description = event.description || '';
+  const derivedStart = parseSafeDate(event.startDate || event.timeline?.startDate || null);
+  const derivedEnd = parseSafeDate(event.endDate || event.timeline?.endDate || null);
+  const derivedRegDeadline = parseSafeDate(event.registrationDeadline || event.timeline?.registrationDeadline || null);
+  const registrationOn = parseSafeDate(event.registrationDate);
+  const rulesArray = Array.isArray(event.rules)
+    ? event.rules
+    : (typeof event.rules === 'string' ? event.rules.split('\n') : []);
+
   const handleRegistration = async () => {
     setIsRegistering(true);
     try {
@@ -77,7 +93,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
           {/* Header */}
           <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">{event.title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
               <button
                 onClick={() => {
                   // Log navigation test
@@ -97,10 +113,41 @@ const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
           {/* Content */}
           <div className="px-6 py-6 max-h-96 overflow-y-auto">
             <div className="space-y-6">
+              {/* Registration Details */}
+              {Array.isArray(event.teams) && event.teams.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h4 className="text-lg font-medium text-gray-900 mb-3">Registration Details</h4>
+                  {(() => {
+                    const team = event.teams[0];
+                    const members = team?.members || [];
+                    const leader = members.find(m => m.role === 'Leader') || members[0];
+                    return (
+                      <div className="space-y-3">
+                        <div className="text-gray-800 font-medium">Team: {team.teamName || team.name}</div>
+                        <div className="text-sm text-gray-700">Leader: {leader?.user?.fullName || leader?.user?.email || '—'}</div>
+                        <div className="text-sm text-gray-700">Members:</div>
+                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {members.map((m, idx) => (
+                            <li key={m.id || idx} className="flex items-center space-x-2">
+                              <img
+                                className="inline-block h-8 w-8 rounded-full ring-2 ring-white"
+                                src={m.user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.user?.fullName || m.user?.email || 'U')}`}
+                                alt={m.user?.fullName || 'Member'}
+                              />
+                              <span className="text-gray-800">{m.user?.fullName || m.user?.email}</span>
+                              <span className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">{m.role || 'Member'}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
               {/* Event Overview */}
               <div>
                 <h4 className="text-lg font-medium text-gray-900 mb-3">Event Overview</h4>
-                <p className="text-gray-600">{event.description}</p>
+                <p className="text-gray-600">{description}</p>
               </div>
 
               {/* Key Details */}
@@ -113,7 +160,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
                   <div className="flex items-center space-x-3">
                     <CalendarIcon className="h-5 w-5 text-gray-500" />
                     <span className="text-gray-700">
-                      {format(new Date(event.startDate), 'MMM dd, yyyy')} - {format(new Date(event.endDate), 'MMM dd, yyyy')}
+                      {derivedStart ? format(derivedStart, 'MMM dd, yyyy') : 'TBA'} - {derivedEnd ? format(derivedEnd, 'MMM dd, yyyy') : 'TBA'}
                     </span>
                   </div>
                   <div className="flex items-center space-x-3">
@@ -137,18 +184,42 @@ const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
                   <div className="flex items-center space-x-3">
                     <ClockIcon className="h-5 w-5 text-gray-500" />
                     <span className="text-gray-700">
-                      {(() => {
-                        const d = new Date(event.registrationDeadline);
-                        return !isNaN(d.getTime())
-                          ? `Registration closes ${format(d, 'MMM dd, yyyy')}`
-                          : 'Registration deadline TBA';
-                      })()}
+                      {derivedRegDeadline ? `Registration closes ${format(derivedRegDeadline, 'MMM dd, yyyy')}` : 'Registration deadline TBA'}
                     </span>
                   </div>
+                  {Array.isArray(event.teams) && event.teams.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-sm text-gray-700 font-medium">Your Team</div>
+                      {(() => {
+                        const team = event.teams[0];
+                        const members = team?.members || [];
+                        const leader = members.find(m => (m.role === 'Leader')) || members[0];
+                        return (
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <div className="text-gray-800 font-medium mb-2">{team.teamName || team.name}</div>
+                            <div className="text-sm text-gray-600 mb-2">Leader: {leader?.user?.fullName || leader?.user?.email || '—'}</div>
+                            <div className="flex -space-x-2">
+                              {members.map((m, idx) => (
+                                <img
+                                  key={m.id || idx}
+                                  className="inline-block h-8 w-8 rounded-full ring-2 ring-white"
+                                  src={m.user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.user?.fullName || m.user?.email || 'U')}`}
+                                  alt={m.user?.fullName || 'Member'}
+                                  title={m.user?.fullName || m.user?.email}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                   {event.isRegistered && (
                     <div className="flex items-center space-x-3">
                       <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                      <span className="text-green-700 font-medium">Registered on {format(new Date(event.registrationDate), 'MMM dd, yyyy')}</span>
+                      <span className="text-green-700 font-medium">
+                        {registrationOn ? `Registered on ${format(registrationOn, 'MMM dd, yyyy')}` : 'Registered'}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -177,7 +248,7 @@ const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
               <div>
                 <h4 className="text-lg font-medium text-gray-900 mb-3">Rules & Guidelines</h4>
                 <ul className="space-y-2">
-                  {event.rules.map((rule, index) => (
+                  {rulesArray.map((rule, index) => (
                     <li key={index} className="flex items-start space-x-3">
                       <span className="text-blue-500 mt-1">•</span>
                       <span className="text-gray-600">{rule}</span>

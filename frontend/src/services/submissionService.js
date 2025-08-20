@@ -20,13 +20,27 @@ api.interceptors.request.use((config) => {
 });
 
 export const submissionService = {
-  // Get all submissions
+  // Get submissions
   async getSubmissions(filters = {}) {
     try {
-      const response = await api.get('/submissions', { params: filters });
-      return response.data;
+      if (filters.eventId) {
+        const response = await api.get(`/submissions/event/${filters.eventId}`);
+        return response.data?.data?.submissions || [];
+      }
+      const response = await api.get('/submissions/user/submissions');
+      return response.data?.data?.submissions || [];
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch submissions');
+    }
+  },
+
+  // Get current user's submissions
+  async getUserSubmissions() {
+    try {
+      const response = await api.get('/submissions/user/submissions');
+      return response.data?.data?.submissions || [];
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch your submissions');
     }
   },
 
@@ -34,7 +48,7 @@ export const submissionService = {
   async getSubmission(id) {
     try {
       const response = await api.get(`/submissions/${id}`);
-      return response.data;
+      return response.data?.data?.submission || null;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch submission');
     }
@@ -94,7 +108,7 @@ export const submissionService = {
   async uploadSubmissionFile(submissionId, file) {
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('submission', file);
 
       const response = await api.post(`/submissions/${submissionId}/files`, formData, {
         headers: {

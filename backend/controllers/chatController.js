@@ -1,6 +1,5 @@
 const Chat = require('../models/mongo/Chat');
-const Event = require('../models/sql/Event');
-const { Team, TeamMember } = require('../models/sql/Team');
+const { Event, Team, TeamMember } = require('../models/sql');
 
 // Create chat message
 const createChatMessage = async (req, res) => {

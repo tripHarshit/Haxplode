@@ -1,6 +1,4 @@
-const { Judge, JudgeEventAssignment } = require('../models/sql/Judge');
-const User = require('../models/sql/User');
-const Event = require('../models/sql/Event');
+const { Judge, JudgeEventAssignment, User, Event } = require('../models/sql');
 const Submission = require('../models/mongo/Submission');
 const { AnalyticsEvent } = require('../models/mongo');
 const { emitToRoom } = require('../utils/socket');
@@ -200,7 +198,9 @@ const getJudgeEvents = async (req, res) => {
         {
           model: Event,
           as: 'event',
+
           attributes: ['id', 'name', 'description', 'timeline'],
+
         },
       ],
       order: [['assignedAt', 'DESC']],

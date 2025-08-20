@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Home, 
@@ -15,7 +15,7 @@ import {
 import ThemeToggle from '../ui/ThemeToggle';
 import { useSocket } from '../../context/SocketContext';
 
-const Layout = ({ children }) => {
+const Layout = () => {
   const { user, logout, hasRole } = useAuth();
   const { unreadCount, setUnreadCount, refreshUnreadCount } = useSocket();
   const location = useLocation();
@@ -41,6 +41,27 @@ const Layout = ({ children }) => {
     return '/dashboard';
   };
 
+  const getProfileHref = () => {
+    if (hasRole('participant')) return '/participant/profile';
+    if (hasRole('organizer')) return '/organizer/profile';
+    if (hasRole('judge')) return '/judge/profile';
+    return '/profile';
+  };
+
+  const getSettingsHref = () => {
+    if (hasRole('participant')) return '/participant/settings';
+    if (hasRole('organizer')) return '/organizer/settings';
+    if (hasRole('judge')) return '/judge/settings';
+    return '/settings';
+  };
+
+  const getNotificationsHref = () => {
+    if (hasRole('participant')) return '/participant/notifications';
+    if (hasRole('organizer')) return '/organizer/notifications';
+    if (hasRole('judge')) return '/judge/notifications';
+    return '/notifications';
+  };
+
   const navigation = [
     { 
       name: 'Dashboard', 
@@ -56,8 +77,8 @@ const Layout = ({ children }) => {
     ...(hasRole('judge') ? [
       { name: 'Submissions', href: '/judge/submissions', icon: Trophy },
     ] : []),
-    { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Profile', href: getProfileHref(), icon: User },
+    { name: 'Settings', href: getSettingsHref(), icon: Settings },
   ];
 
   const additionalLinks = [
@@ -220,7 +241,7 @@ const Layout = ({ children }) => {
                 
                 {/* Notifications */}
                 <Link
-                  to="/notifications"
+                  to={getNotificationsHref()}
                   className="relative p-2 text-neutral-400 hover:text-neutral-500 dark:text-gray-500 dark:hover:text-gray-300"
                   onClick={() => setUnreadCount(0)}
                   title="Notifications"
@@ -257,7 +278,7 @@ const Layout = ({ children }) => {
         {/* Page content */}
         <main className="py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            {children}
+            <Outlet />
           </div>
         </main>
       </div>

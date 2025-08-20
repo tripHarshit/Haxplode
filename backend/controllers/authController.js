@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const https = require('https');
 const crypto = require('crypto');
-const User = require('../models/sql/User');
+const { User } = require('../models/sql');
 const { generateTokens, generatePasswordResetToken, verifyPasswordResetToken } = require('../utils/jwtUtils');
 const jwt = require('jsonwebtoken');
 

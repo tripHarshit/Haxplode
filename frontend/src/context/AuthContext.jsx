@@ -72,57 +72,44 @@ export const AuthProvider = ({ children }) => {
   // Initialize authentication on app load
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log('Initializing authentication...');
-      
-      const token = localStorage.getItem('token');
-      const refreshToken = localStorage.getItem('refreshToken');
-      
-      if (token && refreshToken) {
-        try {
+      try {
+        const token = localStorage.getItem('token');
+        const refreshToken = localStorage.getItem('refreshToken');
+        
+        if (token && refreshToken) {
           dispatch({ type: 'AUTH_START' });
-          
-          // Try to get current user directly first
-          try {
-            const user = await authService.getCurrentUser();
-            dispatch({
-              type: 'AUTH_SUCCESS',
-              payload: { user, token, refreshToken },
-            });
-            console.log('Authentication initialized successfully');
-          } catch (userError) {
-            // If getting user fails, token might be expired, try to refresh
-            console.log('Getting user failed, attempting token refresh...');
-            try {
-              const refreshResponse = await authService.refreshToken();
-              const user = await authService.getCurrentUser();
+          const userData = await authService.getCurrentUser();
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: { user: userData, token, refreshToken },
+          });
+        }
+      } catch (error) {
+        // Token might be expired, try to refresh
+        try {
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (refreshToken) {
+            const newToken = await authService.refreshToken();
+            if (newToken) {
+              const userData = await authService.getCurrentUser();
               dispatch({
                 type: 'AUTH_SUCCESS',
                 payload: { 
-                  user, 
-                  token: refreshResponse.token, 
+                  user: userData, 
+                  token: newToken, 
                   refreshToken 
                 },
               });
-              console.log('Token refreshed successfully');
-            } catch (refreshError) {
-              console.error('Token refresh failed:', refreshError);
-              localStorage.removeItem('token');
-              localStorage.removeItem('refreshToken');
-              dispatch({ type: 'AUTH_FAILURE', payload: 'Session expired' });
             }
           }
-        } catch (error) {
-          console.error('Authentication initialization failed:', error);
+        } catch (refreshError) {
+          // Both tokens are invalid, clear storage
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
-          dispatch({
-            type: 'AUTH_FAILURE',
-            payload: error.message,
-          });
+          dispatch({ type: 'AUTH_FAILURE', payload: 'Session expired' });
         }
-      } else {
-        dispatch({ type: 'AUTH_FAILURE', payload: null });
-        console.log('No authentication tokens found');
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
 
@@ -131,36 +118,27 @@ export const AuthProvider = ({ children }) => {
 
   // Role-based redirect logic
   const getRedirectPath = useCallback((user, intendedPath) => {
-    console.log('getRedirectPath called with:', { user, intendedPath });
-    
     if (!user || !user.role) {
-      console.log('No user or role, returning /dashboard');
       return '/dashboard';
     }
     
     const role = user.role.toLowerCase();
-    console.log('User role:', role);
     
     // If user has specific role, redirect to role-specific dashboard
     if (role === 'organizer') {
-      console.log('Redirecting to /organizer');
       return '/organizer';
     } else if (role === 'judge') {
-      console.log('Redirecting to /judge');
       return '/judge';
     } else if (role === 'participant') {
-      console.log('Redirecting to /participant');
       return '/participant';
     }
     
     // Default dashboard
-    console.log('Redirecting to default /dashboard');
     return '/dashboard';
   }, []);
 
   const login = async (credentials) => {
     try {
-      console.log('Login attempt started');
       dispatch({ type: 'AUTH_START' });
       
       const { user, token, refreshToken } = await authService.login(credentials);
@@ -174,23 +152,12 @@ export const AuthProvider = ({ children }) => {
         payload: { user, token, refreshToken },
       });
       
-      console.log('Login successful, redirecting...');
-      console.log('User data:', user);
-      console.log('Redirect path:', getRedirectPath(user, location.state?.from?.pathname));
-      
       // Get redirect path based on user role
       const redirectPath = getRedirectPath(user, location.state?.from?.pathname);
-      console.log('About to navigate to:', redirectPath);
-      
-      // Add a small delay to see the logs before navigation
-      setTimeout(() => {
-        console.log('Executing navigation now...');
-        navigate(redirectPath, { replace: true });
-      }, 100);
+      navigate(redirectPath, { replace: true });
       
       return { success: true };
     } catch (error) {
-      console.error('Login failed:', error);
       dispatch({
         type: 'AUTH_FAILURE',
         payload: error.message,
@@ -201,7 +168,6 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async (googleToken) => {
     try {
-      console.log('Google OAuth login attempt started');
       dispatch({ type: 'AUTH_START' });
       
       const { user, token, refreshToken } = await authService.loginWithGoogle(googleToken);
@@ -215,15 +181,12 @@ export const AuthProvider = ({ children }) => {
         payload: { user, token, refreshToken },
       });
       
-      console.log('Google login successful, redirecting...');
-      
       // Get redirect path based on user role
       const redirectPath = getRedirectPath(user, location.state?.from?.pathname);
       navigate(redirectPath, { replace: true });
       
       return { success: true };
     } catch (error) {
-      console.error('Google login failed:', error);
       dispatch({
         type: 'AUTH_FAILURE',
         payload: error.message,
@@ -234,7 +197,6 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      console.log('Registration attempt started');
       dispatch({ type: 'AUTH_START' });
       
       const { user, token, refreshToken } = await authService.register(userData);
@@ -248,15 +210,12 @@ export const AuthProvider = ({ children }) => {
         payload: { user, token, refreshToken },
       });
       
-      console.log('Registration successful, redirecting...');
-      
       // Get redirect path based on user role
       const redirectPath = getRedirectPath(user, '/dashboard');
       navigate(redirectPath, { replace: true });
       
       return { success: true };
     } catch (error) {
-      console.error('Registration failed:', error);
       dispatch({
         type: 'AUTH_FAILURE',
         payload: error.message,
@@ -267,8 +226,6 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
-      console.log('Logout attempt started');
-      
       // Clear tokens immediately to prevent refresh loops
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
@@ -279,14 +236,11 @@ export const AuthProvider = ({ children }) => {
       try {
         await authService.logout();
       } catch (error) {
-        console.error('Logout API call failed:', error);
         // Continue with local logout
       }
       
-      console.log('Logout successful, redirecting to home');
       navigate('/', { replace: true });
     } catch (error) {
-      console.error('Logout failed:', error);
       // Still logout locally even if everything fails
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
@@ -297,7 +251,6 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = useCallback(async (userData) => {
     try {
-      console.log('Updating user profile');
       dispatch({ type: 'SET_LOADING', payload: true });
       
       const updatedUser = await authService.updateProfile(userData);
@@ -305,10 +258,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'UPDATE_USER', payload: updatedUser });
       dispatch({ type: 'SET_LOADING', payload: false });
       
-      console.log('Profile updated successfully');
       return { success: true };
     } catch (error) {
-      console.error('Profile update failed:', error);
       dispatch({ type: 'SET_ERROR', payload: error.message });
       return { success: false, error: error.message };
     }
@@ -355,7 +306,6 @@ export const AuthProvider = ({ children }) => {
   // Auto-logout when token expires
   useEffect(() => {
     if (state.token && !authService.isAuthenticated()) {
-      console.log('Token expired, logging out user');
       logout();
     }
   }, [state.token, logout]);

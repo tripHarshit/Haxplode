@@ -54,45 +54,44 @@ const OrganizerDashboard = () => {
   };
 
   useEffect(() => {
-    const loadEvents = async () => {
+    const fetchEvents = async () => {
       try {
-        console.log('OrganizerDashboard: Loading events for current user...');
+        setIsLoadingEvents(true);
         const rawEvents = await hackathonService.getMyEvents();
-        console.log('OrganizerDashboard: Raw events from API:', rawEvents);
-        const mapped = rawEvents.map(ev => ({
-          id: ev.id,
-          title: ev.name,
-          description: ev.description,
-          category: ev.theme,
-          startDate: ev?.timeline?.startDate || ev.startDate || null,
-          endDate: ev?.timeline?.endDate || ev.endDate || null,
-          registrationDeadline: ev?.timeline?.registrationDeadline || null,
-          maxParticipants: (ev.maxTeams || 0) * (ev.maxTeamSize || 0),
+        const mappedEvents = rawEvents.map(event => ({
+          id: event.id,
+          title: event.name,
+          description: event.description,
+          category: event.theme,
+          startDate: event?.timeline?.startDate || event.startDate,
+          endDate: event?.timeline?.endDate || event.endDate,
+          registrationDeadline: event?.timeline?.registrationDeadline,
+          maxParticipants: (event.maxTeams || 0) * (event.maxTeamSize || 0),
           currentParticipants: 0,
-          prize: Array.isArray(ev.prizes) ? ev.prizes.join(', ') : (ev.prize || ''),
-          location: ev.location,
-          isOnline: !!ev.isVirtual,
-          status: ev.status ? String(ev.status).toLowerCase() : 'draft',
-          rules: typeof ev.rules === 'string' ? ev.rules.split('\n') : (ev.rules || []),
-          timeline: ev.timeline || [],
-          isRegistered: false
+          prize: Array.isArray(event.prizes) ? event.prizes.join(', ') : (event.prize || ''),
+          location: event.location,
+          isOnline: !!event.isVirtual,
+          status: event.status ? String(event.status).toLowerCase() : 'draft',
+          rules: typeof event.rules === 'string' ? event.rules.split('\n') : (event.rules || []),
+          timeline: event.timeline || [],
+          isRegistered: false,
         }));
-        setEvents(mapped);
+        setEvents(mappedEvents);
         // Select first event by default and load its announcements
-        if (mapped.length > 0) {
-          const firstId = mapped[0].id;
+        if (mappedEvents.length > 0) {
+          const firstId = mappedEvents[0].id;
           setSelectedEventId(firstId);
           await loadAnnouncements(firstId);
-          await loadStatsForEvents(mapped);
+          await loadStatsForEvents(mappedEvents);
         }
-        console.log('OrganizerDashboard: Events mapped and set in state');
       } catch (error) {
-        console.error('OrganizerDashboard: Failed to load events:', error);
+        console.error('Failed to fetch events:', error);
       } finally {
         setIsLoadingEvents(false);
       }
     };
-    loadEvents();
+
+    fetchEvents();
   }, []);
 
   // Read ?tab= from URL to deep-link into specific dashboard tab
@@ -206,7 +205,6 @@ const OrganizerDashboard = () => {
   };
 
   const handleEventCreated = (newEvent) => {
-    console.log('New event created:', newEvent);
     // Map backend event shape to UI card shape expected by EnhancedEventCard
     const mapped = {
       id: newEvent.id,
@@ -357,12 +355,10 @@ const OrganizerDashboard = () => {
 
   const handleSendMessage = (eventId) => {
     // TODO: Implement message functionality
-    console.log('Send message for event:', eventId);
   };
 
   const handleViewSubmissions = (eventId) => {
     // TODO: Implement submissions view
-    console.log('View submissions for event:', eventId);
   };
 
   const getStatusColor = (status) => {

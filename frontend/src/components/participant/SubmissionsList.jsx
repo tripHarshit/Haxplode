@@ -11,24 +11,48 @@ import {
 } from '@heroicons/react/24/outline';
 import { format, formatDistanceToNow } from 'date-fns';
 import SubmissionFormModal from './SubmissionFormModal';
-import { dataService } from '../../utils/mockData';
+import { submissionService } from '../../services/submissionService';
 
-const SubmissionsList = ({ submissions }) => {
+const SubmissionsList = ({ submissions, defaultEventId, defaultTeamId }) => {
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [editingSubmission, setEditingSubmission] = useState(null);
-  const [currentSubmissions, setCurrentSubmissions] = useState(submissions);
+  const [currentSubmissions, setCurrentSubmissions] = useState(submissions || []);
 
   useEffect(() => {
-    setCurrentSubmissions(submissions);
+    setCurrentSubmissions(submissions || []);
   }, [submissions]);
 
-  const handleSubmissionUpdate = () => {
-    setCurrentSubmissions(dataService.getSubmissions());
+  useEffect(() => {
+    // Initial fetch of user's submissions
+    (async () => {
+      try {
+        const list = await submissionService.getUserSubmissions();
+        setCurrentSubmissions(list);
+      } catch (e) {
+        console.error('Failed to load submissions', e);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (defaultEventId || defaultTeamId) {
+      setEditingSubmission({ eventId: defaultEventId || '', teamId: defaultTeamId || '' });
+      setShowSubmissionForm(true);
+    }
+  }, [defaultEventId, defaultTeamId]);
+
+  const handleSubmissionUpdate = async () => {
+    try {
+      const list = await submissionService.getUserSubmissions();
+      setCurrentSubmissions(list);
+    } catch (e) {
+      console.error('Failed to refresh submissions', e);
+    }
   };
 
   const handleCreateSubmission = () => {
-    setEditingSubmission(null);
+    setEditingSubmission({ eventId: defaultEventId || '', teamId: defaultTeamId || '' });
     setShowSubmissionForm(true);
   };
 
@@ -47,35 +71,35 @@ const SubmissionsList = ({ submissions }) => {
     switch (submission.status) {
       case 'submitted':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-300">
             <CheckCircleIcon className="h-3 w-3 mr-1" />
             Submitted
           </span>
         );
       case 'in_progress':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-300">
             <ClockIcon className="h-3 w-3 mr-1" />
             In Progress
           </span>
         );
       case 'draft':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-900/20 dark:text-neutral-300">
             <DocumentTextIcon className="h-3 w-3 mr-1" />
             Draft
           </span>
         );
       case 'under_review':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300">
             <EyeIcon className="h-3 w-3 mr-1" />
             Under Review
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-900/20 dark:text-neutral-300">
             Unknown
           </span>
         );
@@ -89,13 +113,13 @@ const SubmissionsList = ({ submissions }) => {
     const days = diff / (1000 * 60 * 60 * 24);
     
     if (diff < 0) {
-      return { status: 'overdue', text: 'Overdue', color: 'text-red-600' };
+      return { status: 'overdue', text: 'Overdue', color: 'text-error-600 dark:text-error-400' };
     } else if (days <= 1) {
-      return { status: 'urgent', text: 'Due soon', color: 'text-red-600' };
+      return { status: 'urgent', text: 'Due soon', color: 'text-error-600 dark:text-error-400' };
     } else if (days <= 3) {
-      return { status: 'warning', text: 'Due soon', color: 'text-yellow-600' };
+      return { status: 'warning', text: 'Due soon', color: 'text-warning-600 dark:text-warning-400' };
     } else {
-      return { status: 'ok', text: 'On time', color: 'text-green-600' };
+      return { status: 'ok', text: 'On time', color: 'text-success-600 dark:text-success-400' };
     }
   };
 
@@ -111,13 +135,13 @@ const SubmissionsList = ({ submissions }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Project Submissions</h2>
-          <p className="text-gray-600">Manage your hackathon project submissions</p>
+          <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Project Submissions</h2>
+          <p className="text-neutral-600 dark:text-neutral-400">Manage your hackathon project submissions</p>
         </div>
         
         <button
           onClick={handleCreateSubmission}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
         >
           <PlusIcon className="h-4 w-4 mr-2" />
           New Submission
@@ -127,31 +151,33 @@ const SubmissionsList = ({ submissions }) => {
       {/* Submissions List */}
       {currentSubmissions.length > 0 ? (
         <div className="space-y-4">
-                      {currentSubmissions.map((submission) => {
+          {currentSubmissions.map((submission) => {
             const deadlineStatus = getDeadlineStatus(submission.deadline);
             return (
               <div
-                key={submission.id}
-                className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-200"
+                key={submission.id || submission._id}
+                className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 p-6 hover:shadow-md hover:border-neutral-300 dark:hover:border-neutral-600 transition-all duration-200"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
                           {submission.projectName}
                         </h3>
-                        <p className="text-gray-600 mb-3 line-clamp-2">
-                          {submission.description}
+                        <p className="text-neutral-600 dark:text-neutral-400 mb-3 line-clamp-2">
+                          {submission.projectDescription || submission.description}
                         </p>
                       </div>
                       
                       <div className="flex flex-col items-end space-y-2 ml-6">
                         {getStatusBadge(submission)}
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {submission.teamName}
-                        </span>
+                        {submission.teamName && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300">
+                            {submission.teamName}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -161,16 +187,18 @@ const SubmissionsList = ({ submissions }) => {
                         <div className="flex items-center space-x-2 text-sm text-gray-600">
                           <DocumentTextIcon className="h-4 w-4" />
                           <span className="font-medium">Hackathon:</span>
-                          <span>{submission.hackathonTitle}</span>
+                          <span>{submission.hackathonTitle || submission.eventName}</span>
                         </div>
                         
-                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <ClockIcon className="h-4 w-4" />
-                          <span className="font-medium">Deadline:</span>
-                          <span className={deadlineStatus.color}>
-                            {format(new Date(submission.deadline), 'MMM dd, yyyy HH:mm')}
-                          </span>
-                        </div>
+                        {submission.deadline && (
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <ClockIcon className="h-4 w-4" />
+                            <span className="font-medium">Deadline:</span>
+                            <span className={deadlineStatus.color}>
+                              {format(new Date(submission.deadline), 'MMM dd, yyyy HH:mm')}
+                            </span>
+                          </div>
+                        )}
                         
                         {submission.submittedAt && (
                           <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -186,7 +214,7 @@ const SubmissionsList = ({ submissions }) => {
                           <span className="font-medium">Technologies:</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {submission.technologies.map((tech, index) => (
+                          {(submission.technologies || []).map((tech, index) => (
                             <span
                               key={index}
                               className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800"
@@ -200,11 +228,11 @@ const SubmissionsList = ({ submissions }) => {
 
                     {/* Links and Files */}
                     <div className="space-y-3 mb-4">
-                      {submission.githubUrl && (
+                      {(submission.githubUrl || submission.githubLink) && (
                         <div className="flex items-center space-x-2 text-sm">
                           <span className="font-medium text-gray-700">GitHub:</span>
                           <a
-                            href={submission.githubUrl}
+                            href={submission.githubUrl || submission.githubLink}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-700 underline"
@@ -214,31 +242,31 @@ const SubmissionsList = ({ submissions }) => {
                         </div>
                       )}
                       
-                      {submission.demoUrl && (
+                      {(submission.demoUrl || submission.siteLink) && (
                         <div className="flex items-center space-x-2 text-sm">
-                          <span className="font-medium text-gray-700">Demo:</span>
+                          <span className="font-medium text-neutral-700 dark:text-neutral-300">Site:</span>
                           <a
-                            href={submission.demoUrl}
+                            href={submission.demoUrl || submission.siteLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-700 underline"
+                            className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 underline"
                           >
-                            Live Demo
+                            Open Link
                           </a>
                         </div>
                       )}
                       
-                      {submission.files && submission.files.length > 0 && (
+                      {(submission.files || submission.attachments)?.length > 0 && (
                         <div className="flex items-center space-x-2 text-sm">
-                          <span className="font-medium text-gray-700">Files:</span>
+                          <span className="font-medium text-neutral-700 dark:text-neutral-300">Files:</span>
                           <div className="flex space-x-2">
-                            {submission.files.map((file, index) => (
+                            {(submission.files || submission.attachments).map((file, index) => (
                               <a
                                 key={index}
                                 href={file.url}
-                                className="text-blue-600 hover:text-blue-700 underline"
+                                className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 underline"
                               >
-                                {file.name} ({file.size})
+                                {file.name} {file.size ? `(${file.size})` : ''}
                               </a>
                             ))}
                           </div>
@@ -247,21 +275,25 @@ const SubmissionsList = ({ submissions }) => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <span className={deadlineStatus.color}>
-                          {deadlineStatus.text}
-                        </span>
-                        <span>•</span>
-                        <span>
-                          {formatDistanceToNow(new Date(submission.deadline), { addSuffix: true })}
-                        </span>
+                    <div className="flex items-center justify-between pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                      <div className="flex items-center space-x-2 text-sm text-neutral-500 dark:text-neutral-400">
+                        {submission.deadline && (
+                          <>
+                            <span className={deadlineStatus.color}>
+                              {deadlineStatus.text}
+                            </span>
+                            <span>•</span>
+                            <span>
+                              {formatDistanceToNow(new Date(submission.deadline), { addSuffix: true })}
+                            </span>
+                          </>
+                        )}
                       </div>
                       
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleViewSubmission(submission)}
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                          className="inline-flex items-center px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200"
                         >
                           <EyeIcon className="h-4 w-4 mr-2" />
                           View
@@ -270,7 +302,7 @@ const SubmissionsList = ({ submissions }) => {
                         {canEdit(submission) && (
                           <button
                             onClick={() => handleEditSubmission(submission)}
-                            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                            className="inline-flex items-center px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200"
                           >
                             <PencilIcon className="h-4 w-4 mr-2" />
                             Edit
@@ -286,12 +318,12 @@ const SubmissionsList = ({ submissions }) => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <DocumentTextIcon className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No submissions yet</h3>
-          <p className="text-gray-600 mb-6">Start by creating your first project submission</p>
+          <DocumentTextIcon className="h-12 w-12 mx-auto text-neutral-300 dark:text-neutral-600 mb-4" />
+          <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">No submissions yet</h3>
+          <p className="text-neutral-600 dark:text-neutral-400 mb-6">Start by creating your first project submission</p>
           <button
             onClick={handleCreateSubmission}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
             Create Submission

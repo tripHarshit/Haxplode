@@ -1,5 +1,5 @@
 const Announcement = require('../models/mongo/Announcement');
-const Event = require('../models/sql/Event');
+const { Event } = require('../models/sql');
 const { emitToRoom } = require('../utils/socket');
 const { audit } = require('../utils/audit');
 
