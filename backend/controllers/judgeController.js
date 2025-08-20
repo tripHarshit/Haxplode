@@ -1,4 +1,4 @@
-const { Judge, JudgeEventAssignment, User, Event } = require('../models/sql');
+const { Judge, JudgeEventAssignment, JudgeSubmissionAssignment, User, Event } = require('../models/sql');
 const Submission = require('../models/mongo/Submission');
 const { AnalyticsEvent } = require('../models/mongo');
 const { emitToRoom } = require('../utils/socket');
@@ -444,27 +444,581 @@ const updateJudgeProfile = async (req, res) => {
   }
 };
 
-// Judge analytics (basic)
+// Judge analytics (enhanced with real data)
 const getJudgeAnalytics = async (req, res) => {
   try {
     const judgeId = req.currentUser.judgeProfile?.id;
+    const userId = req.currentUser.id;
     if (!judgeId) {
       return res.status(404).json({ success: false, message: 'Judge profile not found' });
     }
+
+    // Totals from MongoDB scores (backward compatible)
     const countAgg = await Submission.aggregate([
       { $unwind: { path: '$scores', preserveNullAndEmptyArrays: false } },
       { $match: { 'scores.judgeId': judgeId } },
       { $group: { _id: null, total: { $sum: 1 }, avgScore: { $avg: '$scores.score' } } },
     ]);
-    const totals = countAgg[0] || { total: 0, avgScore: 0 };
-    const recent = await AnalyticsEvent.find({ userId: req.currentUser.id }).sort({ ts: -1 }).limit(20);
+    const totalsAgg = countAgg[0] || { total: 0, avgScore: 0 };
+    const totals = { reviews: totalsAgg.total || 0, averageScore: Math.round((totalsAgg.avgScore || 0) * 100) / 100 };
+
+    // Completion from SQL assignments
+    const totalAssigned = await JudgeSubmissionAssignment.count({ where: { judgeId } });
+    const totalReviewed = await JudgeSubmissionAssignment.count({ where: { judgeId, status: 'reviewed' } });
+    const completion = {
+      assigned: totalAssigned,
+      reviewed: totalReviewed,
+      rate: totalAssigned > 0 ? Math.round((totalReviewed / totalAssigned) * 100) : 0,
+    };
+
+    // Average time per review from AnalyticsEvent durationMs
+    const timeEvents = await AnalyticsEvent.find({ userId, type: 'submission_reviewed', durationMs: { $ne: null } }).select('durationMs');
+    const averageMs = timeEvents.length > 0 ? Math.round(timeEvents.reduce((s, e) => s + (e.durationMs || 0), 0) / timeEvents.length) : 0;
+    const time = { averageMs };
+
+    // Score distribution (bucketed by 10)
+    const reviewedAssignments = await JudgeSubmissionAssignment.findAll({ where: { judgeId, status: 'reviewed' }, attributes: ['score', 'reviewedAt'] });
+    const scoreDistribution = {};
+    for (const a of reviewedAssignments) {
+      const numericScore = Number(a.score) || 0;
+      const bucket = Math.floor(numericScore / 10) * 10; // 0,10,20,...,100
+      const key = String(bucket);
+      scoreDistribution[key] = (scoreDistribution[key] || 0) + 1;
+    }
+
+    // Monthly stats: reviews count and average score per month (YYYY-MM)
+    const monthlyMap = new Map();
+    for (const a of reviewedAssignments) {
+      const dt = a.reviewedAt ? new Date(a.reviewedAt) : null;
+      const monthKey = dt ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}` : 'unknown';
+      if (!monthlyMap.has(monthKey)) monthlyMap.set(monthKey, { month: monthKey, reviews: 0, totalScore: 0 });
+      const entry = monthlyMap.get(monthKey);
+      entry.reviews += 1;
+      entry.totalScore += Number(a.score) || 0;
+    }
+    const monthlyStats = Array.from(monthlyMap.values())
+      .filter(m => m.month !== 'unknown')
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .map(m => ({ month: m.month, reviews: m.reviews, avgScore: m.reviews ? Math.round((m.totalScore / m.reviews) * 100) / 100 : 0 }));
+
+    const recent = await AnalyticsEvent.find({ userId }).sort({ ts: -1 }).limit(20);
+
     return res.json({
-      totals: { reviews: totals.total, averageScore: Math.round((totals.avgScore || 0) * 100) / 100 },
+      totals,
+      completion,
+      time,
+      scoreDistribution,
+      monthlyStats,
       recent,
     });
   } catch (error) {
     console.error('Judge analytics error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch judge analytics' });
+  }
+};
+
+// Assign all submissions to all judges for an event (Organizer only)
+const assignSubmissionsToJudges = async (req, res) => {
+  try {
+    console.log('🔍 [assignSubmissionsToJudges] Starting function');
+    console.log('🔍 [assignSubmissionsToJudges] Request params:', req.params);
+    console.log('🔍 [assignSubmissionsToJudges] Current user:', req.currentUser);
+    
+    const { eventId } = req.params;
+
+    console.log('🔍 [assignSubmissionsToJudges] Event ID:', eventId);
+
+    // Check if event exists
+    console.log('🔍 [assignSubmissionsToJudges] Checking if event exists...');
+    const event = await Event.findByPk(eventId);
+    if (!event) {
+      console.log('❌ [assignSubmissionsToJudges] Event not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found',
+      });
+    }
+
+    console.log('🔍 [assignSubmissionsToJudges] Event found:', event.name);
+
+    // Check if user is event creator or organizer
+    if (event.createdBy !== req.currentUser.id && req.currentUser.role !== 'Organizer') {
+      console.log('❌ [assignSubmissionsToJudges] Access denied - not event creator or organizer');
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only event creator or organizers can assign submissions.',
+      });
+    }
+
+    // Get all judges assigned to this event
+    console.log('🔍 [assignSubmissionsToJudges] Fetching judges assigned to event...');
+    const judgeAssignments = await JudgeEventAssignment.findAll({
+      where: { eventId, isActive: true },
+      include: [{ model: Judge, as: 'judge' }],
+    });
+
+    console.log('🔍 [assignSubmissionsToJudges] Found judge assignments:', judgeAssignments.length);
+
+    if (judgeAssignments.length === 0) {
+      console.log('❌ [assignSubmissionsToJudges] No judges assigned to this event');
+      return res.status(400).json({
+        success: false,
+        message: 'No judges assigned to this event',
+      });
+    }
+
+    // Get all submissions for this event
+    console.log('🔍 [assignSubmissionsToJudges] Fetching submissions for event...');
+    const submissions = await Submission.find({ eventId });
+
+    console.log('🔍 [assignSubmissionsToJudges] Found submissions:', submissions.length);
+
+    if (submissions.length === 0) {
+      console.log('❌ [assignSubmissionsToJudges] No submissions found for this event');
+      return res.status(400).json({
+        success: false,
+        message: 'No submissions found for this event',
+      });
+    }
+
+    // Assign each submission to each judge
+    console.log('🔍 [assignSubmissionsToJudges] Starting assignment process...');
+    const assignments = [];
+    for (const submission of submissions) {
+      console.log('🔍 [assignSubmissionsToJudges] Processing submission:', submission._id);
+      for (const judgeAssignment of judgeAssignments) {
+        console.log('🔍 [assignSubmissionsToJudges] Processing judge:', judgeAssignment.judgeId);
+        
+        // Check if assignment already exists
+        const existingAssignment = await JudgeSubmissionAssignment.findOne({
+          where: { judgeId: judgeAssignment.judgeId, submissionId: submission._id.toString() },
+        });
+
+        if (!existingAssignment) {
+          console.log('🔍 [assignSubmissionsToJudges] Creating new assignment for judge', judgeAssignment.judgeId, 'and submission', submission._id);
+          const assignment = await JudgeSubmissionAssignment.create({
+            judgeId: judgeAssignment.judgeId,
+            submissionId: submission._id.toString(),
+            eventId,
+            status: 'assigned',
+          });
+          assignments.push(assignment);
+        } else {
+          console.log('🔍 [assignSubmissionsToJudges] Assignment already exists for judge', judgeAssignment.judgeId, 'and submission', submission._id);
+        }
+      }
+    }
+
+    console.log('🔍 [assignSubmissionsToJudges] Created assignments:', assignments.length);
+
+    audit(req.currentUser.id, 'submissions_assigned_to_judges', { 
+      eventId, 
+      metadata: { 
+        submissionsCount: submissions.length, 
+        judgesCount: judgeAssignments.length,
+        assignmentsCount: assignments.length 
+      } 
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Submissions assigned to judges successfully',
+      data: {
+        assignments: assignments.length,
+        submissions: submissions.length,
+        judges: judgeAssignments.length,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [assignSubmissionsToJudges] Error:', error);
+    console.error('❌ [assignSubmissionsToJudges] Error stack:', error.stack);
+    console.error('❌ [assignSubmissionsToJudges] Error message:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to assign submissions to judges',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+};
+
+// Get assigned submissions for a judge
+const getAssignedSubmissions = async (req, res) => {
+  try {
+    console.log('🔍 [getAssignedSubmissions] Starting function');
+    console.log('🔍 [getAssignedSubmissions] Request params:', req.params);
+    console.log('🔍 [getAssignedSubmissions] Current user:', req.currentUser);
+    
+    const judgeId = req.currentUser.judgeProfile?.id;
+    const { eventId } = req.params;
+
+    console.log('🔍 [getAssignedSubmissions] Judge ID:', judgeId);
+    console.log('🔍 [getAssignedSubmissions] Event ID:', eventId);
+
+    if (!judgeId) {
+      console.log('❌ [getAssignedSubmissions] Judge profile not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Judge profile not found',
+      });
+    }
+
+    // Check if judge is assigned to this event
+    console.log('🔍 [getAssignedSubmissions] Checking judge event assignment...');
+    let eventAssignment;
+    try {
+      eventAssignment = await JudgeEventAssignment.findOne({
+        where: { judgeId, eventId, isActive: true },
+      });
+      console.log('🔍 [getAssignedSubmissions] Event assignment found:', !!eventAssignment);
+    } catch (sqlError) {
+      console.error('❌ [getAssignedSubmissions] SQL error checking event assignment:', sqlError);
+      console.error('❌ [getAssignedSubmissions] SQL error stack:', sqlError.stack);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to check judge assignment',
+        error: process.env.NODE_ENV === 'development' ? sqlError.message : 'Internal server error',
+      });
+    }
+
+    if (!eventAssignment) {
+      console.log('❌ [getAssignedSubmissions] Judge not assigned to this event');
+      return res.status(403).json({
+        success: false,
+        message: 'You are not assigned to this event',
+      });
+    }
+
+    // Get all submission assignments for this judge and event
+    console.log('🔍 [getAssignedSubmissions] Fetching submission assignments...');
+    let submissionAssignments = [];
+    try {
+      submissionAssignments = await JudgeSubmissionAssignment.findAll({
+        where: { judgeId, eventId },
+        order: [['assignedAt', 'ASC']],
+      });
+      console.log('🔍 [getAssignedSubmissions] Found submission assignments:', submissionAssignments.length);
+    } catch (sqlError) {
+      console.error('❌ [getAssignedSubmissions] SQL error fetching submission assignments:', sqlError);
+      console.error('❌ [getAssignedSubmissions] SQL error stack:', sqlError.stack);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch submission assignments',
+        error: process.env.NODE_ENV === 'development' ? sqlError.message : 'Internal server error',
+      });
+    }
+
+    // If no assignments exist for this judge & event, auto-assign all submissions for convenience
+    if (!submissionAssignments || submissionAssignments.length === 0) {
+      console.log('ℹ️ [getAssignedSubmissions] No assignments found. Auto-assigning all event submissions to judge', judgeId);
+      let eventSubmissions = [];
+      try {
+        eventSubmissions = await Submission.find({ eventId });
+        console.log('🔍 [getAssignedSubmissions] Submissions found in MongoDB for event:', eventSubmissions.length);
+      } catch (mongoError) {
+        console.error('❌ [getAssignedSubmissions] MongoDB error while fetching event submissions:', mongoError);
+        return res.status(500).json({ success: false, message: 'Failed to fetch event submissions' });
+      }
+
+      const createPayload = eventSubmissions.map((s) => ({
+        judgeId,
+        submissionId: s._id.toString(),
+        eventId,
+        status: 'assigned',
+        assignedAt: new Date(),
+      }));
+      try {
+        // Bulk create but ignore duplicates just in case
+        for (const payload of createPayload) {
+          const exists = await JudgeSubmissionAssignment.findOne({ where: { judgeId, submissionId: payload.submissionId } });
+          if (!exists) {
+            await JudgeSubmissionAssignment.create(payload);
+          }
+        }
+        console.log('✅ [getAssignedSubmissions] Auto-assignment complete:', createPayload.length);
+      } catch (createErr) {
+        console.error('❌ [getAssignedSubmissions] Failed auto-assigning submissions:', createErr.message);
+      }
+      // Reload assignments
+      submissionAssignments = await JudgeSubmissionAssignment.findAll({
+        where: { judgeId, eventId },
+        order: [['assignedAt', 'ASC']],
+      });
+      console.log('🔍 [getAssignedSubmissions] Reloaded assignments:', submissionAssignments.length);
+    }
+
+    // Get submission details from MongoDB
+    const submissionIds = submissionAssignments.map(assignment => assignment.submissionId);
+    console.log('🔍 [getAssignedSubmissions] Submission IDs to fetch:', submissionIds);
+
+    if (submissionIds.length === 0) {
+      console.log('🔍 [getAssignedSubmissions] No submission assignments found, returning empty array');
+      return res.status(200).json({
+        success: true,
+        data: {
+          submissions: [],
+        },
+      });
+    }
+
+    console.log('🔍 [getAssignedSubmissions] Fetching submissions from MongoDB...');
+    let submissions = [];
+    try {
+      submissions = await Submission.find({ _id: { $in: submissionIds } });
+      console.log('🔍 [getAssignedSubmissions] Found submissions from MongoDB:', submissions.length);
+    } catch (mongoError) {
+      console.error('❌ [getAssignedSubmissions] MongoDB error:', mongoError);
+      console.error('❌ [getAssignedSubmissions] MongoDB error stack:', mongoError.stack);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch submissions from database',
+        error: process.env.NODE_ENV === 'development' ? mongoError.message : 'Internal server error',
+      });
+    }
+
+    // Combine SQL and MongoDB data
+    console.log('🔍 [getAssignedSubmissions] Combining data...');
+    const submissionsWithStatus = submissions.map(submission => {
+      const assignment = submissionAssignments.find(
+        assignment => assignment.submissionId === submission._id.toString()
+      );
+      
+      console.log('🔍 [getAssignedSubmissions] Processing submission:', submission._id, 'Assignment found:', !!assignment);
+      
+      return {
+        ...submission.toObject(),
+        assignmentId: assignment?.id,
+        reviewStatus: assignment?.status || 'assigned',
+        assignedAt: assignment?.assignedAt,
+        reviewedAt: assignment?.reviewedAt,
+        judgeScore: assignment?.score,
+        judgeFeedback: assignment?.feedback,
+        judgeCriteria: assignment?.criteria,
+      };
+    });
+
+    console.log('🔍 [getAssignedSubmissions] Final submissions count:', submissionsWithStatus.length);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        submissions: submissionsWithStatus,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [getAssignedSubmissions] Error:', error);
+    console.error('❌ [getAssignedSubmissions] Error stack:', error.stack);
+    console.error('❌ [getAssignedSubmissions] Error message:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get assigned submissions',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+};
+
+// Submit review for a submission (Judge only) - with locking mechanism
+const submitReview = async (req, res) => {
+  try {
+    console.log('🔍 [submitReview] Starting function');
+    console.log('🔍 [submitReview] Request body:', req.body);
+    console.log('🔍 [submitReview] Current user:', req.currentUser);
+    
+    const { submissionId, score, feedback, criteria, timeSpent } = req.body;
+    const judgeId = req.currentUser.judgeProfile?.id;
+
+    console.log('🔍 [submitReview] Judge ID:', judgeId);
+    console.log('🔍 [submitReview] Submission ID:', submissionId);
+    console.log('🔍 [submitReview] Score:', score);
+
+    if (!judgeId) {
+      console.log('❌ [submitReview] Judge profile not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Judge profile not found',
+      });
+    }
+
+    // Check if submission assignment exists and is not already reviewed
+    console.log('🔍 [submitReview] Checking submission assignment...');
+    const assignment = await JudgeSubmissionAssignment.findOne({
+      where: { judgeId, submissionId, status: 'assigned' },
+    });
+
+    console.log('🔍 [submitReview] Assignment found:', !!assignment);
+
+    if (!assignment) {
+      console.log('❌ [submitReview] Submission not assigned to judge or already reviewed');
+      return res.status(404).json({
+        success: false,
+        message: 'Submission not assigned to you or already reviewed',
+      });
+    }
+
+    // Validate score
+    if (typeof score !== 'number' || score < 0 || score > 100) {
+      console.log('❌ [submitReview] Invalid score:', score);
+      return res.status(400).json({
+        success: false,
+        message: 'Score must be between 0 and 100',
+      });
+    }
+
+    // Update assignment to reviewed status (locking mechanism)
+    console.log('🔍 [submitReview] Updating assignment to reviewed status...');
+    await assignment.update({
+      status: 'reviewed',
+      score,
+      feedback,
+      criteria,
+      reviewedAt: new Date(),
+    });
+
+    console.log('🔍 [submitReview] Assignment updated successfully');
+
+    // Also add to MongoDB submission scores for backward compatibility
+    console.log('🔍 [submitReview] Adding to MongoDB submission scores...');
+    await Submission.findByIdAndUpdate(submissionId, {
+      $push: {
+        scores: {
+          judgeId,
+          score,
+          feedback,
+          criteria,
+          submittedAt: new Date(),
+        },
+      },
+    });
+
+    console.log('🔍 [submitReview] MongoDB submission updated successfully');
+
+    audit(req.currentUser.id, 'submission_reviewed', { 
+      submissionId, 
+      eventId: assignment.eventId,
+      metadata: { judgeId, score, timeSpentMinutes: typeof timeSpent === 'number' ? timeSpent : undefined },
+      durationMs: typeof timeSpent === 'number' ? Math.max(0, Math.round(timeSpent * 60 * 1000)) : undefined,
+    });
+
+    console.log('🔍 [submitReview] Audit log created');
+
+    res.status(200).json({
+      success: true,
+      message: 'Review submitted successfully',
+      data: {
+        assignment,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [submitReview] Error:', error);
+    console.error('❌ [submitReview] Error stack:', error.stack);
+    console.error('❌ [submitReview] Error message:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit review',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+};
+
+// Get event results with average scores (Organizer only)
+const getEventResults = async (req, res) => {
+  try {
+    console.log('🔍 [getEventResults] Starting function');
+    console.log('🔍 [getEventResults] Request params:', req.params);
+    console.log('🔍 [getEventResults] Current user:', req.currentUser);
+    
+    const { eventId } = req.params;
+
+    console.log('🔍 [getEventResults] Event ID:', eventId);
+
+    // Check if event exists
+    console.log('🔍 [getEventResults] Checking if event exists...');
+    const event = await Event.findByPk(eventId);
+    if (!event) {
+      console.log('❌ [getEventResults] Event not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found',
+      });
+    }
+
+    console.log('🔍 [getEventResults] Event found:', event.name);
+
+    // Check if user is event creator or organizer
+    if (event.createdBy !== req.currentUser.id && req.currentUser.role !== 'Organizer') {
+      console.log('❌ [getEventResults] Access denied - not event creator or organizer');
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only event creator or organizers can view results.',
+      });
+    }
+
+    // Align with leaderboard: compute from MongoDB scores using event.rounds weighting
+    console.log('🔍 [getEventResults] Fetching submissions from MongoDB by event...');
+    const submissions = await Submission.find({ eventId });
+    console.log('🔍 [getEventResults] Found submissions:', submissions.length);
+
+    console.log('🔍 [getEventResults] Calculating weighted averages (matching leaderboard)...');
+    const rounds = Array.isArray(event.rounds) ? event.rounds : [];
+    const submissionsWithScores = submissions.map((s) => {
+      const scores = Array.isArray(s.scores) ? s.scores : [];
+
+      let averageScore = 0;
+      if (rounds.length > 0) {
+        let total = 0; let weightSum = 0;
+        for (const rd of rounds) {
+          const rdScores = scores.filter(sc => sc.roundId === rd.id);
+          if (rdScores.length) {
+            const avg = rdScores.reduce((sum, sc) => sum + (Number(sc.score) || 0), 0) / rdScores.length;
+            total += avg * (rd.weight || 1);
+            weightSum += (rd.weight || 1);
+          }
+        }
+        if (weightSum === 0) {
+          const flatAvg = scores.length ? (scores.reduce((sum, sc) => sum + (Number(sc.score) || 0), 0) / scores.length) : 0;
+          averageScore = flatAvg;
+        } else {
+          averageScore = total / weightSum;
+        }
+      } else {
+        averageScore = scores.length ? (scores.reduce((sum, sc) => sum + (Number(sc.score) || 0), 0) / scores.length) : 0;
+      }
+
+      const reviews = scores.map(sc => ({
+        judgeId: sc.judgeId,
+        score: sc.score,
+        feedback: sc.feedback,
+        reviewedAt: sc.submittedAt,
+      }));
+
+      return {
+        ...s.toObject(),
+        averageScore: Math.round(averageScore * 100) / 100,
+        totalReviews: reviews.length,
+        reviews,
+      };
+    });
+
+    submissionsWithScores.sort((a, b) => b.averageScore - a.averageScore);
+
+    const totalReviews = submissionsWithScores.reduce((sum, r) => sum + (r.totalReviews || 0), 0);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        submissions: submissionsWithScores,
+        totalSubmissions: submissions.length,
+        totalReviews,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [getEventResults] Error:', error);
+    console.error('❌ [getEventResults] Error stack:', error.stack);
+    console.error('❌ [getEventResults] Error message:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get event results',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
   }
 };
 
@@ -478,4 +1032,8 @@ module.exports = {
   getJudgeProfile,
   updateJudgeProfile,
   getJudgeAnalytics,
+  assignSubmissionsToJudges,
+  getAssignedSubmissions,
+  submitReview,
+  getEventResults,
 };

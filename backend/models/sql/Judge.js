@@ -140,7 +140,92 @@ const JudgeEventAssignment = sequelize.define('JudgeEventAssignment', {
   ],
 });
 
+// JudgeSubmissionAssignment junction table for judge-submission assignments
+const JudgeSubmissionAssignment = sequelize.define('JudgeSubmissionAssignment', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  judgeId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Judges',
+      key: 'id',
+    },
+  },
+  submissionId: {
+    type: DataTypes.STRING, // MongoDB ObjectId as string
+    allowNull: false,
+  },
+  eventId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Events',
+      key: 'id',
+    },
+  },
+  assignedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  reviewedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  status: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: 'assigned',
+    validate: {
+      isIn: [['assigned', 'reviewed']],
+    },
+  },
+  score: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true,
+    validate: {
+      min: 0,
+      max: 100,
+    },
+  },
+  feedback: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  criteria: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    get() {
+      const rawValue = this.getDataValue('criteria');
+      if (!rawValue) return {};
+      try { return JSON.parse(rawValue); } catch (_) { return {}; }
+    },
+    set(value) {
+      this.setDataValue('criteria', JSON.stringify(value || {}));
+    },
+  },
+}, {
+  tableName: 'JudgeSubmissionAssignments',
+  timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['judgeId', 'submissionId'],
+    },
+    {
+      fields: ['eventId', 'status'],
+    },
+    {
+      fields: ['judgeId', 'status'],
+    },
+  ],
+});
+
 module.exports = {
   Judge,
   JudgeEventAssignment,
+  JudgeSubmissionAssignment,
 };
