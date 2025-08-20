@@ -32,21 +32,21 @@ const AssignedSubmissions = ({ submissions, onViewSubmission, onStartReview }) =
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'assigned': return 'bg-blue-100 text-blue-800';
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'flagged': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'assigned': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
+      case 'in_progress': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
+      case 'completed': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
+      case 'flagged': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'urgent': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
+      case 'high': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300';
+      case 'medium': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
+      case 'low': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
     }
   };
 
@@ -168,9 +168,9 @@ const AssignedSubmissions = ({ submissions, onViewSubmission, onStartReview }) =
 
       {filteredSubmissions.length === 0 && (
         <div className="text-center py-12">
-          <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No submissions found</h3>
-          <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+          <DocumentTextIcon className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No submissions found</h3>
+          <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or filter criteria</p>
         </div>
       )}
     </div>

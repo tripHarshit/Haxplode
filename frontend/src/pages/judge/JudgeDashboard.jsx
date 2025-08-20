@@ -251,7 +251,25 @@ const JudgeDashboard = () => {
 
         {/* Main Content */}
         <div className="flex-1 p-8">
-          {activeTab === 'overview' && (
+          {loading && (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          )}
+          
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+              <div className="flex">
+                <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Error loading dashboard</h3>
+                  <div className="mt-2 text-sm text-red-700 dark:text-red-300">{error}</div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {!loading && !error && activeTab === 'overview' && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h2>
               
@@ -276,10 +294,10 @@ const JudgeDashboard = () => {
 
               {/* Quick Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
-                      <ClipboardDocumentListIcon className="h-8 w-8 text-blue-600" />
+                      <ClipboardDocumentListIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
@@ -290,10 +308,10 @@ const JudgeDashboard = () => {
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
-                      <ClockIcon className="h-8 w-8 text-orange-600" />
+                      <ClockIcon className="h-8 w-8 text-orange-600 dark:text-orange-400" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
@@ -304,10 +322,10 @@ const JudgeDashboard = () => {
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
-                      <ExclamationTriangleIcon className="h-8 w-8 text-red-600" />
+                      <ExclamationTriangleIcon className="h-8 w-8 text-red-600 dark:text-red-400" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
@@ -321,22 +339,62 @@ const JudgeDashboard = () => {
 
               {/* Recent Activity and Analytics Preview */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RecentActivity activities={[]} />
+                <RecentActivity activities={[
+                  {
+                    id: 1,
+                    type: 'review_submitted',
+                    title: 'Review submitted for "Smart Healthcare Monitor"',
+                    description: 'Completed review with score 8.5/10',
+                    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+                  },
+                  {
+                    id: 2,
+                    type: 'assignment_received',
+                    title: 'New assignment received',
+                    description: 'Assigned to review "AI Chatbot Project"',
+                    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+                  },
+                  {
+                    id: 3,
+                    type: 'review_in_progress',
+                    title: 'Review in progress',
+                    description: 'Started reviewing "Blockchain Voting System"',
+                    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+                  },
+                  {
+                    id: 4,
+                    type: 'deadline_approaching',
+                    title: 'Deadline approaching',
+                    description: '2 days left to review "Mobile App Project"',
+                    timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+                  }
+                ]} />
                 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Quick Analytics</h3>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600 dark:text-gray-300">Completion Rate</span>
-                      <span className="text-lg font-semibold text-green-600">
+                      <span className="text-lg font-semibold text-green-600 dark:text-green-400">
                         {getTotalAssigned() > 0 ? Math.round((getCompletedReviews() / getTotalAssigned()) * 100) : 0}%
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
-                        className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-green-600 dark:bg-green-500 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${getTotalAssigned() > 0 ? (getCompletedReviews() / getTotalAssigned()) * 100 : 0}%` }}
                       ></div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 pt-4">
+                      <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{getCompletedReviews()}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Completed</div>
+                      </div>
+                      <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{getPendingReviews()}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Pending</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -344,7 +402,7 @@ const JudgeDashboard = () => {
             </div>
           )}
 
-          {activeTab === 'submissions' && (
+          {!loading && !error && activeTab === 'submissions' && (
             <div className="space-y-6">
               {!selectedHackathon ? (
                 // Show hackathon list
@@ -362,7 +420,7 @@ const JudgeDashboard = () => {
                         <div
                           key={assignment.eventId}
                           onClick={() => handleHackathonSelect(assignment)}
-                          className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:shadow-md transition-shadow duration-200"
+                          className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 transform hover:-translate-y-1"
                         >
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -449,7 +507,7 @@ const JudgeDashboard = () => {
             </div>
           )}
 
-          {activeTab === 'analytics' && analytics && (
+          {!loading && !error && activeTab === 'analytics' && analytics && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Judge Analytics</h2>
               <JudgeAnalytics analytics={{
@@ -463,7 +521,7 @@ const JudgeDashboard = () => {
             </div>
           )}
 
-          {activeTab === 'leaderboard' && (
+          {!loading && !error && activeTab === 'leaderboard' && (
             <div className="space-y-6">
               <Leaderboard />
             </div>

@@ -20,6 +20,7 @@ import EventCreationWizard from '../../components/organizer/EventCreationWizard'
 import { hackathonService } from '../../services/hackathonService';
 import { announcementService } from '../../services/announcementService';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import JudgeAssignmentModal from '../../components/organizer/JudgeAssignmentModal';
 
 const OrganizerDashboard = () => {
@@ -28,6 +29,7 @@ const OrganizerDashboard = () => {
   const [events, setEvents] = useState([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const { user, updateProfile } = useAuth();
+  const { showSuccess, showError } = useNotifications();
   const [participants, setParticipants] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -45,6 +47,7 @@ const OrganizerDashboard = () => {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [showJudgeModal, setShowJudgeModal] = useState(false);
   const [judgeModalEventId, setJudgeModalEventId] = useState(null);
+  const [deletingEventId, setDeletingEventId] = useState(null);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -227,13 +230,42 @@ const OrganizerDashboard = () => {
     setShowEventModal(false);
   };
 
-  const handleDeleteEvent = (eventId) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
-      // Log navigation test
-      if (window.navigationTester) {
-        window.navigationTester.logButtonClick('Delete Event', 'organizer_dashboard');
+  const handleDeleteEvent = async (event) => {
+    console.log('Delete event called with:', event);
+    
+    if (window.confirm(`Are you sure you want to delete "${event.title || event.name}"? This action cannot be undone.\n\n⚠️  WARNING: All participants, teams, submissions, and related data will be automatically removed.`)) {
+      try {
+        setDeletingEventId(event.id);
+        
+        console.log('Attempting to delete event with ID:', event.id);
+        
+        // Log navigation test
+        if (window.navigationTester) {
+          window.navigationTester.logButtonClick('Delete Event', 'organizer_dashboard');
+        }
+        
+        // Call backend to delete the event
+        const result = await hackathonService.deleteHackathon(event.id);
+        console.log('Delete result:', result);
+        
+        // Remove from local state
+        setEvents(prev => prev.filter(e => e.id !== event.id));
+        
+        // Show success message
+        showSuccess('Event deleted successfully. All participants, teams, and related data have been automatically removed.');
+      } catch (error) {
+        console.error('Failed to delete event:', error);
+        console.error('Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        
+        // Show error message
+        showError(error.message || 'Failed to delete event');
+      } finally {
+        setDeletingEventId(null);
       }
-      setEvents(prev => prev.filter(event => event.id !== eventId));
     }
   };
 
@@ -581,6 +613,8 @@ const OrganizerDashboard = () => {
                       setJudgeModalEventId(ev.id);
                       setShowJudgeModal(true);
                     }}
+                    onDelete={handleDeleteEvent}
+                    isDeleting={deletingEventId === event.id}
                   />
                 ))}
               </div>

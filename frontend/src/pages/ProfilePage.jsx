@@ -4,15 +4,11 @@ import { useNotifications } from '../context/NotificationContext';
 import { 
   UserIcon, 
   EnvelopeIcon, 
-  CalendarIcon, 
   PencilIcon,
   CheckIcon,
   XMarkIcon,
   BuildingOfficeIcon,
   LinkIcon,
-  CodeBracketIcon,
-  TrophyIcon,
-  UsersIcon,
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
 
@@ -31,13 +27,11 @@ const ProfilePage = () => {
     organizationRole: '',
     industry: '',
     experienceYears: '',
-    skills: [],
     linkedinProfile: '',
     githubProfile: '',
     website: '',
     hackathonsOrganized: '',
-    teamSize: '',
-    specialties: []
+    teamSize: ''
   });
 
   // Initialize form data when user data changes
@@ -51,13 +45,11 @@ const ProfilePage = () => {
         organizationRole: user.organizationRole || '',
         industry: user.industry || '',
         experienceYears: user.experienceYears || '',
-        skills: user.skills || [],
         linkedinProfile: user.linkedinProfile || '',
         githubProfile: user.githubProfile || '',
         website: user.website || '',
         hackathonsOrganized: user.hackathonsOrganized || '',
-        teamSize: user.teamSize || '',
-        specialties: user.specialties || []
+        teamSize: user.teamSize || ''
       });
     }
   }, [user]);
@@ -70,31 +62,7 @@ const ProfilePage = () => {
     }));
   };
 
-  const handleSkillsChange = (e) => {
-    const skillsString = e.target.value;
-    const skillsArray = skillsString
-      .split(',')
-      .map(skill => skill.trim())
-      .filter(skill => skill.length > 0);
-    
-    setFormData(prev => ({
-      ...prev,
-      skills: skillsArray
-    }));
-  };
 
-  const handleSpecialtiesChange = (e) => {
-    const specialtiesString = e.target.value;
-    const specialtiesArray = specialtiesString
-      .split(',')
-      .map(specialty => specialty.trim())
-      .filter(specialty => specialty.length > 0);
-    
-    setFormData(prev => ({
-      ...prev,
-      specialties: specialtiesArray
-    }));
-  };
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -124,13 +92,11 @@ const ProfilePage = () => {
         organizationRole: user.organizationRole || '',
         industry: user.industry || '',
         experienceYears: user.experienceYears || '',
-        skills: user.skills || [],
         linkedinProfile: user.linkedinProfile || '',
         githubProfile: user.githubProfile || '',
         website: user.website || '',
         hackathonsOrganized: user.hackathonsOrganized || '',
-        teamSize: user.teamSize || '',
-        specialties: user.specialties || []
+        teamSize: user.teamSize || ''
       });
     }
     setIsEditing(false);
@@ -254,18 +220,12 @@ const ProfilePage = () => {
               {/* Left Column - Quick Info */}
               <div className="lg:col-span-1 space-y-6">
 
-                {/* Quick Stats */}
+                {/* Simple Role Info */}
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
-                    Quick Stats
+                    Account Info
                   </h3>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Member Since</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-                      </span>
-                    </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Role</span>
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -273,27 +233,13 @@ const ProfilePage = () => {
                       </span>
                     </div>
                     {isOrganizer && (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Hackathons</span>
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {user.hackathonsOrganized || '0'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Experience</span>
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {user.experienceYears || '0'} years
-                          </span>
-                        </div>
-                      </>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Organization</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {user.organization || 'Not specified'}
+                        </span>
+                      </div>
                     )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Skills</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {user.skills?.length || 0}
-                      </span>
-                    </div>
                   </div>
                 </div>
 
@@ -645,128 +591,11 @@ const ProfilePage = () => {
                   )}
                 </div>
 
-                {/* Skills */}
-                <div className="space-y-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-                    <CodeBracketIcon className="h-5 w-5 mr-2 text-blue-600" />
-                    Skills
-                  </label>
-                  {isEditing ? (
-                    <div>
-                      <input
-                        type="text"
-                        name="skills"
-                        value={formData.skills.join(', ')}
-                        onChange={handleSkillsChange}
-                        className="input"
-                        placeholder="Event Management, Project Planning, Team Leadership, etc. (separate with commas)"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Separate skills with commas. Example: Event Management, Project Planning, Team Leadership
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="py-3 px-4 bg-gray-50 dark:bg-gray-700 rounded-lg min-h-[3rem]">
-                      {user.skills && user.skills.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {user.skills.map((skill, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500">No skills added yet. Click edit to add your skills.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
 
-                {/* Specialties - Organizer Specific */}
-                {isOrganizer && (
-                  <div className="space-y-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-                      <UsersIcon className="h-5 w-5 mr-2 text-green-600" />
-                      Event Specialties
-                    </label>
-                    {isEditing ? (
-                      <div>
-                        <input
-                          type="text"
-                          name="specialties"
-                          value={formData.specialties.join(', ')}
-                          onChange={handleSpecialtiesChange}
-                          className="input"
-                          placeholder="AI/ML, Web Development, Mobile Apps, etc. (separate with commas)"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          What types of hackathons do you specialize in? Separate with commas.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="py-3 px-4 bg-gray-50 dark:bg-gray-700 rounded-lg min-h-[3rem]">
-                        {user.specialties && user.specialties.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {user.specialties.map((specialty, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                              >
-                                {specialty}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-gray-500">No specialties added yet. Click edit to add your event specialties.</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
 
-                {/* Account Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                    <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
-                    Account Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Member Since
-                      </label>
-                      <p className="text-gray-900 dark:text-gray-100 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        }) : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Current Role
-                      </label>
-                      <div className="py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        {user.roles?.map((role, index) => (
-                          <span
-                            key={index}
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${
-                              role === 'organizer' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                            }`}
-                          >
-                            {role === 'organizer' ? '🎯 Organizer' : role}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+
+
+
               </div>
             </div>
           </div>
