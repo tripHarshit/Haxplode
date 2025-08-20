@@ -14,10 +14,66 @@ import JudgeAnalytics from '../../components/judge/JudgeAnalytics';
 import RecentActivity from '../../components/judge/RecentActivity';
 import Leaderboard from '../../components/common/Leaderboard';
 
+const ReviewDetailsModal = ({ isOpen, onClose, submission }) => {
+  if (!isOpen || !submission) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl p-6 border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Review Summary</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-md font-medium text-gray-900 dark:text-gray-100">{submission.projectTitle || submission.projectName}</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{submission.description || submission.projectDescription}</p>
+          </div>
+          {submission.reviewStatus === 'reviewed' ? (
+            <>
+              <div className="flex items-center justify-between p-3 rounded-md bg-gray-50 dark:bg-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Score</span>
+                <span className="text-lg font-semibold text-green-600 dark:text-green-400">{submission.judgeScore}/100</span>
+              </div>
+              {submission.judgeFeedback && (
+                <div>
+                  <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Feedback</h5>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{submission.judgeFeedback}</p>
+                </div>
+              )}
+              {submission.judgeCriteria && (
+                <div>
+                  <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Criteria Scores</h5>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(submission.judgeCriteria).map(([key, val]) => (
+                      <div key={key} className="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-700 rounded px-3 py-2">
+                        <span className="capitalize text-gray-600 dark:text-gray-300">{key.replace(/_/g,' ')}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {submission.reviewedAt && (
+                <div className="text-xs text-gray-500 dark:text-gray-400">Reviewed on {new Date(submission.reviewedAt).toLocaleString()}</div>
+              )}
+            </>
+          ) : (
+            <div className="text-sm text-gray-600 dark:text-gray-300">No review available yet. Start a review to see the summary here.</div>
+          )}
+        </div>
+        <div className="mt-6 flex justify-end">
+          <button onClick={onClose} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const JudgeDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
   const [showScoringForm, setShowScoringForm] = useState(false);
   const [reviewingSubmission, setReviewingSubmission] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -92,19 +148,40 @@ const JudgeDashboard = () => {
       setHackathonSubmissions([]);
       
       const eventId = assignment.eventId;
-      const [subs, teams] = await Promise.all([
-        judgeService.getSubmissionsByEvent(eventId),
-        teamService.getTeamsByEvent(eventId),
-      ]);
       
-      // Create team name map
-      const teamMap = new Map((teams || []).map(t => [t.id, t.teamName]));
-      setHackathonTeams(teamMap);
+      // Use the new API to get assigned submissions for this judge and event
+      const assignedSubmissions = await judgeService.getAssignedSubmissions(eventId);
       
-      // Map submissions to UI format
-      const mappedSubmissions = subs.map(s => 
-        mapBackendSubmissionToUI(s, teamMap, assignment.event?.name || `Event ${eventId}`)
-      );
+      // Map submissions to UI format with review status
+      const mappedSubmissions = assignedSubmissions.map(sub => ({
+        id: sub._id || sub.id,
+        projectTitle: sub.projectName || 'Project',
+        projectName: sub.projectName || 'Project',
+        eventTitle: assignment.event?.name || `Event ${eventId}`,
+        teamName: sub.teamName || 'Unknown Team',
+        description: sub.projectDescription || '',
+        projectDescription: sub.projectDescription || '',
+        technologies: Array.isArray(sub.technologies) ? sub.technologies : [],
+        submissionDate: sub.submissionDate || new Date().toISOString(),
+        reviewStatus: sub.reviewStatus || 'assigned',
+        priority: 'medium',
+        timeSpent: 0,
+        isUrgent: false,
+        isApproachingDeadline: false,
+        githubUrl: sub.githubLink,
+        githubLink: sub.githubLink,
+        demoUrl: sub.siteLink,
+        siteLink: sub.siteLink,
+        videoUrl: sub.videoLink,
+        videoLink: sub.videoLink,
+        docLink: sub.docLink,
+        // Review data if already reviewed
+        judgeScore: sub.judgeScore,
+        judgeFeedback: sub.judgeFeedback,
+        judgeCriteria: sub.judgeCriteria,
+        reviewedAt: sub.reviewedAt,
+        assignedAt: sub.assignedAt,
+      }));
       
       setHackathonSubmissions(mappedSubmissions);
     } catch (error) {
@@ -121,7 +198,7 @@ const JudgeDashboard = () => {
 
   const handleViewSubmission = (submission) => {
     setSelectedSubmission(submission);
-    // TODO: Show submission details modal
+    setShowDetails(true);
   };
 
   const handleStartReview = (submission) => {
@@ -143,21 +220,35 @@ const JudgeDashboard = () => {
         window.navigationTester.logModalInteraction('Scoring Form Modal', 'submit');
       }
       
-      // Persist to backend
-      await judgeService.submitScore({
+      // Use the new API to submit review
+      await judgeService.submitReview({
         submissionId: reviewData.submissionId,
-        score: Math.round(reviewData.totalScore),
+        score: reviewData.score,
         feedback: reviewData.feedback,
-        criteria: reviewData.scores,
+        criteria: reviewData.criteria,
+        timeSpent: reviewData.timeSpent,
       });
 
       // Update local state
-      setSubmissions(prev => prev.map(sub =>
+      setHackathonSubmissions(prev => prev.map(sub =>
         sub.id === reviewData.submissionId
-          ? { ...sub, reviewStatus: 'completed', scores: reviewData.scores, feedback: reviewData.feedback }
+          ? { 
+              ...sub, 
+              reviewStatus: 'reviewed', 
+              judgeScore: reviewData.score,
+              judgeFeedback: reviewData.feedback,
+              judgeCriteria: reviewData.criteria,
+              reviewedAt: new Date().toISOString()
+            }
           : sub
       ));
       
+      // Refresh analytics after submission
+      try {
+        const updatedAnalytics = await judgeService.getAnalytics();
+        setAnalytics(updatedAnalytics);
+      } catch (_) {}
+
       setShowScoringForm(false);
       setReviewingSubmission(null);
     } catch (error) {
@@ -194,18 +285,10 @@ const JudgeDashboard = () => {
     return submissions.filter(sub => sub.isUrgent || sub.isApproachingDeadline);
   };
 
-  // Updated helper functions to work with assignments instead of all submissions
-  const getTotalAssigned = () => assignments.length;
-  const getCompletedReviews = () => {
-    // For now, return 0 since we don't have all submissions loaded
-    // This could be enhanced to fetch completion stats from backend
-    return 0;
-  };
-  const getPendingReviews = () => {
-    // For now, return total assignments since we don't have submission details
-    // This could be enhanced to fetch pending stats from backend
-    return assignments.length;
-  };
+  // Helper functions using real analytics
+  const getTotalAssigned = () => (analytics?.completion?.assigned || 0);
+  const getCompletedReviews = () => (analytics?.completion?.reviewed || 0);
+  const getPendingReviews = () => Math.max(0, getTotalAssigned() - getCompletedReviews());
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
@@ -295,7 +378,7 @@ const JudgeDashboard = () => {
                     reviewAccuracy: 100,
                     experience: (profile?.yearsOfExperience || 0) + ' yrs',
                   }} 
-                  assignments={assignments.map(a => ({ assignedSubmissions: 0, completedReviews: 0, pendingReviews: 0 }))}
+                  assignments={[{ assignedSubmissions: getTotalAssigned(), completedReviews: getCompletedReviews(), pendingReviews: getPendingReviews() }]}
                 />
               )}
 
@@ -346,50 +429,40 @@ const JudgeDashboard = () => {
 
               {/* Recent Activity and Analytics Preview */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RecentActivity activities={[
-                  {
-                    id: 1,
-                    type: 'review_submitted',
-                    title: 'Review submitted for "Smart Healthcare Monitor"',
-                    description: 'Completed review with score 8.5/10',
-                    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-                  },
-                  {
-                    id: 2,
-                    type: 'assignment_received',
-                    title: 'New assignment received',
-                    description: 'Assigned to review "AI Chatbot Project"',
-                    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
-                  },
-                  {
-                    id: 3,
-                    type: 'review_in_progress',
-                    title: 'Review in progress',
-                    description: 'Started reviewing "Blockchain Voting System"',
-                    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
-                  },
-                  {
-                    id: 4,
-                    type: 'deadline_approaching',
-                    title: 'Deadline approaching',
-                    description: '2 days left to review "Mobile App Project"',
-                    timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+                <RecentActivity activities={(analytics?.recent || []).map((evt, idx) => {
+                  const type = evt.type;
+                  // Build human-readable title/description based on event type
+                  if (type === 'submission_reviewed') {
+                    const score = evt?.metadata?.score;
+                    const title = `Review submitted`;
+                    const description = typeof score === 'number' ? `Completed review with score ${score}/100` : 'Completed a review';
+                    return { id: evt._id || idx, type, title, description, timestamp: evt.ts || evt.createdAt };
                   }
-                ]} />
+                  if (type === 'submissions_assigned_to_judges') {
+                    const count = evt?.metadata?.assignmentsCount || 0;
+                    return { id: evt._id || idx, type: 'assignment_received', title: 'New assignments', description: `Received ${count} new assignment(s)`, timestamp: evt.ts || evt.createdAt };
+                  }
+                  // Fallback generic event
+                  return { id: evt._id || idx, type: type || 'activity', title: evt.type || 'Activity', description: '', timestamp: evt.ts || evt.createdAt };
+                })} />
                 
                 <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-slate-200 dark:border-slate-700">
                   <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Quick Analytics</h3>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
+
                       <span className="text-sm text-slate-600 dark:text-slate-300">Completion Rate</span>
                       <span className="text-lg font-semibold text-emerald-600">
                         {getTotalAssigned() > 0 ? Math.round((getCompletedReviews() / getTotalAssigned()) * 100) : 0}%
+
                       </span>
                     </div>
                     <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                       <div
+
                         className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${getTotalAssigned() > 0 ? (getCompletedReviews() / getTotalAssigned()) * 100 : 0}%` }}
+
                       ></div>
                     </div>
                     
@@ -520,17 +593,17 @@ const JudgeDashboard = () => {
               <JudgeAnalytics analytics={{
                 totalReviews: analytics?.totals?.reviews || 0,
                 averageScore: analytics?.totals?.averageScore || 0,
-                averageTimePerReview: 0,
-                completionRate: submissions.length ? Math.round((submissions.filter(s => s.reviewStatus === 'completed').length / submissions.length) * 100) : 0,
-                scoreDistribution: {},
-                monthlyStats: [],
+                averageTimePerReview: Math.round(((analytics?.time?.averageMs || 0) / 1000 / 60) * 10) / 10,
+                completionRate: analytics?.completion?.rate || 0,
+                scoreDistribution: analytics?.scoreDistribution || {},
+                monthlyStats: analytics?.monthlyStats || [],
               }} />
             </div>
           )}
 
           {!loading && !error && activeTab === 'leaderboard' && (
             <div className="space-y-6">
-              <Leaderboard />
+              <Leaderboard events={assignments.map(a => ({ id: a.eventId, name: a.event?.name || `Event ${a.eventId}` }))} />
             </div>
           )}
         </div>
@@ -587,6 +660,12 @@ const JudgeDashboard = () => {
           existingScores={reviewingSubmission.scores}
         />
       )}
+      {/* Review Details Modal */}
+      <ReviewDetailsModal
+        isOpen={showDetails}
+        onClose={() => { setShowDetails(false); setSelectedSubmission(null); }}
+        submission={selectedSubmission}
+      />
     </div>
   );
 };

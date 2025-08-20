@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/auth/LoginPage";
 import Register from "./pages/auth/RegisterPage";
+import GoogleRegister from "./pages/auth/GoogleRegisterPage";
 import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
@@ -23,6 +24,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/register/google" element={<GoogleRegister />} />
 
         {/* Participant Routes */}
         <Route

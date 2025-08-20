@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 
-const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete }) => {
+const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete, events = [], selectedEventId }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState(null);
 
@@ -19,7 +19,7 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete }) => 
   };
 
   const handleDelete = (announcementId) => {
-    if (window.confirm('Are you sure you want to delete this announcement?')) {
+    if (window.confirm('Are you sure you want to delete this announcement? This will archive it.')) {
       onDelete(announcementId);
     }
   };
@@ -122,6 +122,8 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete }) => 
             setShowCreateModal(false);
             setEditingAnnouncement(null);
           }}
+          events={events}
+          selectedEventId={selectedEventId}
           onSubmit={(data) => {
             if (editingAnnouncement) {
               onEdit(editingAnnouncement.id, data);
@@ -138,13 +140,13 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete }) => 
 };
 
 // Announcement Form Modal Component
-const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit }) => {
+const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit, events = [], selectedEventId }) => {
   const [formData, setFormData] = useState({
     title: announcement?.title || '',
     content: announcement?.content || '',
-    targetAudience: announcement?.targetAudience || 'All',
-    isUrgent: announcement?.isUrgent || false,
-    isImportant: announcement?.isImportant || false
+    visibility: (announcement?.targetAudience === 'Both' ? 'Both' : (announcement?.targetAudience || 'Participants')),
+    tags: Array.isArray(announcement?.tags) ? announcement.tags : [],
+    eventId: selectedEventId || (events[0]?.id ?? null),
   });
   const [errors, setErrors] = useState({});
 
@@ -194,7 +196,25 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit }) => {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Hackathon
+            </label>
+            <select
+              value={formData.eventId || ''}
+              onChange={(e) => handleInputChange('eventId', e.target.value ? Number(e.target.value) : null)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100"
+            >
+              <option value="" disabled>Select a hackathon</option>
+              {events && events.map(ev => (
+                <option key={ev.id} value={ev.id}>{ev.title || `Event ${ev.id}`}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+
               Title *
             </label>
             <input
@@ -208,54 +228,91 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Content *
+
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Description *
+
             </label>
             <textarea
               value={formData.content}
               onChange={(e) => handleInputChange('content', e.target.value)}
               rows={4}
-              className={`input ${errors.content ? 'border-red-500 focus:ring-red-500' : ''}`}
-              placeholder="Write your announcement content..."
+
+              className={`w-full px-3 py-2 border rounded-md ${
+                errors.content ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100`}
+              placeholder="Write your announcement description..."
+
             />
             {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Target Audience
+
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Visibility
             </label>
-            <select
-              value={formData.targetAudience}
-              onChange={(e) => handleInputChange('targetAudience', e.target.value)}
-              className="input"
-            >
-              <option value="All">All</option>
-              <option value="Participants">Participants</option>
-              <option value="Judges">Judges</option>
-            </select>
+            <div className="flex items-center space-x-6">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="Participants"
+                  checked={formData.visibility === 'Participants'}
+                  onChange={() => handleInputChange('visibility', 'Participants')}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-700"
+                />
+                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Participants</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="Judges"
+                  checked={formData.visibility === 'Judges'}
+                  onChange={() => handleInputChange('visibility', 'Judges')}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-700"
+                />
+                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Judges</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="Both"
+                  checked={formData.visibility === 'Both'}
+                  onChange={() => handleInputChange('visibility', 'Both')}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-700"
+                />
+                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Both</span>
+              </label>
+            </div>
           </div>
 
-          <div className="flex space-x-4">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.isUrgent}
-                onChange={(e) => handleInputChange('isUrgent', e.target.checked)}
-                className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 dark:border-slate-700 rounded"
-              />
-              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">Mark as Urgent</span>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tags
+
             </label>
-            
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.isImportant}
-                onChange={(e) => handleInputChange('isImportant', e.target.checked)}
-                className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-slate-300 dark:border-slate-700 rounded"
-              />
-              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">Mark as Important</span>
-            </label>
+            <div className="flex items-center space-x-6">
+              {['important','urgent','mandatory'].map(tag => (
+                <label key={tag} className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.tags.includes(tag)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setFormData(prev => ({
+                        ...prev,
+                        tags: checked ? Array.from(new Set([...(prev.tags || []), tag])) : (prev.tags || []).filter(t => t !== tag)
+                      }));
+                    }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-700 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300 capitalize">{tag}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">

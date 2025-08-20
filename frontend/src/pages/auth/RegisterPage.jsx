@@ -3,7 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, Calendar, ArrowRight, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { isValidEmail, isValidPassword } from '../../utils/helpers';
+
 import ThemeToggle from '../../components/ui/ThemeToggle';
+import { signInWithPopup, GoogleAuthProvider, getIdToken } from "firebase/auth";
+import { auth, googleProvider } from "../../services/firebase";
+
 
 const RegisterPage = () => {
   // Allow theme toggle; no forced light mode
@@ -23,7 +27,7 @@ const RegisterPage = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
-  const { register, loginWithGoogle, error: authError, clearError, user, getRedirectPath } = useAuth();
+  const { register, loginWithGoogle, error: authError, clearError, user, getRedirectPath, startGoogleSignIn, updateProfile } = useAuth();
   const navigate = useNavigate();
 
   // Clear auth errors when component mounts
@@ -91,6 +95,11 @@ const RegisterPage = () => {
 
       const result = await loginWithGoogle(response.credential);
       
+      if (result?.requiresRegistration) {
+        // Navigation to registration handled in context
+        return;
+      }
+
       if (result.success) {
         setSuccessMessage('Google registration successful! Redirecting...');
         
@@ -208,11 +217,42 @@ const RegisterPage = () => {
     }
   };
 
-  const handleGoogleRegister = () => {
-    if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-      window.google.accounts.id.prompt();
-    } else {
-      setErrors({ general: 'Google Sign-In is not configured. Please check your environment variables.' });
+  const handleGoogleRegister = async () => {
+    try {
+      setIsGoogleLoading(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      let googleIdToken = credential?.idToken || null;
+      if (!googleIdToken) {
+        googleIdToken = await getIdToken(result.user, true);
+      }
+      const apiResult = await loginWithGoogle(googleIdToken);
+      if (apiResult?.requiresRegistration) {
+        return;
+      }
+      if (apiResult.success) {
+        const displayName = (result.user?.displayName || '').trim();
+        try {
+          if (displayName && (!user?.name || /google user/i.test(user.name))) {
+            await updateProfile({ name: displayName });
+          }
+        } catch {}
+        setSuccessMessage('Google registration successful! Redirecting...');
+        const redirectPath = getRedirectPath(user, '/');
+        navigate(redirectPath, { replace: true });
+      } else {
+        setErrors({ general: apiResult.error || 'Failed to login with Google' });
+      }
+    } catch (err) {
+      // Fallback to One Tap / GSI flow if popup blocked
+      try {
+        await startGoogleSignIn();
+        return;
+      } catch (fallbackError) {
+        setErrors({ general: fallbackError.message || err.message || 'Google registration failed' });
+      }
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 

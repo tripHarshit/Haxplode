@@ -6,6 +6,8 @@ const RecentActivity = ({ activities }) => {
     switch (type) {
       case 'review_submitted':
         return '✅';
+      case 'submission_reviewed':
+        return '✅';
       case 'assignment_received':
         return '📋';
       case 'deadline_approaching':
@@ -20,6 +22,8 @@ const RecentActivity = ({ activities }) => {
   const getActivityColor = (type) => {
     switch (type) {
       case 'review_submitted':
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
+      case 'submission_reviewed':
         return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
       case 'assignment_received':
         return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';

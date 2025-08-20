@@ -112,6 +112,19 @@ const authSchemas = {
     role: Joi.string().valid('Participant', 'Organizer', 'Judge').default('Participant'),
   }),
 
+  googleCompleteRegistration: Joi.object({
+    idToken: Joi.string().required().messages({
+      'any.required': 'Google ID token is required',
+    }),
+    name: Joi.string().min(2).max(100).required().messages({
+      'any.required': 'Full name is required',
+    }),
+    dateOfBirth: Joi.string().isoDate().required().messages({
+      'any.required': 'Date of birth is required',
+    }),
+    role: Joi.string().valid('Participant', 'Organizer', 'Judge').default('Participant'),
+  }),
+
   updateProfile: Joi.object({
     fullName: Joi.string().min(2).max(100).optional(),
     bio: Joi.string().max(1000).allow('', null).optional(),
@@ -263,6 +276,7 @@ const announcementSchemas = {
     eventId: Joi.number().integer().positive().required(),
     title: Joi.string().min(1).max(200).required(),
     message: Joi.string().min(1).max(2000).required(),
+    visibility: Joi.string().valid('Participants', 'Judges', 'Both').default('Participants'),
     type: Joi.string().valid('General', 'Important', 'Urgent', 'Update', 'Reminder').default('General'),
     priority: Joi.string().valid('Low', 'Medium', 'High', 'Critical').default('Medium'),
     isPinned: Joi.boolean().default(false),
@@ -270,7 +284,7 @@ const announcementSchemas = {
     targetAudience: Joi.array().items(Joi.string().valid('All', 'Participants', 'Organizers', 'Judges', 'Teams')).default(['All']),
     scheduledFor: Joi.date().optional(),
     expiresAt: Joi.date().optional(),
-    tags: Joi.array().items(Joi.string()).max(10).default([]),
+    tags: Joi.array().items(Joi.string().valid('important', 'urgent', 'mandatory')).max(10).default([]),
   }),
 };
 
