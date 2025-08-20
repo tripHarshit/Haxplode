@@ -10,6 +10,7 @@ const createAnnouncement = async (req, res) => {
       eventId,
       title,
       message,
+      visibility,
       type,
       priority,
       isPinned,
@@ -45,6 +46,7 @@ const createAnnouncement = async (req, res) => {
       organizerId,
       title,
       message,
+      visibility,
       type,
       priority,
       isPinned,
@@ -57,7 +59,44 @@ const createAnnouncement = async (req, res) => {
     });
 
     audit(organizerId, 'announcement_created', { eventId, metadata: { title } });
-    emitToRoom(`event:${eventId}`, 'event_announcement', { eventId, type: 'announcement', message: title, title, body: message, timestamp: new Date().toISOString() });
+
+    // Determine visibility/audience
+    const visibilityFinal = visibility || (Array.isArray(targetAudience)
+      ? (targetAudience.includes('Participants') && targetAudience.includes('Judges') ? 'Both' : (targetAudience.includes('Judges') ? 'Judges' : 'Participants'))
+      : 'Participants');
+
+    // Emit to registered participants via user rooms
+    if (visibilityFinal === 'Participants' || visibilityFinal === 'Both') {
+      try {
+        const { Registration } = require('../models/mongo');
+        const regs = await Registration.find({ eventId, status: { $in: ['pending', 'confirmed'] } });
+        const participantUserIds = Array.from(new Set(regs.map(r => r.userId).filter(Boolean)));
+        const timestamp = new Date().toISOString();
+        for (const uid of participantUserIds) {
+          emitToRoom(`user:${uid}`, 'notification', { userId: uid, type: 'announcement', title, body: message, link: `/events/${eventId}`, timestamp });
+        }
+      } catch (partEmitErr) {
+        console.warn('Failed to emit to participants:', partEmitErr?.message || partEmitErr);
+      }
+    }
+
+    // Emit to assigned judges via user-specific rooms
+    if (visibilityFinal === 'Judges' || visibilityFinal === 'Both') {
+      try {
+        const { JudgeEventAssignment, Judge } = require('../models/sql');
+        const assignments = await JudgeEventAssignment.findAll({
+          where: { eventId, isActive: true },
+          include: [{ model: Judge, as: 'judge', attributes: ['userId'] }],
+        });
+        const judgeUserIds = assignments.map(a => a.judge?.userId).filter(Boolean);
+        const timestamp = new Date().toISOString();
+        for (const uid of judgeUserIds) {
+          emitToRoom(`user:${uid}`, 'notification', { userId: uid, type: 'announcement', title, body: message, link: `/events/${eventId}`, timestamp });
+        }
+      } catch (judgeEmitErr) {
+        console.warn('Failed to emit to judges:', judgeEmitErr?.message || judgeEmitErr);
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -79,8 +118,9 @@ const createAnnouncement = async (req, res) => {
 // Get announcements by event
 const getAnnouncementsByEvent = async (req, res) => {
   try {
-    const { eventId } = req.params;
-    const { page = 1, limit = 10, type, priority, isPinned } = req.query;
+    const { eventId: eventIdParam } = req.params;
+    const eventId = parseInt(eventIdParam);
+    const { page = 1, limit = 10, type, priority, isPinned, status } = req.query;
     const offset = (page - 1) * limit;
 
     const filter = { eventId };
@@ -88,8 +128,17 @@ const getAnnouncementsByEvent = async (req, res) => {
     if (priority) filter.priority = priority;
     if (isPinned !== undefined) filter.isPinned = isPinned === 'true';
 
-    // Get active announcements
-    const announcements = await Announcement.findActiveByEvent(eventId)
+    // Status filtering: Published vs Archived (default to active published/scheduled)
+    if (status === 'Archived') {
+      filter.status = 'Archived';
+    } else if (status === 'Published') {
+      filter.status = 'Published';
+    } else {
+      filter.status = { $in: ['Published', 'Scheduled'] };
+    }
+
+    const announcements = await Announcement.find(filter)
+      .sort({ isPinned: -1, priority: -1, createdAt: -1 })
       .skip(offset)
       .limit(parseInt(limit));
 

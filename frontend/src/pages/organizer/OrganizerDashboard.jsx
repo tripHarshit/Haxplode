@@ -72,7 +72,7 @@ const OrganizerDashboard = () => {
     const fetchEvents = async () => {
       try {
         setIsLoadingEvents(true);
-        const rawEvents = await hackathonService.getMyEvents();
+        const rawEvents = await hackathonService.getMyEvents({ page: 1, limit: 500 });
         const mappedEvents = rawEvents.map(event => ({
           id: event.id,
           title: event.name,
@@ -190,9 +190,11 @@ const OrganizerDashboard = () => {
     }
   };
 
-  const loadAnnouncements = async (eventId) => {
+  const [announcementStatusFilter, setAnnouncementStatusFilter] = useState('Published');
+
+  const loadAnnouncements = async (eventId, status = announcementStatusFilter) => {
     try {
-      const resp = await announcementService.getEventAnnouncements(eventId, { limit: 50 });
+      const resp = await announcementService.getEventAnnouncements(eventId, { limit: 50, status });
       const list = resp?.data?.announcements || [];
       const mapped = list.map(a => ({
         id: a._id,
@@ -290,20 +292,25 @@ const OrganizerDashboard = () => {
   };
 
   const handleCreateAnnouncement = async (announcementData) => {
-    if (!selectedEventId) return;
+    const eventIdToUse = announcementData.eventId || selectedEventId;
+    if (!eventIdToUse) return;
     try {
+      const target = announcementData.visibility === 'Both'
+        ? ['Participants', 'Judges']
+        : [announcementData.visibility || 'Participants'];
       const payload = {
-        eventId: selectedEventId,
+        eventId: eventIdToUse,
         title: announcementData.title,
         message: announcementData.content,
-        type: announcementData.isUrgent ? 'Urgent' : 'General',
-        priority: announcementData.isUrgent ? 'Critical' : (announcementData.isImportant ? 'High' : 'Medium'),
-        isPinned: !!announcementData.isImportant,
         isPublic: true,
-        targetAudience: [announcementData.targetAudience || 'All'],
+        targetAudience: target,
+        tags: Array.isArray(announcementData.tags) ? announcementData.tags : [],
+        visibility: announcementData.visibility || 'Participants',
+        type: 'General',
+        priority: 'Medium',
       };
       await announcementService.createAnnouncement(payload);
-      await loadAnnouncements(selectedEventId);
+      await loadAnnouncements(eventIdToUse);
     } catch (e) {
       console.error('Create announcement failed:', e);
     }
@@ -323,11 +330,17 @@ const OrganizerDashboard = () => {
   };
 
   const handleDeleteAnnouncement = async (announcementId) => {
+    const prev = announcements;
     try {
+      // Optimistic UI update
+      setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
       await announcementService.deleteAnnouncement(announcementId);
       if (selectedEventId) await loadAnnouncements(selectedEventId);
+      try { showSuccess('Announcement deleted'); } catch {}
     } catch (e) {
       console.error('Delete announcement failed:', e);
+      setAnnouncements(prev);
+      try { showError(e.message || 'Failed to delete announcement'); } catch {}
     }
   };
 
@@ -653,11 +666,31 @@ const OrganizerDashboard = () => {
 
           {activeTab === 'announcements' && (
             <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Announcements</h2>
+                <div className="flex items-center space-x-3">
+                  <label className="text-sm text-gray-600 dark:text-gray-300">Status</label>
+                  <select
+                    value={announcementStatusFilter}
+                    onChange={async (e) => {
+                      const val = e.target.value;
+                      setAnnouncementStatusFilter(val);
+                      if (selectedEventId) await loadAnnouncements(selectedEventId, val);
+                    }}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-200"
+                  >
+                    <option value="Published">Published</option>
+                    <option value="Archived">Archived</option>
+                  </select>
+                </div>
+              </div>
               <AnnouncementsList
                 announcements={announcements}
                 onCreateNew={handleCreateAnnouncement}
                 onEdit={handleEditAnnouncement}
                 onDelete={handleDeleteAnnouncement}
+                events={events}
+                selectedEventId={selectedEventId}
               />
             </div>
           )}

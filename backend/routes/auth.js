@@ -18,6 +18,7 @@ const {
   googleAuth,
   getGoogleAuthUrl,
   googleCallback,
+  completeGoogleRegistration,
 } = require('../controllers/googleAuthController');
 
 const {
@@ -36,13 +37,13 @@ const {
 router.post('/register', validateInput(authSchemas.signup), signup);
 router.post('/signup', validateInput(authSchemas.signup), signup);
 router.post('/login', validateInput(authSchemas.login), login);
-router.post('/google', loginWithGoogle);
 router.post('/refresh', refreshToken);
 
 // Google OAuth routes
 router.post('/google', validateInput(authSchemas.googleAuth), googleAuth);
 router.get('/google/url', getGoogleAuthUrl);
 router.get('/google/callback', googleCallback);
+router.post('/google/complete', validateInput(authSchemas.googleCompleteRegistration), completeGoogleRegistration);
 
 // Protected routes
 router.get('/me', authMiddleware, getProfile);

@@ -49,11 +49,11 @@ const googleAuth = async (req, res) => {
     }
 
     // Check if user already exists
-    let user = await User.findOne({ where: { email: googleUser.email } });
-    
-    if (user) {
-      // User exists, update social login info and last login
-      await user.update({
+    const existingUser = await User.findOne({ where: { email: googleUser.email } });
+
+    if (existingUser) {
+      // User exists, update social login info and last login, then sign them in
+      await existingUser.update({
         socialLogin: {
           google: {
             id: googleUser.googleId,
@@ -63,48 +63,38 @@ const googleAuth = async (req, res) => {
         },
         lastLoginAt: new Date(),
       });
-    } else {
-      // Create new user
-      const dob = new Date();
-      dob.setFullYear(dob.getFullYear() - 18); // Default to 18 years old
-      
-      user = await User.create({
-        fullName: googleUser.fullName,
-        email: googleUser.email,
-        role,
-        dob,
-        password: `google_${googleUser.googleId}_${Date.now()}`, // Generate a secure random password
-        emailVerified: true,
-        profilePicture: googleUser.picture,
-        socialLogin: {
-          google: {
-            id: googleUser.googleId,
-            picture: googleUser.picture,
-            firstLogin: new Date(),
-            lastLogin: new Date(),
+
+      const tokens = generateTokens(existingUser.id, existingUser.role);
+      return res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: {
+            id: existingUser.id,
+            fullName: existingUser.fullName,
+            email: existingUser.email,
+            role: existingUser.role,
+            emailVerified: existingUser.emailVerified,
+            profilePicture: existingUser.profilePicture,
+            socialLogin: existingUser.socialLogin,
           },
+          tokens,
         },
-        lastLoginAt: new Date(),
       });
     }
 
-    // Generate tokens
-    const tokens = generateTokens(user.id, user.role);
-
-    res.status(200).json({
+    // New user: ask frontend to complete registration (no password needed)
+    return res.status(200).json({
       success: true,
-      message: user.socialLogin?.google?.firstLogin ? 'User registered successfully' : 'Login successful',
+      requiresRegistration: true,
+      message: 'Additional details required to complete registration',
       data: {
-        user: {
-          id: user.id,
-          fullName: user.fullName,
-          email: user.email,
-          role: user.role,
-          emailVerified: user.emailVerified,
-          profilePicture: user.profilePicture,
-          socialLogin: user.socialLogin,
+        prefill: {
+          email: googleUser.email,
+          fullName: googleUser.fullName,
+          profilePicture: googleUser.picture,
         },
-        tokens,
+        provider: 'google',
       },
     });
   } catch (error) {
@@ -243,8 +233,76 @@ const googleCallback = async (req, res) => {
   }
 };
 
+// Complete Google-based registration (no password required)
+const completeGoogleRegistration = async (req, res) => {
+  try {
+    const { idToken, name, dateOfBirth, role = 'Participant' } = req.body;
+
+    // Verify token and get Google user info
+    const googleUser = await verifyGoogleToken(idToken);
+    if (!googleUser.emailVerified) {
+      return res.status(400).json({ success: false, message: 'Google email must be verified' });
+    }
+
+    // Ensure user does not already exist
+    const existingUser = await User.findOne({ where: { email: googleUser.email } });
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: 'User already exists. Please log in.' });
+    }
+
+    // Parse DOB
+    const dob = new Date(dateOfBirth);
+    if (Number.isNaN(dob.getTime()) || dob >= new Date()) {
+      return res.status(400).json({ success: false, message: 'Invalid date of birth' });
+    }
+
+    // Create user with a random password placeholder to satisfy model validation
+    const randomPassword = `google_${googleUser.googleId}_${Date.now()}`;
+    const user = await User.create({
+      fullName: name,
+      email: googleUser.email,
+      role,
+      dob,
+      password: randomPassword,
+      emailVerified: true,
+      profilePicture: googleUser.picture,
+      socialLogin: {
+        google: {
+          id: googleUser.googleId,
+          picture: googleUser.picture,
+          firstLogin: new Date(),
+          lastLogin: new Date(),
+        },
+      },
+      lastLoginAt: new Date(),
+    });
+
+    const tokens = generateTokens(user.id, user.role);
+    return res.status(201).json({
+      success: true,
+      message: 'Registration completed successfully',
+      data: {
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          emailVerified: user.emailVerified,
+          profilePicture: user.profilePicture,
+          socialLogin: user.socialLogin,
+        },
+        tokens,
+      },
+    });
+  } catch (error) {
+    console.error('Complete Google registration error:', error);
+    res.status(500).json({ success: false, message: 'Failed to complete Google registration' });
+  }
+};
+
 module.exports = {
   googleAuth,
   getGoogleAuthUrl,
   googleCallback,
+  completeGoogleRegistration,
 };

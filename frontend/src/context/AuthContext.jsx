@@ -170,7 +170,15 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: 'AUTH_START' });
       
-      const { user, token, refreshToken } = await authService.loginWithGoogle(googleToken);
+      const result = await authService.loginWithGoogle(googleToken);
+      if (result?.requiresRegistration) {
+        dispatch({ type: 'SET_LOADING', payload: false });
+        // Navigate to Google registration form with prefill and carry idToken
+        navigate('/register/google', { replace: true, state: { prefill: result.prefill, idToken: result.idToken } });
+        return { success: true, requiresRegistration: true };
+      }
+
+      const { user, token, refreshToken } = result;
       
       // Store tokens
       localStorage.setItem('token', token);
@@ -191,6 +199,70 @@ export const AuthProvider = ({ children }) => {
         type: 'AUTH_FAILURE',
         payload: error.message,
       });
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Start Google Sign-In using Google Identity Services, available from any screen
+  const startGoogleSignIn = useCallback(async () => {
+    return new Promise((resolve, reject) => {
+      const onScriptLoad = () => {
+        if (!window.google || !import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+          reject(new Error('Google Sign-In not configured'));
+          return;
+        }
+        try {
+          window.google.accounts.id.initialize({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+            callback: async (response) => {
+              try {
+                const result = await loginWithGoogle(response.credential);
+                resolve(result);
+              } catch (err) {
+                reject(err);
+              }
+            },
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+          window.google.accounts.id.prompt((notification) => {
+            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+              // Still allow popup-based flow via `google.accounts.id.prompt` callback later
+            }
+          });
+        } catch (e) {
+          reject(e);
+        }
+      };
+
+      // Load script once
+      if (!document.getElementById('google-gsi-script')) {
+        const script = document.createElement('script');
+        script.id = 'google-gsi-script';
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = onScriptLoad;
+        script.onerror = () => reject(new Error('Failed to load Google script'));
+        document.head.appendChild(script);
+      } else {
+        onScriptLoad();
+      }
+    });
+  }, [loginWithGoogle]);
+
+  const completeGoogleRegistration = async ({ idToken, name, dateOfBirth, role }) => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      const { user, token, refreshToken } = await authService.completeGoogleRegistration({ idToken, name, dateOfBirth, role });
+      localStorage.setItem('token', token);
+      localStorage.setItem('refreshToken', refreshToken);
+      dispatch({ type: 'AUTH_SUCCESS', payload: { user, token, refreshToken } });
+      const redirectPath = getRedirectPath(user, '/dashboard');
+      navigate(redirectPath, { replace: true });
+      return { success: true };
+    } catch (error) {
+      dispatch({ type: 'AUTH_FAILURE', payload: error.message });
       return { success: false, error: error.message };
     }
   };
@@ -314,6 +386,7 @@ export const AuthProvider = ({ children }) => {
     ...state,
     login,
     loginWithGoogle,
+    completeGoogleRegistration,
     register,
     logout,
     updateUser,
@@ -324,6 +397,7 @@ export const AuthProvider = ({ children }) => {
     hasAnyRole,
     isRole,
     getRedirectPath,
+    startGoogleSignIn,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

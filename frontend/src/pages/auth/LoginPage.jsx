@@ -5,8 +5,9 @@ import { useToast } from '../../components/ui/Toast';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { isValidEmail } from '../../utils/helpers';
 import { useForceLightMode } from '../../context/ThemeContext';
-import { signInWithPopup, getIdToken, GoogleAuthProvider } from 'firebase/auth';
-import { auth, googleProvider } from '../../services/firebase';
+import { signInWithPopup, GoogleAuthProvider, getIdToken } from "firebase/auth";
+import { auth, googleProvider } from "../../services/firebase";
+
 
 const LoginPage = () => {
   useForceLightMode();
@@ -21,7 +22,7 @@ const LoginPage = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
-  const { login, loginWithGoogle, error: authError, clearError, user, getRedirectPath, isAuthenticated, updateProfile } = useAuth();
+  const { login, loginWithGoogle, error: authError, clearError, user, getRedirectPath, isAuthenticated, updateProfile, startGoogleSignIn } = useAuth();
   const { success, error: showError } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -91,6 +92,11 @@ const LoginPage = () => {
 
       const result = await loginWithGoogle(response.credential);
       
+      if (result?.requiresRegistration) {
+        // Navigation to registration handled in context
+        return;
+      }
+
       if (result.success) {
         setSuccessMessage('Google login successful! Redirecting...');
         
@@ -197,6 +203,10 @@ const LoginPage = () => {
         googleIdToken = await getIdToken(result.user, true);
       }
       const apiResult = await loginWithGoogle(googleIdToken);
+      if (apiResult?.requiresRegistration) {
+        // Navigation to /register/google is handled inside loginWithGoogle
+        return;
+      }
       if (apiResult.success) {
         // Post-login name sync if needed
         const displayName = (result.user?.displayName || '').trim();
@@ -214,7 +224,13 @@ const LoginPage = () => {
       }
     } catch (err) {
       console.error('Firebase Google login failed:', err);
-      setErrors({ general: err.message || 'Google login failed' });
+      // Attempt fallback using Google Identity Services (works without popup blockers)
+      try {
+        await startGoogleSignIn();
+        return;
+      } catch (fallbackError) {
+        setErrors({ general: fallbackError.message || err.message || 'Google login failed' });
+      }
     } finally {
       setIsGoogleLoading(false);
     }
