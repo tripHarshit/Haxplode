@@ -475,7 +475,43 @@ const JudgeDashboard = () => {
       {showScoringForm && reviewingSubmission && (
         <ScoringForm
           submission={reviewingSubmission}
-          scoringCriteria={[{ id: 'overall', name: 'Overall', description: 'Overall score', weight: 100, maxScore: 10 }]}
+          scoringCriteria={[
+            {
+              id: 'innovation',
+              name: 'Innovation & Creativity',
+              description: 'Originality and creative approach to solving the problem',
+              weight: 25,
+              maxScore: 10
+            },
+            {
+              id: 'technical',
+              name: 'Technical Quality',
+              description: 'Code quality, architecture, and technical implementation',
+              weight: 30,
+              maxScore: 10
+            },
+            {
+              id: 'ux',
+              name: 'User Experience',
+              description: 'Usability, design, and user interface quality',
+              weight: 20,
+              maxScore: 10
+            },
+            {
+              id: 'feasibility',
+              name: 'Feasibility & Scalability',
+              description: 'Practical implementation and potential for growth',
+              weight: 15,
+              maxScore: 10
+            },
+            {
+              id: 'presentation',
+              name: 'Presentation & Documentation',
+              description: 'Clarity of presentation and quality of documentation',
+              weight: 10,
+              maxScore: 10
+            }
+          ]}
           isOpen={showScoringForm}
           onClose={() => {
             setShowScoringForm(false);

@@ -147,7 +147,7 @@ async function createHackathon(req, res) {
 			maxTeamSize: settings.teamSizeMax || 4,
 			maxTeams: Math.ceil((maxParticipants || 100) / (settings.teamSizeMax || 4)),
 			isPublic: true,
-			status: 'Draft',
+			status: 'Published',
 			tags: tags || [],
 			coverImage: req.body.bannerUrl || null,
 			location: location || 'TBD',
