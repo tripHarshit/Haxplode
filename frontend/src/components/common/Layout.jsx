@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   Home, 
   Calendar, 
-  Trophy, 
   Settings, 
   LogOut, 
   Menu, 
@@ -73,9 +72,6 @@ const Layout = () => {
     ] : []),
     ...(hasRole('organizer') ? [
       { name: 'Create Hackathon', href: '/organizer/create', icon: Calendar },
-    ] : []),
-    ...(hasRole('judge') ? [
-      { name: 'Submissions', href: '/judge/submissions', icon: Trophy },
     ] : []),
     { name: 'Profile', href: getProfileHref(), icon: User },
     { name: 'Settings', href: getSettingsHref(), icon: Settings },

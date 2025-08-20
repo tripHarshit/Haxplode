@@ -1,125 +1,92 @@
-import React, { useState, useEffect } from 'react';
-import { Trophy, Medal, Award, TrendingUp, TrendingDown, Minus, Download, Filter } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Trophy, Medal, Award, Download, ChevronDown, Search } from 'lucide-react';
 import { useToast } from '../ui/Toast';
+import { hackathonService } from '../../services/hackathonService';
+import { teamService } from '../../services/teamService';
 
-const Leaderboard = () => {
-  const [leaderboard, setLeaderboard] = useState([
-    {
-      id: 1,
-      rank: 1,
-      team: 'Team Innovators',
-      project: 'AI-Powered Healthcare Assistant',
-      score: 95,
-      participants: ['John Doe', 'Jane Smith', 'Mike Johnson'],
-      trend: 'up',
-      change: 2,
-      category: 'AI/ML'
-    },
-    {
-      id: 2,
-      rank: 2,
-      team: 'Code Masters',
-      project: 'Smart City Traffic Management',
-      score: 92,
-      participants: ['Alice Brown', 'Bob Wilson'],
-      trend: 'down',
-      change: 1,
-      category: 'IoT'
-    },
-    {
-      id: 3,
-      rank: 3,
-      team: 'Tech Pioneers',
-      project: 'Blockchain Voting System',
-      score: 89,
-      participants: ['Charlie Davis', 'Diana Miller', 'Eve Garcia'],
-      trend: 'up',
-      change: 3,
-      category: 'Blockchain'
-    },
-    {
-      id: 4,
-      rank: 4,
-      team: 'Data Wizards',
-      project: 'Predictive Analytics Dashboard',
-      score: 87,
-      participants: ['Frank Lee', 'Grace Chen'],
-      trend: 'stable',
-      change: 0,
-      category: 'Data Science'
-    },
-    {
-      id: 5,
-      rank: 5,
-      team: 'Web Warriors',
-      project: 'E-commerce Platform',
-      score: 85,
-      participants: ['Henry Taylor', 'Ivy Rodriguez'],
-      trend: 'up',
-      change: 1,
-      category: 'Web Development'
-    }
-  ]);
-
-  const [filteredLeaderboard, setFilteredLeaderboard] = useState(leaderboard);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+// Props: events = [{ id, name }]
+const Leaderboard = ({ events = [] }) => {
+  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || null);
+  const [rows, setRows] = useState([]); // [{ teamId, team, score, participants }]
+  const [loading, setLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const { success } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]); // [{id, name}]
 
-  const categories = ['all', 'AI/ML', 'IoT', 'Blockchain', 'Data Science', 'Web Development'];
-
-  // Simulate real-time updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      setLeaderboard(prev => {
-        const updated = prev.map(team => {
-          // Randomly update scores to simulate live changes
-          if (Math.random() > 0.7) {
-            const scoreChange = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
-            const newScore = Math.max(70, Math.min(100, team.score + scoreChange));
-            
-            let trend = 'stable';
-            let change = 0;
-            
-            if (scoreChange > 0) {
-              trend = 'up';
-              change = scoreChange;
-            } else if (scoreChange < 0) {
-              trend = 'down';
-              change = Math.abs(scoreChange);
-            }
-            
-            return {
-              ...team,
-              score: newScore,
-              trend,
-              change
-            };
-          }
-          return team;
-        });
-        
-        // Re-sort by score
-        return updated.sort((a, b) => b.score - a.score).map((team, index) => ({
-          ...team,
-          rank: index + 1
+    if (!selectedEventId) return;
+    let isMounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        // Fetch teams and leaderboard entries in parallel
+        const [teams, leaderboardResp] = await Promise.all([
+          teamService.getTeamsByEvent(selectedEventId),
+          hackathonService.getHackathonLeaderboard(selectedEventId),
+        ]);
+
+        const entries = leaderboardResp?.entries || [];
+        // Aggregate scores per team and compute average
+        const teamIdToAggregates = new Map();
+        for (const e of entries) {
+          const teamId = Number(e.teamId);
+          const score = Number(e.score) || 0;
+          const current = teamIdToAggregates.get(teamId) || { sum: 0, count: 0 };
+          current.sum += score;
+          current.count += 1;
+          teamIdToAggregates.set(teamId, current);
+        }
+        const teamIdToAvgScore = new Map();
+        for (const [teamId, agg] of teamIdToAggregates.entries()) {
+          const avg = agg.count ? agg.sum / agg.count : 0;
+          teamIdToAvgScore.set(teamId, Math.round(avg * 100) / 100);
+        }
+
+        const merged = teams.map((t) => ({
+          teamId: t.id || t.teamId,
+          team: t.teamName || t.name || `Team ${t.id}`,
+          participants: Array.isArray(t.members) ? t.members.map(m => m.fullName || m.name || m.email || 'Member') : [],
+          score: teamIdToAvgScore.get(Number(t.id || t.teamId)) || 0,
         }));
-      });
-      
-      setLastUpdate(new Date());
-    }, 10000); // Update every 10 seconds
 
-    return () => clearInterval(interval);
-  }, []);
+        merged.sort((a, b) => b.score - a.score);
+        const ranked = merged.map((row, idx) => ({ id: row.teamId, rank: idx + 1, ...row }));
+        if (isMounted) {
+          setRows(ranked);
+          setLastUpdate(new Date());
+        }
+      } catch (e) {
+        console.error('Failed to load leaderboard:', e);
+        if (isMounted) setRows([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [selectedEventId]);
 
-  // Filter leaderboard by category
   useEffect(() => {
-    if (selectedCategory === 'all') {
-      setFilteredLeaderboard(leaderboard);
-    } else {
-      setFilteredLeaderboard(leaderboard.filter(team => team.category === selectedCategory));
+    // Update default selected when events prop changes
+    if (!selectedEventId && events.length > 0) {
+      setSelectedEventId(events[0].id);
     }
-  }, [leaderboard, selectedCategory]);
+  }, [events]);
+
+  const handleSearch = async () => {
+    try {
+      // Basic search using existing endpoint with title filter (if supported), else fetch and filter client-side
+      const resp = await hackathonService.getHackathons({ title: searchQuery, limit: 10 });
+      const list = resp?.events || [];
+      // Filter search results to only include events assigned to the judge
+      const assignedEventIds = new Set(events.map(e => e.id));
+      const filteredList = list.filter(e => assignedEventIds.has(e.id));
+      setSearchResults(filteredList.map(e => ({ id: e.id, name: e.name || e.title })));
+    } catch (e) {
+      console.error('Hackathon search failed:', e);
+      setSearchResults([]);
+    }
+  };
 
   const getRankIcon = (rank) => {
     switch (rank) {
@@ -134,38 +101,14 @@ const Leaderboard = () => {
     }
   };
 
-  const getTrendIcon = (trend) => {
-    switch (trend) {
-      case 'up':
-        return <TrendingUp className="h-4 w-4 text-green-500" />;
-      case 'down':
-        return <TrendingDown className="h-4 w-4 text-red-500" />;
-      default:
-        return <Minus className="h-4 w-4 text-gray-400" />;
-    }
-  };
-
-  const getTrendColor = (trend) => {
-    switch (trend) {
-      case 'up':
-        return 'text-green-600 dark:text-green-400';
-      case 'down':
-        return 'text-red-600 dark:text-red-400';
-      default:
-        return 'text-gray-600 dark:text-gray-400';
-    }
-  };
-
   const handleExport = () => {
     const csvContent = [
-      ['Rank', 'Team', 'Project', 'Score', 'Category', 'Participants'].join(','),
-      ...filteredLeaderboard.map(team => [
+      ['Rank', 'Team', 'Score', 'Participants'].join(','),
+      ...rows.map(team => [
         team.rank,
         team.team,
-        team.project,
         team.score,
-        team.category,
-        team.participants.join('; ')
+        (team.participants || []).join('; ')
       ].join(','))
     ].join('\n');
 
@@ -190,7 +133,51 @@ const Leaderboard = () => {
             Real-time rankings • Last updated: {lastUpdate.toLocaleTimeString()}
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 gap-3 sm:gap-0 w-full sm:w-auto">
+          {/* Search bar */}
+          <div className="w-full sm:w-80">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search hackathons..."
+                className="w-full pl-9 pr-24 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+              />
+              <Search className="h-4 w-4 text-gray-500 absolute left-2 top-1/2 -translate-y-1/2" />
+              <button
+                onClick={handleSearch}
+                className="absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700"
+              >Search</button>
+            </div>
+            {searchResults.length > 0 && (
+              <div className="mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md max-h-56 overflow-y-auto shadow-lg">
+                {searchResults.map(r => (
+                  <button
+                    key={r.id}
+                    onClick={() => { setSelectedEventId(r.id); setSearchResults([]); setSearchQuery(r.name || `Event ${r.id}`); }}
+                    className="block w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-200"
+                  >
+                    {r.name || `Event ${r.id}`}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Hackathon selector */}
+          <div className="relative">
+            <select
+              value={selectedEventId || ''}
+              onChange={(e) => setSelectedEventId(Number(e.target.value) || null)}
+              className="appearance-none pr-8 pl-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+            >
+              <option value="" disabled>Select hackathon</option>
+              {events.map(ev => (
+                <option key={ev.id} value={ev.id}>{ev.name || `Event ${ev.id}`}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none h-4 w-4 text-gray-500 absolute right-2 top-1/2 -translate-y-1/2" />
+          </div>
           <button
             onClick={handleExport}
             className="btn-outline flex items-center space-x-2"
@@ -201,25 +188,11 @@ const Leaderboard = () => {
         </div>
       </div>
 
-      {/* Category Filter */}
-      <div className="flex items-center space-x-4">
-        <Filter className="h-5 w-5 text-gray-500" />
-        <div className="flex space-x-2">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                selectedCategory === category
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {category === 'all' ? 'All Categories' : category}
-            </button>
-          ))}
+      {!selectedEventId && (
+        <div className="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+          Select a hackathon to view its leaderboard.
         </div>
-      </div>
+      )}
 
       {/* Leaderboard Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -231,16 +204,10 @@ const Leaderboard = () => {
                   Rank
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Team & Project
+                  Team
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Score
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Trend
+                  Avg Score
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Participants
@@ -248,7 +215,7 @@ const Leaderboard = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredLeaderboard.map((team, index) => (
+              {rows.map((team, index) => (
                 <tr
                   key={team.id}
                   className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${
@@ -265,34 +232,16 @@ const Leaderboard = () => {
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {team.team}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
-                        {team.project}
-                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
-                      {team.category}
-                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {team.score}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-1">
-                      {getTrendIcon(team.trend)}
-                      {team.change > 0 && (
-                        <span className={`text-sm font-medium ${getTrendColor(team.trend)}`}>
-                          +{team.change}
-                        </span>
-                      )}
+                      {Number(team.score).toFixed(2)}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1">
-                      {team.participants.map((participant, pIndex) => (
+                      {(team.participants || []).map((participant, pIndex) => (
                         <span
                           key={pIndex}
                           className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
@@ -304,6 +253,11 @@ const Leaderboard = () => {
                   </td>
                 </tr>
               ))}
+              {selectedEventId && !loading && rows.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-6 text-center text-gray-500 dark:text-gray-400">No teams found for this hackathon.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -311,8 +265,17 @@ const Leaderboard = () => {
 
       {/* Live Update Indicator */}
       <div className="flex items-center justify-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-        <span>Live updates every 10 seconds</span>
+        {loading ? (
+          <>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <span>Loading leaderboard…</span>
+          </>
+        ) : (
+          <>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+          </>
+        )}
       </div>
     </div>
   );

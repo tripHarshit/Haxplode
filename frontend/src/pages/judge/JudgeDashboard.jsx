@@ -592,7 +592,7 @@ const JudgeDashboard = () => {
 
           {!loading && !error && activeTab === 'leaderboard' && (
             <div className="space-y-6">
-              <Leaderboard />
+              <Leaderboard events={assignments.map(a => ({ id: a.eventId, name: a.event?.name || `Event ${a.eventId}` }))} />
             </div>
           )}
         </div>
