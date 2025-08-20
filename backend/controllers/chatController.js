@@ -80,6 +80,26 @@ const createChatMessage = async (req, res) => {
       });
     }
 
+    // If this is a reply to a question, notify the original asker
+    if (parentMessageId) {
+      try {
+        const parent = await Chat.findById(parentMessageId);
+        if (parent && parent.senderId && parent.senderId !== senderId) {
+          emitToRoom(`user:${parent.senderId}`, 'notification', {
+            type: 'qna_reply',
+            title: 'Reply to your question',
+            body: message,
+            eventId,
+            messageId: chatMessage._id?.toString?.() || chatMessage.id,
+            questionId: parent._id?.toString?.() || parent.id,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (e) {
+        // best effort
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Message sent successfully',
