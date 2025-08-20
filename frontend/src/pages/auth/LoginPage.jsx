@@ -6,7 +6,7 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from 'l
 import { isValidEmail } from '../../utils/helpers';
 import { useForceLightMode } from '../../context/ThemeContext';
 import { signInWithPopup, getIdToken, GoogleAuthProvider } from 'firebase/auth';
-import { auth, googleProvider } from '../../services/firebase';
+import { auth, googleProvider, isFirebaseConfigured } from '../../services/firebase';
 
 const LoginPage = () => {
   useForceLightMode();
@@ -188,6 +188,13 @@ const LoginPage = () => {
   const handleGoogleLogin = async () => {
     try {
       setIsGoogleLoading(true);
+      if (!isFirebaseConfigured || !auth || !googleProvider) {
+        if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+          window.google.accounts.id.prompt();
+          return;
+        }
+        throw new Error('Google Sign-In is not available. Missing Firebase configuration.');
+      }
       const result = await signInWithPopup(auth, googleProvider);
       // Extract Google ID token from OAuth credential (preferred for backend validation)
       const credential = GoogleAuthProvider.credentialFromResult(result);
