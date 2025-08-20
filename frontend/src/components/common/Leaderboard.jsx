@@ -128,8 +128,8 @@ const Leaderboard = ({ events = [] }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Live Leaderboard</h2>
-          <p className="text-slate-600 dark:text-slate-300">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Live Leaderboard</h2>
+          <p className="text-gray-600 dark:text-gray-400">
             Real-time rankings • Last updated: {lastUpdate.toLocaleTimeString()}
           </p>
         </div>
@@ -188,67 +188,37 @@ const Leaderboard = ({ events = [] }) => {
         </div>
       </div>
 
-
-      {/* Category Filter */}
-      <div className="flex items-center space-x-4">
-        <Filter className="h-5 w-5 text-slate-500" />
-        <div className="flex space-x-2">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                selectedCategory === category
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-              }`}
-            >
-              {category === 'all' ? 'All Categories' : category}
-            </button>
-          ))}
-
       {!selectedEventId && (
         <div className="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
           Select a hackathon to view its leaderboard.
-
         </div>
       )}
 
       {/* Leaderboard Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-50 dark:bg-slate-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Rank
                 </th>
-
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                  Team & Project
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Team
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                  Category
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Avg Score
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                  Score
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                  Trend
-
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Participants
                 </th>
               </tr>
             </thead>
-
-            <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-              {filteredLeaderboard.map((team, index) => (
-
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {rows.map((team, index) => (
                 <tr
                   key={team.id}
-                  className={`hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200 ${
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${
                     index < 3 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10' : ''
                   }`}
                 >
@@ -259,34 +229,14 @@ const Leaderboard = ({ events = [] }) => {
                   </td>
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-sm font-medium text-slate-900 dark:text-white">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {team.team}
                       </div>
-
-                      <div className="text-sm text-slate-600 dark:text-slate-300 line-clamp-1">
-                        {team.project}
-                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
-                      {team.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-lg font-bold text-slate-900 dark:text-white">
-                      {team.score}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-1">
-                      {getTrendIcon(team.trend)}
-                      {team.change > 0 && (
-                        <span className={`text-sm font-medium ${getTrendColor(team.trend)}`}>
-                          +{team.change}
-                        </span>
-                      )}
-
+                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {Number(team.score).toFixed(2)}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -294,7 +244,7 @@ const Leaderboard = ({ events = [] }) => {
                       {(team.participants || []).map((participant, pIndex) => (
                         <span
                           key={pIndex}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
                         >
                           {participant}
                         </span>
@@ -314,11 +264,18 @@ const Leaderboard = ({ events = [] }) => {
       </div>
 
       {/* Live Update Indicator */}
-
-      <div className="flex items-center justify-center space-x-2 text-sm text-slate-600 dark:text-slate-300">
-        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-        <span>Live updates every 10 seconds</span>
-
+      <div className="flex items-center justify-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+        {loading ? (
+          <>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <span>Loading leaderboard…</span>
+          </>
+        ) : (
+          <>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+          </>
+        )}
       </div>
     </div>
   );

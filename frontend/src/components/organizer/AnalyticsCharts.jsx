@@ -35,38 +35,38 @@ const AnalyticsCharts = ({ eventStats }) => {
   return (
     <div className="space-y-8">
       {/* Participants per Event Bar Chart */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Participants per Event</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Participants per Event</h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={participantsPerEvent}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#CBD5E1" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
                 dataKey="name" 
                 angle={-45}
                 textAnchor="end"
                 height={80}
                 interval={0}
-                stroke="#64748B"
+                stroke="#9CA3AF"
               />
-              <YAxis stroke="#64748B" />
+              <YAxis stroke="#9CA3AF" />
               <Tooltip 
                 formatter={(value, name) => [
                   name === 'participants' ? `${value} participants` : value,
                   name === 'participants' ? 'Current' : name === 'maxParticipants' ? 'Max Capacity' : name
                 ]}
                 labelFormatter={(label) => `Event: ${label}`}
-                contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', color: '#E2E8F0' }}
+                contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', color: '#E5E7EB' }}
               />
               <Bar 
                 dataKey="participants" 
-                fill="#10B981" 
+                fill="#3B82F6" 
                 name="Current Participants"
                 radius={[4, 4, 0, 0]}
               />
               <Bar 
                 dataKey="maxParticipants" 
-                fill="#94A3B8" 
+                fill="#4B5563" 
                 name="Max Capacity"
                 radius={[4, 4, 0, 0]}
               />
@@ -77,33 +77,33 @@ const AnalyticsCharts = ({ eventStats }) => {
         {/* Chart Legend */}
         <div className="flex justify-center space-x-6 mt-4">
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-emerald-500 rounded"></div>
-            <span className="text-sm text-slate-600 dark:text-slate-300">Current Participants</span>
+            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Current Participants</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-slate-400 rounded"></div>
-            <span className="text-sm text-slate-600 dark:text-slate-300">Max Capacity</span>
+            <div className="w-4 h-4 bg-gray-500 rounded"></div>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Max Capacity</span>
           </div>
         </div>
       </div>
 
       {/* Registrations Over Time Line Chart */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Registrations Over Time</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Registrations Over Time</h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={lineChartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#CBD5E1" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
                 dataKey="date" 
                 interval="preserveStartEnd"
-                stroke="#64748B"
+                stroke="#9CA3AF"
               />
-              <YAxis stroke="#64748B" />
+              <YAxis stroke="#9CA3AF" />
               <Tooltip 
                 formatter={(value) => [`${value} registrations`, 'Total Registrations']}
                 labelFormatter={(label) => `Date: ${label}`}
-                contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', color: '#E2E8F0' }}
+                contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', color: '#E5E7EB' }}
               />
               <Line 
                 type="monotone" 
@@ -120,85 +120,85 @@ const AnalyticsCharts = ({ eventStats }) => {
 
       {/* Summary Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-          <h4 className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Total Events</h4>
-          <div className="text-3xl font-bold text-emerald-600">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Events</h4>
+          <div className="text-3xl font-bold text-blue-600">
             {Object.keys(eventStats).length}
           </div>
         </div>
         
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-          <h4 className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Total Participants</h4>
-          <div className="text-3xl font-bold text-emerald-600">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Participants</h4>
+          <div className="text-3xl font-bold text-green-600">
             {Object.values(eventStats).reduce((sum, stats) => sum + stats.totalParticipants, 0)}
           </div>
         </div>
         
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-          <h4 className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Total Teams</h4>
-          <div className="text-3xl font-bold text-emerald-600">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Teams</h4>
+          <div className="text-3xl font-bold text-purple-600">
             {Object.values(eventStats).reduce((sum, stats) => sum + stats.teamsFormed, 0)}
           </div>
         </div>
       </div>
 
       {/* Event Performance Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-          <h3 className="text-lg font-medium text-slate-900 dark:text-white">Event Performance Summary</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Event Performance Summary</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-            <thead className="bg-slate-50 dark:bg-slate-900">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Event
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Participants
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Capacity
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Teams
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Submissions
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Fill Rate
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {Object.entries(eventStats).map(([title, stats]) => {
-                const fillRate = Math.round((stats.totalParticipants / stats.maxParticipants) * 100) || 0;
+                const fillRate = Math.round((stats.totalParticipants / stats.maxParticipants) * 100);
                 return (
                   <tr key={title}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-900 dark:text-white">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {title.length > 30 ? title.substring(0, 30) + '...' : title}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {stats.totalParticipants}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {stats.maxParticipants}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {stats.teamsFormed}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {stats.submissionsReceived}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         fillRate >= 90 ? 'bg-red-100 text-red-800' :
-                        fillRate >= 75 ? 'bg-amber-100 text-amber-800' :
-                        fillRate >= 50 ? 'bg-slate-100 text-slate-800' :
-                        'bg-emerald-100 text-emerald-800'
+                        fillRate >= 75 ? 'bg-yellow-100 text-yellow-800' :
+                        fillRate >= 50 ? 'bg-blue-100 text-blue-800' :
+                        'bg-green-100 text-green-800'
                       }`}>
                         {fillRate}%
                       </span>
