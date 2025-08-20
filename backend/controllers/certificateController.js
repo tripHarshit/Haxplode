@@ -250,26 +250,64 @@ const getUserCertificates = async (userId) => {
 // Download certificate PDF
 const downloadCertificate = async (certificateId, userId) => {
   try {
+    console.log(`Attempting to download certificate ${certificateId} for user ${userId}`);
+    
     const certificate = await Certificate.findOne({
       where: { id: certificateId, userId }
     });
 
     if (!certificate) {
-      throw new Error('Certificate not found');
+      console.log(`Certificate ${certificateId} not found for user ${userId}`);
+      throw new Error('Certificate not found or access denied');
     }
+
+    console.log(`Found certificate:`, {
+      id: certificate.id,
+      certificateNumber: certificate.certificateNumber,
+      pdfUrl: certificate.pdfUrl,
+      userId: certificate.userId
+    });
 
     // Check if PDF file exists
-    const filepath = path.join(__dirname, '..', certificate.pdfUrl);
-    if (!fs.existsSync(filepath)) {
-      throw new Error('Certificate PDF not found');
+    if (!certificate.pdfUrl) {
+      console.log(`Certificate ${certificateId} has no PDF URL, generating...`);
+      await generatePDFForCertificate(certificate);
+      console.log(`PDF generated for certificate ${certificateId}`);
+      // Refresh certificate data to get the updated pdfUrl
+      await certificate.reload();
     }
 
+    // Fix the file path resolution
+    const filepath = path.resolve(__dirname, '..', certificate.pdfUrl.replace('/uploads/', 'uploads/'));
+    console.log(`Looking for PDF file at: ${filepath}`);
+
+    if (!fs.existsSync(filepath)) {
+      console.log(`PDF file not found at: ${filepath}`);
+      
+      // Try alternative path resolution
+      const altPath = path.join(__dirname, '..', 'uploads', 'certificates', path.basename(certificate.pdfUrl));
+      console.log(`Trying alternative path: ${altPath}`);
+      
+      if (fs.existsSync(altPath)) {
+        console.log(`Found PDF at alternative path: ${altPath}`);
+        return {
+          filepath: altPath,
+          filename: `certificate_${certificate.certificateNumber}.pdf`,
+          certificate
+        };
+      }
+      
+      throw new Error('Certificate PDF file not found on server');
+    }
+
+    console.log(`PDF file found successfully at: ${filepath}`);
     return {
       filepath,
       filename: `certificate_${certificate.certificateNumber}.pdf`,
       certificate
     };
   } catch (error) {
+    console.error(`Error in downloadCertificate for certificate ${certificateId}:`, error);
     throw error;
   }
 };
@@ -280,9 +318,66 @@ const generateWinnerCertificates = async (eventId, winners) => {
   // with different designs and ranking information
 };
 
+// Generate PDF for existing certificate if it doesn't have one
+const generatePDFForCertificate = async (certificate) => {
+  try {
+    console.log(`Generating PDF for certificate ${certificate.id}`);
+    
+    // Get user and event details
+    const user = await User.findByPk(certificate.userId);
+    const event = await Event.findByPk(certificate.eventId);
+    
+    if (!user || !event) {
+      throw new Error('User or event not found for certificate');
+    }
+    
+    // Get team details if applicable
+    let team = null;
+    if (certificate.teamId) {
+      team = await Team.findByPk(certificate.teamId);
+    }
+    
+    // Generate certificate data
+    const certificateData = {
+      participantName: user.fullName,
+      eventName: event.name,
+      eventTheme: event.theme || 'Hackathon',
+      eventDate: `${new Date(event.timeline?.startDate || event.createdAt).toLocaleDateString()} - ${new Date(event.timeline?.endDate || event.createdAt).toLocaleDateString()}`,
+      projectName: certificate.projectName,
+      teamName: team ? team.name : null,
+      certificateNumber: certificate.certificateNumber
+    };
+    
+    // Generate PDF
+    const pdfBuffer = await generateCertificatePDF(certificateData);
+    
+    // Save PDF to uploads directory
+    const uploadsDir = path.join(__dirname, '../uploads/certificates');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    
+    const filename = `certificate_${certificate.id}_${Date.now()}.pdf`;
+    const filepath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filepath, pdfBuffer);
+    
+    // Update certificate with PDF URL
+    await certificate.update({
+      pdfUrl: `/uploads/certificates/${filename}`
+    });
+    
+    console.log(`PDF generated successfully for certificate ${certificate.id}`);
+    return filepath;
+  } catch (error) {
+    console.error(`Error generating PDF for certificate ${certificate.id}:`, error);
+    throw error;
+  }
+};
+
 module.exports = {
   generateEventCertificates,
   getUserCertificates,
   downloadCertificate,
-  generateWinnerCertificates
+  generateWinnerCertificates,
+  generatePDFForCertificate
 };

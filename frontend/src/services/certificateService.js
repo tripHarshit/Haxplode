@@ -35,9 +35,29 @@ export const certificateService = {
   // Download certificate PDF
   async downloadCertificate(certificateId) {
     try {
+      console.log(`Attempting to download certificate ${certificateId}`);
+      
       const response = await api.get(`/certificates/download/${certificateId}`, {
         responseType: 'blob'
       });
+      
+      // Check if the response is actually a PDF
+      const contentType = response.headers['content-type'];
+      if (!contentType || !contentType.includes('application/pdf')) {
+        // If not a PDF, try to parse the error message
+        const text = await response.data.text();
+        let errorMessage = 'Failed to download certificate';
+        
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If we can't parse JSON, use the text as is
+          errorMessage = text || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
+      }
       
       // Create blob URL and trigger download
       const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -50,10 +70,44 @@ export const certificateService = {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
+      console.log(`Certificate ${certificateId} downloaded successfully`);
       return { success: true };
     } catch (error) {
       console.error('Error downloading certificate:', error);
-      throw new Error(error.response?.data?.message || 'Failed to download certificate');
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to download certificate';
+      
+      if (error.response) {
+        // Server responded with error status
+        if (error.response.status === 404) {
+          errorMessage = 'Certificate not found';
+        } else if (error.response.status === 403) {
+          errorMessage = 'Access denied to this certificate';
+        } else if (error.response.status === 400) {
+          errorMessage = 'Certificate not ready for download';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Server error while downloading certificate';
+        }
+        
+        // Try to get error message from response
+        if (error.response.data) {
+          try {
+            const errorData = JSON.parse(await error.response.data.text());
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If we can't parse the error response, use the status-based message
+          }
+        }
+      } else if (error.request) {
+        // Network error
+        errorMessage = 'Network error - please check your connection';
+      } else {
+        // Other error
+        errorMessage = error.message || errorMessage;
+      }
+      
+      throw new Error(errorMessage);
     }
   },
 
