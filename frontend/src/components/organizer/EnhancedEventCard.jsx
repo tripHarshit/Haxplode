@@ -9,8 +9,9 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
+import { Crown } from 'lucide-react';
 
-const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSubmissions, onEdit, onAddJudge, onDelete, isDeleting }) => {
+const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSubmissions, onEdit, onAddJudge, onDelete, onManageSponsors, isDeleting }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -143,7 +144,7 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
       {/* Quick Actions */}
       <div className="p-6">
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Quick Actions</h4>
-        <div className="grid grid-cols-6 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => onViewParticipants(event.id)}
             className="flex flex-col items-center p-3 text-gray-600 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
@@ -194,6 +195,15 @@ const EnhancedEventCard = ({ event, onViewParticipants, onSendMessage, onViewSub
               <path d="M19 8a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V8z" />
             </svg>
             <span className="text-xs">Add Judge</span>
+          </button>
+
+          <button
+            onClick={() => onManageSponsors?.(event)}
+            className="flex flex-col items-center p-3 text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition-colors duration-200"
+            title="Manage Sponsors"
+          >
+            <Crown className="h-5 w-5 mb-1" />
+            <span className="text-xs">Sponsors</span>
           </button>
 
           <button

@@ -16,6 +16,7 @@ import AnnouncementsList from '../../components/organizer/AnnouncementsList';
 import EnhancedEventCard from '../../components/organizer/EnhancedEventCard';
 import AnalyticsCharts from '../../components/organizer/AnalyticsCharts';
 import SponsorShowcase from '../../components/organizer/SponsorShowcase';
+import SponsorManagementModal from '../../components/organizer/SponsorManagementModal';
 import EventCreationWizard from '../../components/organizer/EventCreationWizard';
 import { hackathonService } from '../../services/hackathonService';
 import { announcementService } from '../../services/announcementService';
@@ -49,8 +50,13 @@ const OrganizerDashboard = () => {
   const [showJudgeModal, setShowJudgeModal] = useState(false);
   const [judgeModalEventId, setJudgeModalEventId] = useState(null);
   const [deletingEventId, setDeletingEventId] = useState(null);
+
+  const [showSponsorModal, setShowSponsorModal] = useState(false);
+  const [sponsorEvent, setSponsorEvent] = useState(null);
+  
   const [showQnaModal, setShowQnaModal] = useState(false);
   const [qnaEventId, setQnaEventId] = useState(null);
+
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -585,6 +591,10 @@ const OrganizerDashboard = () => {
                     onViewParticipants={handleViewParticipants}
                     onSendMessage={handleSendMessage}
                     onViewSubmissions={handleViewSubmissions}
+                    onManageSponsors={(ev) => {
+                      setSponsorEvent(ev);
+                      setShowSponsorModal(true);
+                    }}
                     onEdit={(ev) => {
                       setShowEventModal(true);
                       // Pre-fill wizard by setting defaults via window event (simple approach), or adjust wizard to accept initial values
@@ -680,6 +690,27 @@ const OrganizerDashboard = () => {
         }}
       />
 
+
+      <SponsorManagementModal
+        isOpen={showSponsorModal}
+        event={sponsorEvent}
+        onClose={() => {
+          setShowSponsorModal(false);
+          setSponsorEvent(null);
+        }}
+        onSave={async (eventId, sponsors) => {
+          try {
+            await hackathonService.updateHackathon(eventId, { sponsors });
+            setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, sponsors } : e)));
+            showSuccess('Sponsors updated successfully.');
+          } catch (e) {
+            console.error('Failed to update sponsors', e);
+            showError(e.message || 'Failed to update sponsors');
+            throw e;
+          }
+        }}
+      />
+      
       {/* QnA Modal for organizers */}
       {showQnaModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">

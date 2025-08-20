@@ -21,6 +21,7 @@ const mapHackathon = (ev) => {
     status: ev.status ? String(ev.status).toLowerCase() : 'draft',
     rules: typeof ev.rules === 'string' ? ev.rules.split('\n') : (ev.rules || []),
     timeline: ev.timeline || [],
+    sponsors: Array.isArray(ev.sponsors) ? ev.sponsors : [],
     isRegistered: false,
   };
 };

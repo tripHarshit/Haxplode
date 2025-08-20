@@ -433,7 +433,6 @@ const LoginPage = () => {
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );
