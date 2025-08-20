@@ -2,6 +2,9 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/auth/LoginPage";
 import Register from "./pages/auth/RegisterPage";
+import HomePage from "./pages/HomePage";
+import ProfilePage from "./pages/ProfilePage";
+import SettingsPage from "./pages/SettingsPage";
 import ParticipantDashboard from "./pages/participant/ParticipantDashboard";
 import HackathonList from "./pages/participant/HackathonList";
 import HackathonDetails from "./pages/participant/HackathonDetails";
@@ -16,6 +19,7 @@ function App() {
   return (
     <Routes>
         {/* Public Routes */}
+        <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -31,6 +35,8 @@ function App() {
           <Route index element={<ParticipantDashboard />} />
           <Route path="hackathons" element={<HackathonList />} />
           <Route path="hackathons/:id" element={<HackathonDetails />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
 
         {/* Organizer Routes */}
@@ -44,6 +50,8 @@ function App() {
         >
           <Route index element={<OrganizerDashboard />} />
           <Route path="create-hackathon" element={<CreateHackathon />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
 
         {/* Judge Routes */}
@@ -56,10 +64,12 @@ function App() {
           }
         >
           <Route index element={<JudgeDashboard />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
 
         {/* Redirect unknown routes */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
   );
 }

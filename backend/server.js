@@ -10,7 +10,9 @@ const rateLimit = require('express-rate-limit');
 
 const { connectSQL } = require('./config/sqlDatabase');
 // Ensure all SQL models and associations are registered BEFORE syncing
+console.log('🔄 Loading SQL models...');
 require('./models/sql');
+console.log('✅ SQL models loaded');
 const { connectMongo } = require('./config/mongoDatabase');
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
@@ -111,6 +113,18 @@ async function startServer() {
     // Connect to Azure SQL Database
     await connectSQL();
     console.log('✅ Connected to Azure SQL Database');
+    
+    // Verify Certificate table exists
+    try {
+      const { Certificate } = require('./models/sql');
+      
+      // Test if the table exists by doing a simple query
+      await Certificate.count();
+      console.log('✅ Certificate table verified and accessible');
+    } catch (error) {
+      console.error('❌ Certificate table verification failed:', error.message);
+      console.error('❌ This will cause certificate-related features to fail');
+    }
 
     // Connect to MongoDB
     await connectMongo();

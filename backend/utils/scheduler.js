@@ -1,4 +1,4 @@
-const Event = require('../models/sql/Event');
+const { Event } = require('../models/sql');
 const Announcement = require('../models/mongo/Announcement');
 const { emitToRoom } = require('./socket');
 const { scheduleCertificateGeneration } = require('./certificateScheduler');

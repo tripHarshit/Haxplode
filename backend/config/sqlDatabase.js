@@ -46,13 +46,52 @@ async function connectSQL() {
     // Sync models (in production, use migrations instead)
     if (process.env.NODE_ENV !== 'production') {
       try {
-        // Allow non-destructive ALTERs in development to add missing columns
-        await sequelize.sync({ alter: true });
-        console.log('✅ Database models synchronized with alter:true (non-production).');
+        console.log('🔄 Starting database sync...');
+        
+        // Force sync to ensure all tables are created (WARNING: This will drop existing tables in development)
+        // Use alter: true for production-like behavior
+        await sequelize.sync({ alter: true, force: false });
+        
+        console.log('✅ Database models synchronized successfully.');
+        
+        // Verify critical tables exist
+        const tables = await sequelize.query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'", { type: sequelize.QueryTypes.SELECT });
+        console.log('📋 Available tables:', tables.map(t => t.TABLE_NAME));
+        
       } catch (syncError) {
-        console.warn('⚠️  Model sync failed:', syncError.message);
-        console.warn('⚠️  Continuing without sync - ensure tables exist manually');
-        console.warn('⚠️  If you need to reset the database, do it manually in Azure Portal');
+        console.error('❌ Model sync failed:', syncError.message);
+        console.error('❌ Sync error details:', syncError);
+        
+        // Try to create just the Certificate table manually if sync fails
+        try {
+          console.log('🔄 Attempting to create Certificate table manually...');
+          await sequelize.query(`
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Certificates' AND xtype='U')
+            CREATE TABLE [Certificates] (
+              [id] INT IDENTITY(1,1) PRIMARY KEY,
+              [userId] INT NOT NULL,
+              [eventId] INT NOT NULL,
+              [teamId] INT NULL,
+              [type] VARCHAR(50) NOT NULL DEFAULT 'participation',
+              [title] VARCHAR(200) NOT NULL,
+              [description] TEXT NULL,
+              [projectName] VARCHAR(200) NULL,
+              [score] DECIMAL(5,2) NULL,
+              [rank] INT NULL,
+              [issuedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
+              [certificateNumber] VARCHAR(50) NOT NULL UNIQUE,
+              [pdfUrl] VARCHAR(500) NULL,
+              [metadata] TEXT NULL,
+              [createdAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
+              [updatedAt] DATETIME2 NOT NULL DEFAULT GETDATE()
+            )
+          `);
+          console.log('✅ Certificate table created manually');
+        } catch (manualCreateError) {
+          console.error('❌ Failed to create Certificate table manually:', manualCreateError.message);
+        }
+        
+        console.warn('⚠️  Continuing without full sync - some features may not work');
       }
     }
   } catch (error) {

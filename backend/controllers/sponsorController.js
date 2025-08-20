@@ -1,4 +1,4 @@
-const Sponsor = require('../models/sql/Sponsor');
+const { Sponsor } = require('../models/sql');
 
 // GET /api/sponsors (for current organizer)
 async function listSponsors(req, res) {

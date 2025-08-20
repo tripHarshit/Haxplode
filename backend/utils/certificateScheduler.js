@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const Event = require('../models/sql/Event');
+const { Event, Certificate } = require('../models/sql');
 const { generateEventCertificates } = require('../controllers/certificateController');
 
 // Schedule certificate generation for completed events
@@ -20,7 +20,7 @@ const scheduleCertificateGeneration = () => {
         },
                  include: [
            {
-             model: require('../models/sql/Certificate'),
+             model: Certificate,
              as: 'certificates',
              required: false
            }
@@ -93,7 +93,7 @@ const checkAndGenerateEventCertificates = async (eventId) => {
     }
 
     // Check if certificates already exist
-    const existingCertificates = await require('../models/sql/Certificate').findAll({
+    const existingCertificates = await Certificate.findAll({
       where: { eventId }
     });
 

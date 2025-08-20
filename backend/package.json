@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "lint": "eslint .",
-    "migrate": "node scripts/migrate.js"
+    "migrate": "node scripts/migrate.js",
+    "setup-db": "node scripts/setupDatabase.js"
   },
   "keywords": [
     "hackathon",

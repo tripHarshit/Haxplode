@@ -1,7 +1,5 @@
 const { Registration, Submission } = require('../models/mongo');
-const { Team, TeamMember } = require('../models/sql/Team');
-const Event = require('../models/sql/Event');
-const User = require('../models/sql/User');
+const { Team, TeamMember, Event, User } = require('../models/sql');
 
 async function getDashboardData(req, res) {
   try {

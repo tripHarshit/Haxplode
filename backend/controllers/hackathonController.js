@@ -1,9 +1,6 @@
 const { Op } = require('sequelize');
-const Event = require('../models/sql/Event');
-const User = require('../models/sql/User');
-const { Team, TeamMember } = require('../models/sql/Team');
+const { Event, User, Team, TeamMember, Judge, JudgeEventAssignment } = require('../models/sql');
 const { Submission, Registration, Announcement } = require('../models/mongo');
-const { Judge, JudgeEventAssignment } = require('../models/sql/Judge');
 const { emitToRoom } = require('../utils/socket');
 const { audit } = require('../utils/audit');
 

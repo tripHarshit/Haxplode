@@ -1,6 +1,5 @@
 const Submission = require('../models/mongo/Submission');
-const { Team, TeamMember } = require('../models/sql/Team');
-const Event = require('../models/sql/Event');
+const { Team, TeamMember, Event } = require('../models/sql');
 const { audit } = require('../utils/audit');
 
 // Create submission (Participant only)

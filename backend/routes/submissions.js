@@ -42,7 +42,8 @@ router.get('/:id/summary', async (req, res) => {
     if (!sub) return res.status(404).json({ message: 'Submission not found' });
     const scores = sub.scores || [];
     // Weighted by event rounds if present
-    const event = await require('../models/sql/Event').findByPk(sub.eventId);
+    const { Event } = require('../models/sql');
+    const event = await Event.findByPk(sub.eventId);
     let avgScore;
     if (event?.rounds?.length) {
       let total = 0; let weightSum = 0;

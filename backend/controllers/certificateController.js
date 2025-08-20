@@ -1,12 +1,8 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
-const Certificate = require('../models/sql/Certificate');
-const User = require('../models/sql/User');
-const Event = require('../models/sql/Event');
-const Team = require('../models/sql/Team');
+const { Certificate, User, Event, Team, sequelize } = require('../models/sql');
 const { Registration } = require('../models/mongo');
-const { sequelize } = require('../config/sqlDatabase');
 
 // Generate a unique certificate number
 const generateCertificateNumber = () => {
@@ -220,6 +216,13 @@ const generateEventCertificates = async (eventId) => {
 // Get user certificates
 const getUserCertificates = async (userId) => {
   try {
+    console.log('getUserCertificates called with userId:', userId);
+    
+    // First check if the Certificate model is properly loaded
+    if (!Certificate) {
+      throw new Error('Certificate model not found');
+    }
+    
     const certificates = await Certificate.findAll({
       where: { userId },
       include: [
@@ -237,8 +240,11 @@ const getUserCertificates = async (userId) => {
       order: [['issuedAt', 'DESC']]
     });
 
+    console.log('Certificates found:', certificates.length);
     return certificates;
   } catch (error) {
+    console.error('Error in getUserCertificates:', error);
+    console.error('Error stack:', error.stack);
     throw error;
   }
 };

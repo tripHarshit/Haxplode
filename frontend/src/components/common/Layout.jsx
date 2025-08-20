@@ -42,6 +42,27 @@ const Layout = () => {
     return '/dashboard';
   };
 
+  const getProfileHref = () => {
+    if (hasRole('participant')) return '/participant/profile';
+    if (hasRole('organizer')) return '/organizer/profile';
+    if (hasRole('judge')) return '/judge/profile';
+    return '/profile';
+  };
+
+  const getSettingsHref = () => {
+    if (hasRole('participant')) return '/participant/settings';
+    if (hasRole('organizer')) return '/organizer/settings';
+    if (hasRole('judge')) return '/judge/settings';
+    return '/settings';
+  };
+
+  const getNotificationsHref = () => {
+    if (hasRole('participant')) return '/participant/notifications';
+    if (hasRole('organizer')) return '/organizer/notifications';
+    if (hasRole('judge')) return '/judge/notifications';
+    return '/notifications';
+  };
+
   const navigation = [
     { 
       name: 'Dashboard', 
@@ -59,8 +80,8 @@ const Layout = () => {
       { name: 'Judging', href: '/judge', icon: Users },
       { name: 'Leaderboard', href: '/judge', icon: Trophy },
     ] : []),
-    { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Profile', href: getProfileHref(), icon: User },
+    { name: 'Settings', href: getSettingsHref(), icon: Settings },
   ];
 
   const additionalLinks = [
@@ -223,7 +244,7 @@ const Layout = () => {
                 
                 {/* Notifications */}
                 <Link
-                  to="/notifications"
+                  to={getNotificationsHref()}
                   className="relative p-2 text-neutral-400 hover:text-neutral-500 dark:text-gray-500 dark:hover:text-gray-300"
                   onClick={() => setUnreadCount(0)}
                   title="Notifications"

@@ -7,10 +7,31 @@ const {
   generateEventCertificates 
 } = require('../controllers/certificateController');
 
+// Test endpoint to check if Certificate model is working
+router.get('/test', async (req, res) => {
+  try {
+    const { Certificate } = require('../models/sql');
+    const count = await Certificate.count();
+    res.json({ 
+      message: 'Certificate model is working',
+      tableExists: true,
+      recordCount: count
+    });
+  } catch (error) {
+    console.error('Certificate model test failed:', error);
+    res.status(500).json({ 
+      message: 'Certificate model test failed',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // Get user's certificates
 router.get('/user/:userId', authMiddleware, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
+    console.log('Fetching certificates for user:', userId);
     
     // Ensure user can only access their own certificates
     if (req.currentUser.id !== userId && req.currentUser.role !== 'Organizer') {
@@ -18,10 +39,15 @@ router.get('/user/:userId', authMiddleware, async (req, res) => {
     }
 
     const certificates = await getUserCertificates(userId);
+    console.log('Found certificates:', certificates.length);
     res.json({ certificates });
   } catch (error) {
     console.error('Error fetching certificates:', error);
-    res.status(500).json({ message: 'Failed to fetch certificates' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Failed to fetch certificates',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 });
 
