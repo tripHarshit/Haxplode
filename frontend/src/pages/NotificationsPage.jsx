@@ -19,7 +19,7 @@ import {
 
 const NotificationsPage = () => {
   const { user } = useAuth();
-  const { refreshUnreadCount } = useSocket();
+  const { socket, refreshUnreadCount } = useSocket();
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState('all'); // all, unread, read
@@ -67,6 +67,21 @@ const NotificationsPage = () => {
     };
     loadAnnouncements();
   }, [user]);
+
+  // Live removal on announcement delete events
+  useEffect(() => {
+    if (!socket) return;
+    const onDelete = (data) => {
+      const id = data?.announcementId;
+      if (!id) return;
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      try { refreshUnreadCount(); } catch {}
+    };
+    socket.on('event_announcement_delete', onDelete);
+    return () => {
+      socket.off('event_announcement_delete', onDelete);
+    };
+  }, [socket]);
 
   const markAsRead = async (notificationId) => {
     setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));

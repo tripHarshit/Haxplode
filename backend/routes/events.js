@@ -27,10 +27,11 @@ const {
 
 // Public routes (with optional authentication)
 router.get('/', optionalAuth, getAllEvents);
-router.get('/:id', optionalAuth, getEventById);
 
 // Protected routes
+// Note: Define '/user/events' before '/:id' to avoid shadowing by the dynamic route
 router.get('/user/events', authMiddleware, getEventsByUser);
+router.get('/:id', optionalAuth, getEventById);
 
 // Organizer only routes
 router.post('/', authMiddleware, authorizeOrganizer, validateInput(eventSchemas.create), createEvent);

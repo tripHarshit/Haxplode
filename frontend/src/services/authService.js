@@ -114,32 +114,62 @@ export const authService = {
   },
 
   async loginWithGoogle(idToken) {
-  try {
-    console.log('Google OAuth login attempt');
+    try {
+      console.log('Google OAuth login attempt');
 
-    const response = await api.post('/auth/google', {
-      idToken,
-      role: 'Participant' // Default role, can be made configurable later
-    });
+      const response = await api.post('/auth/google', {
+        idToken,
+        role: 'Participant'
+      });
 
-    // Endpoint may return either { token, refreshToken } or { tokens: { accessToken, refreshToken } }
-    const data = response.data.data || {};
-    const accessToken = data.token || data.accessToken || data.tokens?.accessToken;
-    const refreshToken = data.refreshToken || data.tokens?.refreshToken;
-    const normalizedUser = authService._normalizeUser(data.user);
+      // New user flow: backend signals requiresRegistration
+      if (response.data?.requiresRegistration) {
+        const prefill = response.data?.data?.prefill || {};
+        console.log('Google account not found. Needs registration.');
+        // Caller should navigate to Google registration page
+        return { requiresRegistration: true, prefill, provider: 'google', idToken };
+      }
 
-    // Store tokens
-    if (accessToken) localStorage.setItem('token', accessToken);
-    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      // Existing user flow: tokens present under data or nested tokens
+      const data = response.data.data || {};
+      const accessToken = data.token || data.accessToken || data.tokens?.accessToken;
+      const refreshToken = data.refreshToken || data.tokens?.refreshToken;
+      const normalizedUser = authService._normalizeUser(data.user);
 
-    console.log('Google login successful for user:', normalizedUser?.fullName || normalizedUser?.name);
+      // Store tokens
+      if (accessToken) localStorage.setItem('token', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
 
-    return { user: normalizedUser, token: accessToken, refreshToken };
-  } catch (error) {
-    console.error('Google login failed:', error.message);
-    throw new Error(error.response?.data?.message || 'Google login failed');
-  }
-},
+      console.log('Google login successful for user:', normalizedUser?.fullName || normalizedUser?.name);
+
+      return { user: normalizedUser, token: accessToken, refreshToken };
+    } catch (error) {
+      console.error('Google login failed:', error.message);
+      throw new Error(error.response?.data?.message || 'Google login failed');
+    }
+  },
+
+  async completeGoogleRegistration({ idToken, name, dateOfBirth, role = 'Participant' }) {
+    try {
+      const response = await api.post('/auth/google/complete', {
+        idToken,
+        name,
+        dateOfBirth,
+        role,
+      });
+      const data = response.data.data || {};
+      const accessToken = data.token || data.accessToken || data.tokens?.accessToken;
+      const refreshToken = data.refreshToken || data.tokens?.refreshToken;
+      const normalizedUser = authService._normalizeUser(data.user);
+
+      if (accessToken) localStorage.setItem('token', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
+      return { user: normalizedUser, token: accessToken, refreshToken };
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to complete Google registration');
+    }
+  },
 
   async register(userData) {
     try {

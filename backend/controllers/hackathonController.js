@@ -550,7 +550,12 @@ async function getLeaderboard(req, res) {
 						weightSum += (rd.weight || 1);
 					}
 				}
-				const finalScore = weightSum ? total / weightSum : 0;
+				// If no round-specific scores were found, fall back to averaging all scores
+				if (!weightSum) {
+					const avgAll = scores.length ? (scores.reduce((sum, sc) => sum + (sc.score || 0), 0) / scores.length) : 0;
+					return { teamId: s.teamId, submissionId: s._id, score: Math.round(avgAll * 100) / 100 };
+				}
+				const finalScore = total / weightSum;
 				return { teamId: s.teamId, submissionId: s._id, score: Math.round(finalScore * 100) / 100 };
 			}
 			const avg = scores.length ? (scores.reduce((sum, sc) => sum + (sc.score || 0), 0) / scores.length) : 0;
@@ -587,12 +592,13 @@ async function createHackathonAnnouncement(req, res) {
 	try {
 		const eventId = parseInt(req.params.id);
 		const organizerId = req.currentUser.id;
-		const { title, message, type, priority, isPinned, isPublic, targetAudience, scheduledFor, expiresAt, tags } = req.body;
+		const { title, message, visibility, type, priority, isPinned, isPublic, targetAudience, scheduledFor, expiresAt, tags } = req.body;
 		const announcement = await Announcement.create({
 			eventId,
 			organizerId,
 			title,
 			message,
+			visibility,
 			type,
 			priority,
 			isPinned,
@@ -604,7 +610,38 @@ async function createHackathonAnnouncement(req, res) {
 			status: scheduledFor && scheduledFor > new Date() ? 'Scheduled' : 'Published',
 		});
 		audit(organizerId, 'announcement_created', { eventId, metadata: { title } });
-		emitToRoom(`event:${eventId}`, 'event_announcement', { eventId, type: 'announcement', message: title, timestamp: new Date().toISOString() });
+		const visibilityFinal = visibility || (Array.isArray(targetAudience)
+			? (targetAudience.includes('Participants') && targetAudience.includes('Judges') ? 'Both' : (targetAudience.includes('Judges') ? 'Judges' : 'Participants'))
+			: 'Participants');
+		if (visibilityFinal === 'Participants' || visibilityFinal === 'Both') {
+			try {
+				const { Registration } = require('../models/mongo');
+				const regs = await Registration.find({ eventId, status: { $in: ['pending', 'confirmed'] } });
+				const participantUserIds = Array.from(new Set(regs.map(r => r.userId).filter(Boolean)));
+				const timestamp = new Date().toISOString();
+				for (const uid of participantUserIds) {
+					emitToRoom(`user:${uid}`, 'notification', { userId: uid, type: 'announcement', title, body: message, link: `/events/${eventId}`, timestamp });
+				}
+			} catch (partErr) {
+				console.warn('Failed to emit to participants:', partErr?.message || partErr);
+			}
+		}
+		if (visibilityFinal === 'Judges' || visibilityFinal === 'Both') {
+			try {
+				const { JudgeEventAssignment, Judge } = require('../models/sql');
+				const assignments = await JudgeEventAssignment.findAll({
+					where: { eventId, isActive: true },
+					include: [{ model: Judge, as: 'judge', attributes: ['userId'] }],
+				});
+				const judgeUserIds = assignments.map(a => a.judge?.userId).filter(Boolean);
+				const timestamp = new Date().toISOString();
+				for (const uid of judgeUserIds) {
+					emitToRoom(`user:${uid}`, 'notification', { userId: uid, type: 'announcement', title, body: message, link: `/events/${eventId}`, timestamp });
+				}
+			} catch (err) {
+				console.warn('Failed to emit to judges:', err?.message || err);
+			}
+		}
 		return res.status(201).json({ announcement });
 	} catch (err) {
 		console.error('Create hackathon announcement error:', err);

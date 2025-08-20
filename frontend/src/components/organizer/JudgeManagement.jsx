@@ -9,11 +9,14 @@ import {
   ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { mockJudges } from '../../utils/organizerMockData';
+import { judgeService } from '../../services/judgeService';
+import { toast } from 'react-toastify';
 
-const JudgeManagement = () => {
+const JudgeManagement = ({ eventId, onJudgesUpdate }) => {
   const [judges] = useState(mockJudges);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddJudge, setShowAddJudge] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const filteredJudges = judges.filter(judge =>
     judge.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,21 +36,49 @@ const JudgeManagement = () => {
     return 'text-red-600';
   };
 
+  const handleAssignSubmissionsToJudges = async () => {
+    try {
+      setLoading(true);
+      await judgeService.assignSubmissionsToJudges(eventId);
+      
+      // Show success message
+      toast.success('Submissions assigned to judges successfully!');
+      
+      // Refresh judges list
+      if (onJudgesUpdate) {
+        onJudgesUpdate();
+      }
+    } catch (error) {
+      console.error('Error assigning submissions to judges:', error);
+      toast.error(error.response?.data?.message || 'Failed to assign submissions to judges');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Actions */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Judge Management</h2>
-          <p className="text-gray-600">Manage judges, assign rounds, and track performance</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Judge Management</h2>
+          <p className="text-gray-600 dark:text-gray-400">Manage judges and their assignments for this event</p>
         </div>
-        <button
-          onClick={() => setShowAddJudge(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 flex items-center space-x-2"
-        >
-          <UserPlusIcon className="h-4 w-4" />
-          <span>Add Judge</span>
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={handleAssignSubmissionsToJudges}
+            disabled={loading || judges.length === 0}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Assigning...' : 'Assign Submissions to Judges'}
+          </button>
+          <button
+            onClick={() => setShowAddJudge(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Add Judge
+          </button>
+        </div>
       </div>
 
       {/* Stats Overview */}

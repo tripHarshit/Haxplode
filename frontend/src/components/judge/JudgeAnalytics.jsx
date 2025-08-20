@@ -9,10 +9,11 @@ import {
 
 const JudgeAnalytics = ({ analytics }) => {
   // Transform data for charts
+  const denominator = Math.max(1, analytics.totalReviews || 0);
   const scoreDistributionData = Object.entries(analytics.scoreDistribution).map(([score, count]) => ({
     score: parseFloat(score),
     count,
-    percentage: Math.round((count / analytics.totalReviews) * 100)
+    percentage: Math.round((count / denominator) * 100)
   }));
 
   const monthlyStatsData = analytics.monthlyStats.map(stat => ({

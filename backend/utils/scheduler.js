@@ -69,12 +69,44 @@ async function publishScheduledAnnouncements() {
   for (const ann of toPublish) {
     ann.status = 'Published';
     await ann.save();
-    emitToRoom(`event:${ann.eventId}`, 'event_announcement', {
+    const visibilityFinal = ann.visibility || (Array.isArray(ann.targetAudience)
+      ? (ann.targetAudience.includes('Participants') && ann.targetAudience.includes('Judges') ? 'Both' : (ann.targetAudience.includes('Judges') ? 'Judges' : 'Participants'))
+      : 'Participants');
+    const payload = {
       eventId: ann.eventId,
       type: 'announcement',
       message: ann.title,
+      title: ann.title,
+      body: ann.message,
       timestamp: new Date().toISOString(),
-    });
+    };
+    if (visibilityFinal === 'Participants' || visibilityFinal === 'Both') {
+      try {
+        const { Registration } = require('../models/mongo');
+        const regs = await Registration.find({ eventId: ann.eventId, status: { $in: ['pending', 'confirmed'] } });
+        const participantUserIds = Array.from(new Set(regs.map(r => r.userId).filter(Boolean)));
+        for (const uid of participantUserIds) {
+          emitToRoom(`user:${uid}`, 'notification', { userId: uid, type: 'announcement', title: ann.title, body: ann.message, link: `/events/${ann.eventId}`, timestamp: payload.timestamp });
+        }
+      } catch (err) {
+        console.warn('Scheduler participant emit failed:', err?.message || err);
+      }
+    }
+    if (visibilityFinal === 'Judges' || visibilityFinal === 'Both') {
+      try {
+        const { JudgeEventAssignment, Judge } = require('../models/sql');
+        const assignments = await JudgeEventAssignment.findAll({
+          where: { eventId: ann.eventId, isActive: true },
+          include: [{ model: Judge, as: 'judge', attributes: ['userId'] }],
+        });
+        const judgeUserIds = assignments.map(a => a.judge?.userId).filter(Boolean);
+        for (const uid of judgeUserIds) {
+          emitToRoom(`user:${uid}`, 'notification', { userId: uid, type: 'announcement', title: ann.title, body: ann.message, link: `/events/${ann.eventId}`, timestamp: payload.timestamp });
+        }
+      } catch (err) {
+        console.warn('Scheduler judge emit failed:', err?.message || err);
+      }
+    }
   }
 }
 
