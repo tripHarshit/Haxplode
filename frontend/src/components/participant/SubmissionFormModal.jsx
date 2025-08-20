@@ -180,6 +180,8 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
         }
         if (!formData.description.trim()) {
           newErrors.description = 'Project description is required';
+        } else if (formData.description.trim().length < 10) {
+          newErrors.description = 'Description must be at least 10 characters';
         }
         if (!formData.hackathonId) {
           newErrors.hackathonId = 'Please select a hackathon';
@@ -200,7 +202,6 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
         break;
       case 3:
         // Optional fields, no validation required
-        // But we can add a gentle reminder about file uploads
         break;
     }
     
@@ -227,7 +228,13 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
       return;
     }
     
-    if (!validateStep(currentStep)) {
+    // Re-validate all critical steps to prevent server-side validation errors
+    if (!validateStep(1)) {
+      setCurrentStep(1);
+      return;
+    }
+    if (!validateStep(2)) {
+      setCurrentStep(2);
       return;
     }
     
@@ -377,8 +384,10 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
   };
 
   const availableHackathons = userEvents;
-  const availableTeams = userTeams.filter(t => (t.event?.id || t.eventId) === formData.hackathonId).map(t => ({ id: t.id, name: t.teamName || t.name }));
-  const selectedHackathonTitle = availableHackathons.find(h => h.id === formData.hackathonId)?.title;
+  const availableTeams = userTeams
+    .filter(t => Number(t.event?.id || t.eventId) === Number(formData.hackathonId))
+    .map(t => ({ id: t.id, name: t.teamName || t.name }));
+  const selectedHackathonTitle = availableHackathons.find(h => Number(h.id) === Number(formData.hackathonId))?.title;
 
   // Auto-select team if only one available for selected event
   React.useEffect(() => {
@@ -454,108 +463,108 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                                         <label htmlFor="projectName" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                       Project Name *
-                     </label>
-                     <input
-                       type="text"
-                       id="projectName"
-                       name="projectName"
-                       value={formData.projectName}
-                       onChange={handleInputChange}
-                       onKeyPress={handleKeyPress}
-                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 dark:placeholder-neutral-400 ${
-                         errors.projectName ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
-                       }`}
-                       placeholder="Enter project name"
-                       disabled={isSubmitting}
-                     />
-                     {errors.projectName && (
-                       <p className="mt-1 text-sm text-error-600 dark:text-error-400">{errors.projectName}</p>
-                     )}
+                    <label htmlFor="projectName" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      Project Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="projectName"
+                      name="projectName"
+                      value={formData.projectName}
+                      onChange={handleInputChange}
+                      onKeyPress={handleKeyPress}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 dark:placeholder-neutral-400 ${
+                        errors.projectName ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
+                      }`}
+                      placeholder="Enter project name"
+                      disabled={isSubmitting}
+                    />
+                    {errors.projectName && (
+                      <p className="mt-1 text-sm text-error-600 dark:text-error-400">{errors.projectName}</p>
+                    )}
                   </div>
 
-                                     <div>
-                     <label htmlFor="hackathonId" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                       Hackathon *
-                     </label>
-                     <select
-                       id="hackathonId"
-                       name="hackathonId"
-                       value={formData.hackathonId}
-                       onChange={handleInputChange}
-                       onKeyPress={handleKeyPress}
-                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 ${
-                         errors.hackathonId ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
-                       }`}
-                       disabled={isSubmitting}
-                     >
-                       <option value="">Select hackathon</option>
-                       {availableHackathons.map((hackathon) => (
-                         <option key={hackathon.id} value={hackathon.id}>
-                           {hackathon.title}
-                         </option>
-                       ))}
-                     </select>
-                     {errors.hackathonId && (
-                       <p className="mt-1 text-sm text-error-600 dark:text-error-400">{errors.hackathonId}</p>
-                     )}
-                   </div>
+                  <div>
+                    <label htmlFor="hackathonId" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      Hackathon *
+                    </label>
+                    <select
+                      id="hackathonId"
+                      name="hackathonId"
+                      value={formData.hackathonId}
+                      onChange={handleInputChange}
+                      onKeyPress={handleKeyPress}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 ${
+                        errors.hackathonId ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
+                      }`}
+                      disabled={isSubmitting}
+                    >
+                      <option value="">Select hackathon</option>
+                      {availableHackathons.map((hackathon) => (
+                        <option key={hackathon.id} value={hackathon.id}>
+                          {hackathon.title}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.hackathonId && (
+                      <p className="mt-1 text-sm text-error-600 dark:text-error-400">{errors.hackathonId}</p>
+                    )}
+                  </div>
                 </div>
 
-                                 <div>
-                   <label htmlFor="description" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                     Project Description *
-                   </label>
-                   <textarea
-                     id="description"
-                     name="description"
-                     value={formData.description}
-                     onChange={handleInputChange}
-                     onKeyPress={handleKeyPress}
-                     rows={4}
-                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 dark:placeholder-neutral-400 ${
-                       errors.description ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
-                     }`}
-                     placeholder="Describe your project, its features, and how it works"
-                     disabled={isSubmitting}
-                   />
-                   {errors.description && (
-                     <p className="mt-1 text-sm text-error-600 dark:text-error-400">{errors.description}</p>
-                   )}
-                 </div>
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    Project Description *
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    onKeyPress={handleKeyPress}
+                    rows={4}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 dark:placeholder-neutral-400 ${
+                      errors.description ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
+                    }`}
+                    placeholder="Describe your project, its features, and how it works"
+                    disabled={isSubmitting}
+                  />
+                  {errors.description && (
+                    <p className="mt-1 text-sm text-error-600 dark:text-error-400">{errors.description}</p>
+                  )}
+                </div>
 
-                                 <div>
-                   <label htmlFor="teamId" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                     Team *
-                   </label>
-                   <select
-                     id="teamId"
-                     name="teamId"
-                     value={formData.teamId}
-                     onChange={handleInputChange}
-                     onKeyPress={handleKeyPress}
-                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 ${
-                       errors.teamId ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
-                     }`}
-                     disabled={isSubmitting || !formData.hackathonId}
-                   >
-                     <option value="">Select team</option>
-                     {availableTeams.map((team) => (
-                       <option key={team.id} value={team.id}>
-                         {team.name}
-                       </option>
-                     ))}
-                   </select>
-                   {errors.teamId && (
-                     <p className="mt-1 text-sm text-error-600 dark:text-error-400">{errors.teamId}</p>
-                   )}
-                   {!formData.hackathonId && (
-                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                       Please select a hackathon first
-                     </p>
-                   )}
-                 </div>
+                <div>
+                  <label htmlFor="teamId" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    Team *
+                  </label>
+                  <select
+                    id="teamId"
+                    name="teamId"
+                    value={formData.teamId}
+                    onChange={handleInputChange}
+                    onKeyPress={handleKeyPress}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 ${
+                      errors.teamId ? 'border-error-300 dark:border-error-600' : 'border-neutral-300 dark:border-neutral-600'
+                    }`}
+                    disabled={isSubmitting || !formData.hackathonId}
+                  >
+                    <option value="">Select team</option>
+                    {availableTeams.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.teamId && (
+                    <p className="mt-1 text-sm text-error-600 dark:text-error-400">{errors.teamId}</p>
+                  )}
+                  {!formData.hackathonId && (
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                      Please select a hackathon first
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -649,21 +658,21 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                     
                     {formData.technologies.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                                                 {formData.technologies.map((tech, index) => (
-                           <span
-                             key={index}
-                             className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300"
-                           >
-                             {tech}
-                             <button
-                               type="button"
-                               onClick={() => handleTechnologyRemove(tech)}
-                               className="ml-2 text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
-                             >
-                               <XMarkIconSolid className="h-4 w-4" />
-                             </button>
-                           </span>
-                         ))}
+                        {formData.technologies.map((tech, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300"
+                          >
+                            {tech}
+                            <button
+                              type="button"
+                              onClick={() => handleTechnologyRemove(tech)}
+                              className="ml-2 text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+                            >
+                              <XMarkIconSolid className="h-4 w-4" />
+                            </button>
+                          </span>
+                        ))}
                       </div>
                     )}
                     
@@ -740,7 +749,7 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
                   <h5 className="font-medium text-gray-900 mb-3">Submission Review</h5>
                   <div className="space-y-2 text-sm text-gray-600">
                     <p><span className="font-medium">Project:</span> {formData.projectName}</p>
-                    <p><span className="font-medium">Hackathon:</span> {availableHackathons.find(h => h.id === formData.hackathonId)?.title}</p>
+                    <p><span className="font-medium">Hackathon:</span> {availableHackathons.find(h => Number(h.id) === Number(formData.hackathonId))?.title}</p>
                     <p><span className="font-medium">Team:</span> {availableTeams.find(t => t.id === formData.teamId)?.name}</p>
                     <p><span className="font-medium">Technologies:</span> {formData.technologies.join(', ')}</p>
                     <p><span className="font-medium">Files:</span> {formData.files.length} file(s)</p>
@@ -764,54 +773,54 @@ const SubmissionFormModal = ({ isOpen, onClose, submission, onSubmissionCreated 
               </div>
             )}
 
-                         {/* Navigation */}
-             <div className="flex items-center justify-between pt-6 border-t border-neutral-200 dark:border-neutral-700">
-               <div>
-                 {currentStep > 1 && (
-                   <button
-                     type="button"
-                     onClick={prevStep}
-                     disabled={isSubmitting}
-                     className="inline-flex items-center px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
-                   >
-                     <ArrowLeftIcon className="h-4 w-4 mr-2" />
-                     Previous
-                   </button>
-                 )}
-               </div>
-               
-               <div className="flex space-x-3">
-                 <button
-                   type="button"
-                   onClick={handleClose}
-                   disabled={isSubmitting}
-                   className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
-                 >
-                   Cancel
-                 </button>
-                 
-                 {currentStep < totalSteps ? (
-                   <button
-                     type="button"
-                     onClick={nextStep}
-                     disabled={isSubmitting}
-                     className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 shadow-sm"
-                   >
-                     Next
-                     <ArrowRightIcon className="h-4 w-4 ml-2" />
-                   </button>
-                 ) : (
-                   <button
-                     type="button"
-                     onClick={handleSubmit}
-                     disabled={isSubmitting}
-                     className="inline-flex items-center px-6 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 shadow-sm"
-                   >
-                     {isSubmitting ? 'Submitting...' : (submission ? 'Update Submission' : 'Submit Project')}
-                   </button>
-                 )}
-               </div>
-             </div>
+            {/* Navigation */}
+            <div className="flex items-center justify-between pt-6 border-t border-neutral-200 dark:border-neutral-700">
+              <div>
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
+                  >
+                    <ArrowLeftIcon className="h-4 w-4 mr-2" />
+                    Previous
+                  </button>
+                )}
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                
+                {currentStep < totalSteps ? (
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 shadow-sm"
+                  >
+                    Next
+                    <ArrowRightIcon className="h-4 w-4 ml-2" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center px-6 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 shadow-sm"
+                  >
+                    {isSubmitting ? 'Submitting...' : (submission ? 'Update Submission' : 'Submit Project')}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
