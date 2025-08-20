@@ -22,6 +22,7 @@ import { announcementService } from '../../services/announcementService';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import JudgeAssignmentModal from '../../components/organizer/JudgeAssignmentModal';
+import QnA from '../../components/participant/QnA';
 
 const OrganizerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -48,6 +49,8 @@ const OrganizerDashboard = () => {
   const [showJudgeModal, setShowJudgeModal] = useState(false);
   const [judgeModalEventId, setJudgeModalEventId] = useState(null);
   const [deletingEventId, setDeletingEventId] = useState(null);
+  const [showQnaModal, setShowQnaModal] = useState(false);
+  const [qnaEventId, setQnaEventId] = useState(null);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -354,7 +357,8 @@ const OrganizerDashboard = () => {
   };
 
   const handleSendMessage = (eventId) => {
-    // TODO: Implement message functionality
+    setQnaEventId(eventId);
+    setShowQnaModal(true);
   };
 
   const handleViewSubmissions = (eventId) => {
@@ -675,6 +679,23 @@ const OrganizerDashboard = () => {
           setJudgeModalEventId(null);
         }}
       />
+
+      {/* QnA Modal for organizers */}
+      {showQnaModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Event Q&A</h3>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowQnaModal(false)}>✕</button>
+            </div>
+            {qnaEventId ? (
+              <QnA eventId={qnaEventId} />
+            ) : (
+              <div className="text-sm text-gray-500">Select an event</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
