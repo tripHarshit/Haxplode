@@ -16,6 +16,7 @@ import TeamDetailsModal from './TeamDetailsModal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { dataService } from '../../utils/mockData';
+import { participantService } from '../../services/participantService';
 
 const TeamsList = ({ teams }) => {
   const { user } = useAuth();
@@ -31,8 +32,12 @@ const TeamsList = ({ teams }) => {
     setCurrentTeams(teams);
   }, [teams]);
 
-  const handleTeamUpdate = () => {
-    setCurrentTeams(dataService.getTeams());
+  const handleTeamUpdate = (newTeams) => {
+    if (Array.isArray(newTeams)) {
+      setCurrentTeams(newTeams);
+    } else {
+      setCurrentTeams((prev) => prev.filter(Boolean));
+    }
   };
 
   const handleDeleteTeam = async (teamId, e) => {
@@ -43,15 +48,25 @@ const TeamsList = ({ teams }) => {
       return;
     }
 
-    if (!window.confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
-      return;
-    }
+    // Optimistically decide whether this is a delete or a leave based on role in the team
+    const team = currentTeams.find(t => String(t.id) === String(teamId));
+    const membership = (team?.members || []).find(m => String(m.userId || m.id) === String(user?.id));
+    const isLeader = membership?.role?.toLowerCase?.() === 'leader' || membership?.role === 'Team Lead';
+
+    const confirmMsg = isLeader ? 'Delete this team? This cannot be undone.' : 'Leave this team?';
+    if (!window.confirm(confirmMsg)) return;
 
     setIsDeleting(true);
     try {
-      await dataService.deleteTeam(teamId, user.id);
-      showSuccess('Team deleted successfully');
-      handleTeamUpdate();
+      if (isLeader) {
+        await participantService.deleteTeam(teamId);
+        showSuccess('Team deleted');
+      } else {
+        await participantService.leaveTeam(teamId);
+        showSuccess('Left team');
+      }
+      // Remove from local list
+      handleTeamUpdate(currentTeams.filter(t => String(t.id) !== String(teamId)));
     } catch (error) {
       showError(error.message);
     } finally {

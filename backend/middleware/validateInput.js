@@ -197,7 +197,10 @@ const eventSchemas = {
       amount: Joi.number().positive().required(),
       description: Joi.string().optional(),
     })).optional(),
-    sponsors: Joi.array().items(Joi.string()).optional(),
+    sponsors: Joi.array().items(Joi.alternatives().try(
+      Joi.string(),
+      Joi.object({ name: Joi.string().required() })
+    )).optional(),
     maxTeamSize: Joi.number().integer().min(1).max(10).optional(),
     maxTeams: Joi.number().integer().min(1).optional(),
     registrationFee: Joi.number().positive().optional(),

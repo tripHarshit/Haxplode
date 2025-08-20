@@ -9,25 +9,30 @@ const SponsorManagementModal = ({ isOpen, event, onClose, onSave }) => {
 
   const [sponsors, setSponsors] = useState(initialSponsors);
   const [newSponsor, setNewSponsor] = useState('');
+  const [newWebsite, setNewWebsite] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Reset local state whenever the targeted event changes or the modal re-opens
   useEffect(() => {
     setSponsors(initialSponsors);
     setNewSponsor('');
+    setNewWebsite('');
   }, [initialSponsors, event?.id, isOpen]);
 
   if (!isOpen || !event) return null;
 
   const handleAdd = () => {
     const name = newSponsor.trim();
+    const website = newWebsite.trim();
     if (!name) return;
     if (sponsors.some((s) => (typeof s === 'string' ? s.toLowerCase() : String(s?.name || '').toLowerCase()) === name.toLowerCase())) {
       setNewSponsor('');
+      setNewWebsite('');
       return;
     }
-    setSponsors((prev) => [...prev, name]);
+    setSponsors((prev) => [...prev, { name, website }]);
     setNewSponsor('');
+    setNewWebsite('');
   };
 
   const handleRemove = (idx) => {
@@ -55,15 +60,24 @@ const SponsorManagementModal = ({ isOpen, event, onClose, onSave }) => {
         <div className="px-6 py-5 space-y-4">
           <div>
             <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Add sponsors for <span className="font-medium">{event.title || event.name}</span>. These will be visible to participants on the hackathon page.</div>
-            <div className="flex space-x-2">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
               <input
                 type="text"
                 value={newSponsor}
                 onChange={(e) => setNewSponsor(e.target.value)}
                 placeholder="Sponsor name (e.g., Acme Corp)"
-                className="flex-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="sm:col-span-5 min-w-0 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <button onClick={handleAdd} className="px-3 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Add</button>
+              <input
+                type="url"
+                value={newWebsite}
+                onChange={(e) => setNewWebsite(e.target.value)}
+                placeholder="Website URL (optional)"
+                className="sm:col-span-5 min-w-0 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="sm:col-span-2">
+                <button onClick={handleAdd} className="w-full px-3 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Add</button>
+              </div>
             </div>
           </div>
 
@@ -73,12 +87,19 @@ const SponsorManagementModal = ({ isOpen, event, onClose, onSave }) => {
               <div className="text-sm text-gray-500">No sponsors yet.</div>
             ) : (
               <ul className="space-y-2 max-h-64 overflow-y-auto">
-                {sponsors.map((s, idx) => (
-                  <li key={`${String(s)}-${idx}`} className="flex items-center justify-between bg-gray-50 dark:bg-gray-900 rounded-md px-3 py-2">
-                    <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{typeof s === 'string' ? s : s?.name || String(s)}</span>
-                    <button onClick={() => handleRemove(idx)} className="text-red-600 hover:text-red-700 text-sm">Remove</button>
-                  </li>
-                ))}
+                {sponsors.map((s, idx) => {
+                  const name = typeof s === 'string' ? s : (s?.name || String(s));
+                  const website = typeof s === 'object' ? (s.website || '') : '';
+                  return (
+                    <li key={`${String(name)}-${idx}`} className="flex items-center justify-between bg-gray-50 dark:bg-gray-900 rounded-md px-3 py-2">
+                      <div className="min-w-0">
+                        <div className="text-sm text-gray-800 dark:text-gray-200 truncate">{name}</div>
+                        {website && <div className="text-xs text-gray-500 truncate">{website}</div>}
+                      </div>
+                      <button onClick={() => handleRemove(idx)} className="text-red-600 hover:text-red-700 text-sm">Remove</button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

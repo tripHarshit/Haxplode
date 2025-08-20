@@ -18,6 +18,7 @@ import AnalyticsCharts from '../../components/organizer/AnalyticsCharts';
 import SponsorShowcase from '../../components/organizer/SponsorShowcase';
 import SponsorManagementModal from '../../components/organizer/SponsorManagementModal';
 import EventCreationWizard from '../../components/organizer/EventCreationWizard';
+import { sponsorService } from '../../services/sponsorService';
 import { hackathonService } from '../../services/hackathonService';
 import { announcementService } from '../../services/announcementService';
 import { useAuth } from '../../context/AuthContext';
@@ -84,6 +85,7 @@ const OrganizerDashboard = () => {
           rules: typeof event.rules === 'string' ? event.rules.split('\n') : (event.rules || []),
           timeline: event.timeline || [],
           isRegistered: false,
+          sponsors: Array.isArray(event.sponsors) ? event.sponsors : [],
         }));
         setEvents(mappedEvents);
         // Select first event by default and load its announcements
@@ -231,7 +233,8 @@ const OrganizerDashboard = () => {
       status: newEvent.status ? String(newEvent.status).toLowerCase() : 'draft',
       rules: typeof newEvent.rules === 'string' ? newEvent.rules.split('\n') : (newEvent.rules || []),
       timeline: newEvent.timeline || [],
-      isRegistered: false
+      isRegistered: false,
+      sponsors: Array.isArray(newEvent.sponsors) ? newEvent.sponsors : [],
     };
     setEvents(prev => [...prev, mapped]);
     setShowEventModal(false);
@@ -701,6 +704,18 @@ const OrganizerDashboard = () => {
         onSave={async (eventId, sponsors) => {
           try {
             await hackathonService.updateHackathon(eventId, { sponsors });
+            // Sync to Sponsors catalog so the Sponsors tab reflects new entries
+            try {
+              const existing = await sponsorService.list();
+              const existingNamesLc = new Set(existing.map(s => String(s.name || '').trim().toLowerCase()));
+              const normalized = (sponsors || []).map(s => (typeof s === 'string' ? { name: s } : s)).filter(Boolean);
+              const toCreate = normalized.filter(s => s.name && !existingNamesLc.has(String(s.name).trim().toLowerCase()));
+              for (const sp of toCreate) {
+                await sponsorService.create({ name: sp.name, website: sp.website || '' });
+              }
+            } catch (catalogErr) {
+              console.warn('Sponsor catalog sync failed:', catalogErr?.message);
+            }
             setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, sponsors } : e)));
             showSuccess('Sponsors updated successfully.');
           } catch (e) {

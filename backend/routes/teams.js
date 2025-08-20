@@ -12,6 +12,7 @@ const {
   inviteToTeam,
   joinByCode,
   leaveTeam,
+  deleteTeam,
 } = require('../controllers/teamController');
 
 const {
@@ -40,5 +41,6 @@ router.delete('/:teamId/members/:userId', authMiddleware, authorizeParticipant, 
 router.post('/:teamId/invite', authMiddleware, authorizeParticipant, inviteToTeam);
 router.post('/join', authMiddleware, authorizeParticipant, joinByCode);
 router.delete('/:teamId/leave', authMiddleware, authorizeParticipant, leaveTeam);
+router.delete('/:teamId', authMiddleware, authorizeParticipant, deleteTeam);
 
 module.exports = router;
