@@ -22,6 +22,7 @@ import { announcementService } from '../../services/announcementService';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import JudgeAssignmentModal from '../../components/organizer/JudgeAssignmentModal';
+import OrganizerSubmissionsModal from '../../components/organizer/OrganizerSubmissionsModal';
 
 const OrganizerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -48,6 +49,7 @@ const OrganizerDashboard = () => {
   const [showJudgeModal, setShowJudgeModal] = useState(false);
   const [judgeModalEventId, setJudgeModalEventId] = useState(null);
   const [deletingEventId, setDeletingEventId] = useState(null);
+  const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -358,7 +360,8 @@ const OrganizerDashboard = () => {
   };
 
   const handleViewSubmissions = (eventId) => {
-    // TODO: Implement submissions view
+    setSelectedEventId(eventId);
+    setShowSubmissionsModal(true);
   };
 
   const getStatusColor = (status) => {
@@ -674,6 +677,12 @@ const OrganizerDashboard = () => {
           setShowJudgeModal(false);
           setJudgeModalEventId(null);
         }}
+      />
+
+      <OrganizerSubmissionsModal
+        isOpen={showSubmissionsModal}
+        eventId={selectedEventId}
+        onClose={() => setShowSubmissionsModal(false)}
       />
     </div>
   );
