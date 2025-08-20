@@ -68,6 +68,14 @@ export const SocketProvider = ({ children }) => {
         } catch {}
       });
 
+      // Listen for announcement updates/deletes
+      newSocket.on('event_announcement_update', (data) => {
+        console.log('Announcement updated:', data);
+      });
+      newSocket.on('event_announcement_delete', (data) => {
+        console.log('Announcement deleted:', data);
+      });
+
       // Listen for direct notifications
       newSocket.on('notification', (data) => {
         try {
@@ -90,6 +98,26 @@ export const SocketProvider = ({ children }) => {
         // In a real app, this would update the UI or show notifications
       });
 
+      // Q&A channel listeners
+      newSocket.on('qna_message', (data) => {
+        console.log('Q&A message:', data);
+      });
+      newSocket.on('qna_update', (data) => {
+        console.log('Q&A message updated:', data);
+      });
+      newSocket.on('qna_delete', (data) => {
+        console.log('Q&A message deleted:', data);
+      });
+      newSocket.on('qna_reaction', (data) => {
+        console.log('Q&A reaction:', data);
+      });
+      newSocket.on('qna_read', (data) => {
+        console.log('Q&A read receipt:', data);
+      });
+      newSocket.on('qna_pin', (data) => {
+        console.log('Q&A pin toggled:', data);
+      });
+
       return () => {
         newSocket.disconnect();
         setSocket(null);
@@ -98,13 +126,15 @@ export const SocketProvider = ({ children }) => {
     }
   }, [isAuthenticated, user]);
 
-  // Join event rooms the user is participating in
+  // Join event rooms the user is participating in OR created (if organizer)
   useEffect(() => {
     const joinEventRooms = async () => {
       if (!socket || !isConnected || !user) return;
       try {
-        const { participatingEvents } = await hackathonService.getUserEvents({ page: 1, limit: 100 });
-        const eventIds = (participatingEvents || []).map(e => e.id);
+        const { createdEvents, participatingEvents } = await hackathonService.getUserEvents({ page: 1, limit: 100 });
+        const createdIds = (createdEvents || []).map(e => e.id);
+        const partIds = (participatingEvents || []).map(e => e.id);
+        const eventIds = Array.from(new Set([...(createdIds || []), ...(partIds || [])]));
         eventIds.forEach(eventId => {
           socket.emit('join_room', { roomType: 'event', roomId: eventId });
         });

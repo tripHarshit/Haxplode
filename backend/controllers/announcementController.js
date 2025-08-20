@@ -177,6 +177,14 @@ const updateAnnouncement = async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    // Emit update event
+    emitToRoom(`event:${announcement.eventId}`, 'event_announcement_update', {
+      eventId: announcement.eventId,
+      announcementId: id,
+      announcement: updatedAnnouncement,
+      timestamp: new Date().toISOString(),
+    });
+
     res.status(200).json({
       success: true,
       message: 'Announcement updated successfully',
@@ -218,6 +226,13 @@ const deleteAnnouncement = async (req, res) => {
 
     // Soft delete by changing status to Archived
     await Announcement.findByIdAndUpdate(id, { status: 'Archived' });
+
+    // Emit delete event
+    emitToRoom(`event:${announcement.eventId}`, 'event_announcement_delete', {
+      eventId: announcement.eventId,
+      announcementId: id,
+      timestamp: new Date().toISOString(),
+    });
 
     res.status(200).json({
       success: true,

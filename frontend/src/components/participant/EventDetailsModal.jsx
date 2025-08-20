@@ -13,6 +13,7 @@ import {
 import { Crown } from 'lucide-react';
 import { format } from 'date-fns';
 import { hackathonService } from '../../services/hackathonService';
+import QnA from './QnA';
 
 const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -269,6 +270,11 @@ const EventDetailsModal = ({ event, isOpen, onClose, onRequestRegister }) => {
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              {/* Q&A */}
+              <div>
+                <QnA eventId={event.id} />
               </div>
             </div>
           </div>
