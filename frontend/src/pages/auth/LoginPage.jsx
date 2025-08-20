@@ -4,13 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { isValidEmail } from '../../utils/helpers';
-import { useForceLightMode } from '../../context/ThemeContext';
+import ThemeToggle from '../../components/ui/ThemeToggle';
 import { signInWithPopup, GoogleAuthProvider, getIdToken } from "firebase/auth";
-import { auth, googleProvider } from "../../services/firebase";
-
+import { auth, googleProvider, isFirebaseConfigured } from '../../services/firebase';
 
 const LoginPage = () => {
-  useForceLightMode();
+  // Allow theme toggle; no forced light mode
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -22,7 +21,7 @@ const LoginPage = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
-  const { login, loginWithGoogle, error: authError, clearError, user, getRedirectPath, isAuthenticated, updateProfile, startGoogleSignIn } = useAuth();
+  const { login, loginWithGoogle, error: authError, clearError, user, getRedirectPath, isAuthenticated, startGoogleSignIn } = useAuth();
   const { success, error: showError } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,74 +52,7 @@ const LoginPage = () => {
     }
   }, [successMessage]);
 
-  // Initialize Google Sign-In (keep existing for compatibility)
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = initializeGoogleSignIn;
-    document.head.appendChild(script);
 
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
-  }, []);
-
-  const initializeGoogleSignIn = () => {
-    if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredentialResponse,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
-    }
-  };
-
-  const handleGoogleCredentialResponse = async (response) => {
-    try {
-      setIsGoogleLoading(true);
-      setErrors({});
-      
-      if (window.navigationTester) {
-        window.navigationTester.logAuthEvent('google_oauth_attempt', true);
-        window.navigationTester.logButtonClick('Continue with Google', 'login_page');
-      }
-
-      const result = await loginWithGoogle(response.credential);
-      
-      if (result?.requiresRegistration) {
-        // Navigation to registration handled in context
-        return;
-      }
-
-      if (result.success) {
-        setSuccessMessage('Google login successful! Redirecting...');
-        
-        if (window.navigationTester) {
-          window.navigationTester.logAuthEvent('google_oauth_attempt', false);
-        }
-
-        setTimeout(() => {
-          const redirectPath = getRedirectPath(user, from);
-          navigate(redirectPath, { replace: true });
-        }, 1500);
-      }
-    } catch (error) {
-      console.error('Google login failed:', error);
-      
-      if (window.navigationTester) {
-        window.navigationTester.logAuthEvent('google_oauth_attempt', false, { error: error.message });
-      }
-      
-      setErrors({ general: error.message || 'Google login failed' });
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -190,47 +122,51 @@ const LoginPage = () => {
     }
   };
 
-  // New handler using Firebase popup
+  // Firebase Google login implementation
   const handleGoogleLogin = async () => {
     try {
       setIsGoogleLoading(true);
-      const result = await signInWithPopup(auth, googleProvider);
-      // Extract Google ID token from OAuth credential (preferred for backend validation)
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      let googleIdToken = credential?.idToken || null;
-      if (!googleIdToken) {
-        // Fallback: Firebase user token (may not be accepted by backend expecting Google issuer)
-        googleIdToken = await getIdToken(result.user, true);
+      setErrors({});
+      
+      if (!isFirebaseConfigured || !auth || !googleProvider) {
+        throw new Error('Firebase Google authentication not configured');
       }
+
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      // Extract Google ID token from OAuth credential
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      let googleIdToken = credential?.idToken;
+      
+      if (!googleIdToken) {
+        // Fallback: get ID token from Firebase user
+        googleIdToken = await result.user.getIdToken(true);
+      }
+
+      if (!googleIdToken) {
+        throw new Error('Failed to get Google ID token');
+      }
+
+      console.log('Google ID token obtained, calling backend...');
+      
+      // Call backend with Google ID token
       const apiResult = await loginWithGoogle(googleIdToken);
+      
       if (apiResult?.requiresRegistration) {
-        // Navigation to /register/google is handled inside loginWithGoogle
+        // Navigation to registration handled in context
         return;
       }
-      if (apiResult.success) {
-        // Post-login name sync if needed
-        const displayName = (result.user?.displayName || '').trim();
-        try {
-          if (displayName && (!user?.name || /google user/i.test(user.name))) {
-            await updateProfile({ name: displayName });
-          }
-        } catch {}
 
+      if (apiResult.success) {
         setSuccessMessage('Google login successful! Redirecting...');
-        const redirectPath = getRedirectPath(user, from);
-        navigate(redirectPath, { replace: true });
-      } else {
-        setErrors({ general: apiResult.error || 'Failed to login with Google' });
+        setTimeout(() => {
+          const redirectPath = getRedirectPath(user, from);
+          navigate(redirectPath, { replace: true });
+        }, 1500);
       }
     } catch (err) {
       console.error('Firebase Google login failed:', err);
-      // Attempt fallback using Google Identity Services (works without popup blockers)
-      try {
-        await startGoogleSignIn();
-        return;
-      } catch (fallbackError) {
-        setErrors({ general: fallbackError.message || err.message || 'Google login failed' });
-      }
+      setErrors({ general: err.message || 'Google login failed' });
     } finally {
       setIsGoogleLoading(false);
     }
@@ -249,13 +185,16 @@ const LoginPage = () => {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <Link to="/" className="inline-block">
-            <h1 className="text-3xl font-bold text-gradient">Haxplode</h1>
-          </Link>
-          <h2 className="mt-6 text-3xl font-bold tracking-tight text-neutral-900">
+          <div className="flex items-center justify-center gap-3">
+            <Link to="/" className="inline-block">
+              <h1 className="text-3xl font-bold text-gradient">Haxplode</h1>
+            </Link>
+            <ThemeToggle />
+          </div>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
             Welcome back
           </h2>
-          <p className="mt-2 text-sm text-neutral-600">
+          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
             Sign in to your account to continue
           </p>
         </div>
@@ -273,10 +212,10 @@ const LoginPage = () => {
         {/* Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {errors.general && (
-            <div className="rounded-lg bg-error-50 border border-error-200 p-4">
+            <div className="rounded-lg bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-700 p-4">
               <div className="flex items-center">
                 <AlertCircle className="h-5 w-5 text-error-600 mr-2" />
-                <p className="text-sm text-error-700">{errors.general}</p>
+                <p className="text-sm text-error-700 dark:text-error-400">{errors.general}</p>
               </div>
             </div>
           )}
@@ -284,7 +223,7 @@ const LoginPage = () => {
           <div className="space-y-4">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Email address
               </label>
               <div className="relative">
@@ -318,7 +257,7 @@ const LoginPage = () => {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -348,9 +287,9 @@ const LoginPage = () => {
                   disabled={isLoading}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-neutral-400 hover:text-neutral-600" />
+                    <EyeOff className="h-5 w-5 text-neutral-400 hover:text-neutral-200" />
                   ) : (
-                    <Eye className="h-5 w-5 text-neutral-400 hover:text-neutral-600" />
+                    <Eye className="h-5 w-5 text-neutral-400 hover:text-neutral-200" />
                   )}
                 </button>
               </div>
@@ -413,7 +352,7 @@ const LoginPage = () => {
 
           {/* Sign up link */}
           <div className="text-center">
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-neutral-600 dark:text-neutral-300">
               Don't have an account?{' '}
               <Link
                 to="/register"

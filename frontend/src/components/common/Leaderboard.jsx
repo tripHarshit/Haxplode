@@ -128,8 +128,8 @@ const Leaderboard = ({ events = [] }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Live Leaderboard</h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Live Leaderboard</h2>
+          <p className="text-slate-600 dark:text-slate-300">
             Real-time rankings • Last updated: {lastUpdate.toLocaleTimeString()}
           </p>
         </div>
@@ -195,12 +195,12 @@ const Leaderboard = ({ events = [] }) => {
       )}
 
       {/* Leaderboard Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+            <thead className="bg-slate-50 dark:bg-slate-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                   Rank
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -209,7 +209,7 @@ const Leaderboard = ({ events = [] }) => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Avg Score
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                   Participants
                 </th>
               </tr>
@@ -218,7 +218,7 @@ const Leaderboard = ({ events = [] }) => {
               {rows.map((team, index) => (
                 <tr
                   key={team.id}
-                  className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${
+                  className={`hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200 ${
                     index < 3 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10' : ''
                   }`}
                 >
@@ -229,7 +229,7 @@ const Leaderboard = ({ events = [] }) => {
                   </td>
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <div className="text-sm font-medium text-slate-900 dark:text-white">
                         {team.team}
                       </div>
                     </div>
@@ -244,7 +244,7 @@ const Leaderboard = ({ events = [] }) => {
                       {(team.participants || []).map((participant, pIndex) => (
                         <span
                           key={pIndex}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
                         >
                           {participant}
                         </span>

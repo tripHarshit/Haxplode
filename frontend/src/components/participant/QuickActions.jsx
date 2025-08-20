@@ -20,7 +20,7 @@ const QuickActions = ({ onActionClick }) => {
       title: 'Browse Events',
       description: 'Discover new hackathons and challenges',
       icon: MagnifyingGlassIcon,
-      color: 'bg-blue-500 hover:bg-blue-600',
+      color: 'bg-emerald-500 hover:bg-emerald-600',
       action: 'browse-events'
     },
     {
@@ -28,7 +28,7 @@ const QuickActions = ({ onActionClick }) => {
       title: 'Join Team',
       description: 'Join an existing team with invitation code',
       icon: PlusIcon,
-      color: 'bg-purple-500 hover:bg-purple-600',
+      color: 'bg-emerald-500/90 hover:bg-emerald-600',
       action: 'join-team'
     },
     {
@@ -36,7 +36,7 @@ const QuickActions = ({ onActionClick }) => {
       title: 'Submit Project',
       description: 'Submit your project for active events',
       icon: RocketLaunchIcon,
-      color: 'bg-orange-500 hover:bg-orange-600',
+      color: 'bg-emerald-500/90 hover:bg-emerald-600',
       action: 'submit-project'
     },
     {
@@ -44,7 +44,7 @@ const QuickActions = ({ onActionClick }) => {
       title: 'Manage Submissions',
       description: 'View and edit your project submissions',
       icon: DocumentTextIcon,
-      color: 'bg-pink-500 hover:bg-pink-600',
+      color: 'bg-emerald-500/90 hover:bg-emerald-600',
       action: 'manage-submissions'
     }
   ];
@@ -71,10 +71,10 @@ const QuickActions = ({ onActionClick }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-        <p className="text-sm text-gray-600">Get started quickly with these common tasks</p>
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Quick Actions</h3>
+        <p className="text-sm text-slate-600 dark:text-slate-300">Get started quickly with these common tasks</p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -93,7 +93,7 @@ const QuickActions = ({ onActionClick }) => {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-sm mb-1">{action.title}</h4>
-                  <p className="text-xs text-blue-100 opacity-90">{action.description}</p>
+                  <p className="text-xs text-emerald-50/90">{action.description}</p>
                 </div>
               </div>
             </button>
@@ -101,10 +101,10 @@ const QuickActions = ({ onActionClick }) => {
         })}
       </div>
       
-      <div className="mt-6 pt-6 border-t border-gray-200">
+      <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">Need help getting started?</p>
-          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+          <p className="text-sm text-slate-600 dark:text-slate-300">Need help getting started?</p>
+          <button className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
             View Tutorial
           </button>
         </div>

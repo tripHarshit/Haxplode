@@ -78,7 +78,8 @@ const googleAuth = async (req, res) => {
             profilePicture: existingUser.profilePicture,
             socialLogin: existingUser.socialLogin,
           },
-          tokens,
+          token: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
         },
       });
     }
@@ -291,7 +292,8 @@ const completeGoogleRegistration = async (req, res) => {
           profilePicture: user.profilePicture,
           socialLogin: user.socialLogin,
         },
-        tokens,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       },
     });
   } catch (error) {

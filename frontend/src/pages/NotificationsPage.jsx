@@ -145,13 +145,13 @@ const NotificationsPage = () => {
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'success':
-        return <CheckCircleIcon className="h-6 w-6 text-green-500" />;
+        return <CheckCircleIcon className="h-6 w-6 text-emerald-500" />;
       case 'warning':
-        return <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500" />;
+        return <ExclamationTriangleIcon className="h-6 w-6 text-amber-500" />;
       case 'error':
         return <ExclamationTriangleIcon className="h-6 w-6 text-red-500" />;
       default:
-        return <InformationCircleIcon className="h-6 w-6 text-blue-500" />;
+        return <InformationCircleIcon className="h-6 w-6 text-slate-500" />;
     }
   };
 
@@ -161,13 +161,13 @@ const NotificationsPage = () => {
     
     switch (type) {
       case 'success':
-        return `${baseStyles} ${readStyles} border-green-500 bg-green-50 hover:bg-green-100`;
+        return `${baseStyles} ${readStyles} border-emerald-500 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20`;
       case 'warning':
-        return `${baseStyles} ${readStyles} border-yellow-500 bg-yellow-50 hover:bg-yellow-100`;
+        return `${baseStyles} ${readStyles} border-amber-500 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20`;
       case 'error':
-        return `${baseStyles} ${readStyles} border-red-500 bg-red-50 hover:bg-red-100`;
+        return `${baseStyles} ${readStyles} border-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-900/20`;
       default:
-        return `${baseStyles} ${readStyles} border-blue-500 bg-blue-50 hover:bg-blue-100`;
+        return `${baseStyles} ${readStyles} border-slate-400 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800`;
     }
   };
 
@@ -199,42 +199,42 @@ const NotificationsPage = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900">
         <div className="text-center">
-          <BellIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Please log in to view notifications</h1>
+          <BellIcon className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Please log in to view notifications</h1>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                <BellIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+                <BellIcon className="h-8 w-8 text-emerald-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Notifications</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Notifications</h1>
+                <p className="text-slate-600 dark:text-slate-300 mt-1">
                   Stay updated with the latest announcements and updates
                 </p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               {unreadCount > 0 && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
                   {unreadCount} unread
                 </span>
               )}
               <button
                 onClick={markAllAsRead}
                 disabled={unreadCount === 0}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <CheckIcon className="h-4 w-4 mr-2" />
                 Mark all as read
@@ -244,11 +244,11 @@ const NotificationsPage = () => {
         </div>
 
         {/* Filters and Bulk Actions */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
           <div className="p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
               {/* Filter Tabs */}
-              <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <div className="flex space-x-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
                 {[
                   { key: 'all', label: 'All', count: notifications.length },
                   { key: 'unread', label: 'Unread', count: unreadCount },
@@ -259,12 +259,12 @@ const NotificationsPage = () => {
                     onClick={() => setFilter(tab.key)}
                     className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                       filter === tab.key
-                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     {tab.label}
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200">
                       {tab.count}
                     </span>
                   </button>
@@ -274,26 +274,26 @@ const NotificationsPage = () => {
               {/* Bulk Actions */}
               {showBulkActions && (
                 <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="text-sm text-slate-600 dark:text-slate-300">
                     {selectedNotifications.size} selected
                   </span>
                   <button
                     onClick={markSelectedAsRead}
-                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800 transition-colors"
+                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-emerald-500 hover:bg-emerald-600 transition-colors"
                   >
                     <EyeIcon className="h-4 w-4 mr-1" />
                     Mark as read
                   </button>
                   <button
                     onClick={deleteSelected}
-                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800 transition-colors"
+                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors"
                   >
                     <TrashIcon className="h-4 w-4 mr-1" />
                     Delete
                   </button>
                   <button
                     onClick={clearSelection}
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    className="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                   >
                     Clear
                   </button>
@@ -306,25 +306,25 @@ const NotificationsPage = () => {
         {/* Notifications List */}
         <div className="space-y-4">
           {isLoading ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12">
               <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-3 text-gray-600 dark:text-gray-400">Loading notifications...</span>
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-2 border-t-emerald-600"></div>
+                <span className="ml-3 text-slate-600 dark:text-slate-300">Loading notifications...</span>
               </div>
             </div>
           ) : filteredNotificationsList.length > 0 ? (
             <>
               {/* Select All Option */}
               {filteredNotificationsList.length > 0 && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4">
                   <label className="flex items-center space-x-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={selectedNotifications.size === filteredNotificationsList.length}
                       onChange={selectAll}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded"
                     />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                       Select all ({filteredNotificationsList.length})
                     </span>
                   </label>
@@ -335,8 +335,8 @@ const NotificationsPage = () => {
               {filteredNotificationsList.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200 hover:shadow-md ${
-                    selectedNotifications.has(notification.id) ? 'ring-2 ring-blue-500' : ''
+                  className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-200 hover:shadow-md ${
+                    selectedNotifications.has(notification.id) ? 'ring-2 ring-emerald-500' : ''
                   }`}
                 >
                   <div className={`p-6 ${getNotificationStyles(notification.type, notification.read)}`}>
@@ -346,7 +346,7 @@ const NotificationsPage = () => {
                         type="checkbox"
                         checked={selectedNotifications.has(notification.id)}
                         onChange={() => toggleSelection(notification.id)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded mt-1"
                       />
                       
                       {/* Icon */}
@@ -360,26 +360,26 @@ const NotificationsPage = () => {
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
                               <h3 className={`text-lg font-semibold ${
-                                notification.read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'
+                                notification.read ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white'
                               }`}>
                                 {notification.title}
                               </h3>
                               {!notification.read && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
                                   New
                                 </span>
                               )}
                             </div>
-                            <p className="text-gray-600 dark:text-gray-400 mb-3 leading-relaxed">
+                            <p className="text-slate-600 dark:text-slate-300 mb-3 leading-relaxed">
                               {notification.message}
                             </p>
-                            <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-400">
                               <div className="flex items-center">
                                 <ClockIcon className="h-4 w-4 mr-1" />
                                 {formatTimestamp(notification.timestamp)}
                               </div>
                               {notification.eventName && (
-                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">
+                                <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-md">
                                   {notification.eventName}
                                 </span>
                               )}
@@ -388,8 +388,8 @@ const NotificationsPage = () => {
                                   notification.priority === 'Critical' 
                                     ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                                     : notification.priority === 'High'
-                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+                                    : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200'
                                 }`}>
                                   {notification.priority}
                                 </span>
@@ -402,7 +402,7 @@ const NotificationsPage = () => {
                             {!notification.read && (
                               <button
                                 onClick={() => markAsRead(notification.id)}
-                                className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                                 title="Mark as read"
                               >
                                 <EyeIcon className="h-4 w-4" />
@@ -410,7 +410,7 @@ const NotificationsPage = () => {
                             )}
                             <button
                               onClick={() => deleteNotification(notification.id)}
-                              className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                              className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                               title="Delete notification"
                             >
                               <TrashIcon className="h-4 w-4" />
@@ -424,12 +424,12 @@ const NotificationsPage = () => {
               ))}
             </>
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
-              <BellIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+              <BellIcon className="h-16 w-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
                 {filter === 'all' ? 'No notifications yet' : `No ${filter} notifications`}
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                 {filter === 'all' 
                   ? "You're all caught up! Check back later for new updates and announcements."
                   : `No ${filter} notifications to display.`

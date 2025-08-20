@@ -374,7 +374,6 @@ module.exports = {
   logout,
   forgotPassword,
   resetPassword,
-  loginWithGoogle,
 };
 
 // Forgot password (issues a reset token; integrate email provider separately)
@@ -394,67 +393,7 @@ async function forgotPassword(req, res) {
   }
 }
 
-// Google OAuth login
-async function loginWithGoogle(req, res) {
-  try {
-    const { idToken } = req.body;
-    if (!idToken) {
-      return res.status(400).json({ success: false, message: 'idToken is required' });
-    }
-    const clientId = process.env.OAUTH_GOOGLE_CLIENT_ID;
-    // Verify with Google tokeninfo endpoint
-    const tokenInfo = await new Promise((resolve, reject) => {
-      https.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`, (resp) => {
-        let data = '';
-        resp.on('data', (chunk) => { data += chunk; });
-        resp.on('end', () => {
-          try {
-            const json = JSON.parse(data);
-            if (json.error_description || json.error) return reject(new Error(json.error_description || json.error));
-            resolve(json);
-          } catch (e) { reject(e); }
-        });
-      }).on('error', reject);
-    });
 
-    if (clientId && tokenInfo.aud !== clientId) {
-      return res.status(401).json({ success: false, message: 'Invalid Google client' });
-    }
-
-    const email = tokenInfo.email;
-    const fullName = tokenInfo.name || tokenInfo.given_name || 'Google User';
-    if (!email) return res.status(400).json({ success: false, message: 'Email not present in token' });
-
-    let user = await User.findOne({ where: { email } });
-    if (!user) {
-      // Create user with defaults
-      user = await User.create({
-        fullName,
-        email,
-        role: 'Participant',
-        dob: new Date(2000, 0, 1),
-        password: crypto.randomBytes(32).toString('hex'),
-        emailVerified: true,
-      });
-    }
-
-    const tokens = generateTokens(user.id, user.role);
-    await user.update({ lastLoginAt: new Date() });
-
-    return res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role },
-        token: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-      },
-    });
-  } catch (error) {
-    console.error('Google login error:', error);
-    res.status(401).json({ success: false, message: 'Failed to login with Google' });
-  }
-}
 
 // Reset password
 async function resetPassword(req, res) {

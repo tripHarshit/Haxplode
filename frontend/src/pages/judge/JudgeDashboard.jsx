@@ -291,14 +291,21 @@ const JudgeDashboard = () => {
   const getPendingReviews = () => Math.max(0, getTotalAssigned() - getCompletedReviews());
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700 sticky top-0 z-10">
+      <div className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Judge Dashboard</h1>
-              <p className="text-gray-600 dark:text-gray-400">Review submissions and provide feedback</p>
+          <div className="flex items-center justify-between py-6">
+            <div className="flex items-center space-x-3">
+              <h1 className="text-2xl font-black text-emerald-500">Haxplode</h1>
+              <div className="h-6 w-px bg-slate-200" />
+              <div>
+                <p className="text-sm font-medium text-slate-600">Judge Dashboard</p>
+                <p className="text-xs text-slate-500">Review submissions and provide feedback</p>
+              </div>
+            </div>
+            <div className="text-slate-600">
+              Welcome, {profile?.user?.fullName || 'Judge'}!
             </div>
           </div>
         </div>
@@ -306,7 +313,7 @@ const JudgeDashboard = () => {
 
       <div className="flex">
         {/* Sidebar Navigation */}
-        <div className="w-64 bg-white dark:bg-gray-800 shadow-sm min-h-screen">
+        <div className="w-64 bg-white dark:bg-slate-800 shadow-sm min-h-screen">
           <nav className="mt-8">
             <div className="px-4 space-y-2">
               {[
@@ -320,11 +327,11 @@ const JudgeDashboard = () => {
                   onClick={() => handleTabChange(tab.id)}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-500'
-                      : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'
+                      ? 'bg-emerald-500 text-white'
+                      : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 dark:text-slate-300 dark:hover:bg-slate-700'
                   }`}
                 >
-                  <tab.icon className="h-5 w-5" />
+                  <tab.icon className={`h-5 w-5 ${activeTab === tab.id ? 'text-white' : 'text-emerald-500'}`} />
                   <span className="font-medium">{tab.label}</span>
                 </button>
               ))}
@@ -336,7 +343,7 @@ const JudgeDashboard = () => {
         <div className="flex-1 p-8">
           {loading && (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
             </div>
           )}
           
@@ -354,7 +361,7 @@ const JudgeDashboard = () => {
           
           {!loading && !error && activeTab === 'overview' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Overview</h2>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Dashboard Overview</h2>
               
               {/* Judge Profile */}
               {profile && (
@@ -377,43 +384,43 @@ const JudgeDashboard = () => {
 
               {/* Quick Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
-                      <ClipboardDocumentListIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                      <ClipboardDocumentListIcon className="h-8 w-8 text-emerald-600" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Assigned</dt>
-                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">{getTotalAssigned()}</dd>
+                        <dt className="text-sm font-medium text-slate-600 dark:text-slate-300 truncate">Total Assigned</dt>
+                        <dd className="text-2xl font-bold text-emerald-600">{getTotalAssigned()}</dd>
                       </dl>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
-                      <ClockIcon className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+                      <ClockIcon className="h-8 w-8 text-emerald-600" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Pending Reviews</dt>
-                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">{getPendingReviews()}</dd>
+                        <dt className="text-sm font-medium text-slate-600 dark:text-slate-300 truncate">Pending Reviews</dt>
+                        <dd className="text-2xl font-bold text-emerald-600">{getPendingReviews()}</dd>
                       </dl>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
-                      <ExclamationTriangleIcon className="h-8 w-8 text-red-600 dark:text-red-400" />
+                      <ExclamationTriangleIcon className="h-8 w-8 text-amber-600" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Urgent Reviews</dt>
-                        <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">{getUrgentSubmissions().length}</dd>
+                        <dt className="text-sm font-medium text-slate-600 dark:text-slate-300 truncate">Urgent Reviews</dt>
+                        <dd className="text-2xl font-bold text-emerald-600">{getUrgentSubmissions().length}</dd>
                       </dl>
                     </div>
                   </div>
@@ -439,8 +446,8 @@ const JudgeDashboard = () => {
                   return { id: evt._id || idx, type: type || 'activity', title: evt.type || 'Activity', description: '', timestamp: evt.ts || evt.createdAt };
                 })} />
                 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Quick Analytics</h3>
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 border border-slate-200 dark:border-slate-700">
+                  <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Quick Analytics</h3>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600 dark:text-gray-300">Completion Rate</span>
@@ -448,7 +455,7 @@ const JudgeDashboard = () => {
                         {analytics?.completion?.rate || 0}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                       <div
                         className="bg-green-600 dark:bg-green-500 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${analytics?.completion?.rate || 0}%` }}
@@ -456,13 +463,13 @@ const JudgeDashboard = () => {
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 pt-4">
-                      <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{getCompletedReviews()}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Completed</div>
+                      <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-emerald-600">{getCompletedReviews()}</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-300">Completed</div>
                       </div>
-                      <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                        <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{getPendingReviews()}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Pending</div>
+                      <div className="text-center p-3 bg-slate-50 dark:bg-slate-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-slate-700 dark:text-slate-300">{getPendingReviews()}</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-300">Pending</div>
                       </div>
                     </div>
                   </div>
@@ -476,7 +483,7 @@ const JudgeDashboard = () => {
               {!selectedHackathon ? (
                 // Show hackathon list
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Assigned Hackathons</h2>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Assigned Hackathons</h2>
                   {assignments.length === 0 ? (
                     <div className="text-center py-12">
                       <ClipboardDocumentListIcon className="mx-auto h-12 w-12 text-gray-400" />
@@ -489,24 +496,24 @@ const JudgeDashboard = () => {
                         <div
                           key={assignment.eventId}
                           onClick={() => handleHackathonSelect(assignment)}
-                          className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 transform hover:-translate-y-1"
+                          className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 cursor-pointer hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600 transition-all duration-200 transform hover:-translate-y-1"
                         >
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                               {assignment.event?.name || `Event ${assignment.eventId}`}
                             </h3>
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                               assignment.role === 'Primary' 
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
                             }`}>
                               {assignment.role}
                             </span>
                           </div>
                           
-                          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                          <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
                             {assignment.event?.description && (
-                              <p className="text-gray-700 dark:text-gray-300">{assignment.event.description}</p>
+                              <p className="text-slate-700 dark:text-slate-300">{assignment.event.description}</p>
                             )}
                             {assignment.event?.timeline && (
                               (() => {
@@ -525,7 +532,7 @@ const JudgeDashboard = () => {
                             <p>Assigned: {new Date(assignment.assignedAt || Date.now()).toLocaleDateString()}</p>
                           </div>
                           
-                          <div className="mt-4 flex items-center text-blue-600 dark:text-blue-400">
+                          <div className="mt-4 flex items-center text-emerald-600">
                             <span className="text-sm font-medium">Click to view submissions</span>
                             <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -542,17 +549,17 @@ const JudgeDashboard = () => {
                   <div className="flex items-center mb-6">
                     <button
                       onClick={handleBackToHackathons}
-                      className="mr-4 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                      className="mr-4 p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
                     >
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                         {selectedHackathon.event?.name || `Event ${selectedHackathon.eventId}`}
                       </h2>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-slate-600 dark:text-slate-300">
                         Role: {selectedHackathon.role} • {hackathonSubmissions.length} submissions
                       </p>
                     </div>
@@ -560,9 +567,9 @@ const JudgeDashboard = () => {
                   
                   {hackathonSubmissions.length === 0 ? (
                     <div className="text-center py-12">
-                      <ClipboardDocumentListIcon className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No submissions yet</h3>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">This hackathon doesn't have any submissions yet.</p>
+                      <ClipboardDocumentListIcon className="mx-auto h-12 w-12 text-slate-400" />
+                      <h3 className="mt-2 text-sm font-medium text-slate-900 dark:text-white">No submissions yet</h3>
+                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">This hackathon doesn't have any submissions yet.</p>
                     </div>
                   ) : (
                     <AssignedSubmissions
@@ -578,7 +585,7 @@ const JudgeDashboard = () => {
 
           {!loading && !error && activeTab === 'analytics' && analytics && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Judge Analytics</h2>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Judge Analytics</h2>
               <JudgeAnalytics analytics={{
                 totalReviews: analytics?.totals?.reviews || 0,
                 averageScore: analytics?.totals?.averageScore || 0,

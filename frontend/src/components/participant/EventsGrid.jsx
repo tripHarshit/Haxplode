@@ -123,8 +123,8 @@ const EventsGrid = ({ events, onRefresh, onRequestSubmit }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Events</h2>
-          <p className="text-gray-600">Hackathons you are registered for</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Events</h2>
+          <p className="text-slate-600 dark:text-slate-300">Hackathons you are registered for</p>
         </div>
         
         {/* View Toggle */}
@@ -134,7 +134,7 @@ const EventsGrid = ({ events, onRefresh, onRequestSubmit }) => {
             className={`p-2 rounded-lg transition-colors ${
               viewMode === 'grid' 
                 ? 'bg-blue-100 text-blue-600' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
             }`}
           >
             <ViewColumnsIcon className="h-5 w-5" />
@@ -144,7 +144,7 @@ const EventsGrid = ({ events, onRefresh, onRequestSubmit }) => {
             className={`p-2 rounded-lg transition-colors ${
               viewMode === 'list' 
                 ? 'bg-blue-100 text-blue-600' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
             }`}
           >
             <ListBulletIcon className="h-5 w-5" />
@@ -153,17 +153,17 @@ const EventsGrid = ({ events, onRefresh, onRequestSubmit }) => {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
         <div className="space-y-4">
           {/* Search Bar */}
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-300" />
             <input
               type="text"
               placeholder="Search events by title, description, or category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
             />
           </div>
 
@@ -171,28 +171,28 @@ const EventsGrid = ({ events, onRefresh, onRequestSubmit }) => {
           <div className="flex items-center justify-between">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+              className="flex items-center space-x-2 text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white transition-colors"
             >
               <FunnelIcon className="h-5 w-5" />
               <span>Filters</span>
             </button>
             
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-slate-500 dark:text-slate-400">
               {filteredEvents.length} of {currentEvents.length} events
             </span>
           </div>
 
           {/* Filters */}
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Category
                 </label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
                   {mockCategories.map((category) => (
                     <option key={category} value={category}>
@@ -203,13 +203,13 @@ const EventsGrid = ({ events, onRefresh, onRequestSubmit }) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Prize Range
                 </label>
                 <select
                   value={selectedPrizeRange}
                   onChange={(e) => setSelectedPrizeRange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
                   {mockPrizeRanges.map((range) => (
                     <option key={range} value={range}>

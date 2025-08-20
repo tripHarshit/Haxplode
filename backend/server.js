@@ -46,8 +46,10 @@ app.use(helmet());
 
 // Allowed origins (local + Azure Static Web Apps)
 const allowedOrigins = [
-  process.env.FRONTEND_URL, // from .env (your prod frontend URL)
-  'http://localhost:5173', // local dev
+  process.env.FRONTEND_URL, // prod frontend URL
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000'
 ].filter(Boolean);
 
 app.use(cors({
@@ -65,7 +67,12 @@ app.use(cors({
 }));
 
 // Preflight
-app.options('*', cors());
+app.options('*', cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
 
 // Rate limiting
 const limiter = rateLimit({
