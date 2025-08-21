@@ -54,7 +54,12 @@ const Event = sequelize.define('Event', {
     },
     get() {
       const rawValue = this.getDataValue('timeline');
-      return rawValue ? JSON.parse(rawValue) : null;
+      if (!rawValue) return null;
+      try {
+        return JSON.parse(rawValue);
+      } catch (e) {
+        return null;
+      }
     },
     set(value) {
       this.setDataValue('timeline', JSON.stringify(value));
@@ -84,7 +89,12 @@ const Event = sequelize.define('Event', {
     },
     get() {
       const rawValue = this.getDataValue('prizes');
-      return rawValue ? JSON.parse(rawValue) : null;
+      if (!rawValue) return [];
+      try {
+        return JSON.parse(rawValue);
+      } catch (e) {
+        return [];
+      }
     },
     set(value) {
       this.setDataValue('prizes', JSON.stringify(value));
@@ -95,7 +105,12 @@ const Event = sequelize.define('Event', {
     defaultValue: '[]',
     get() {
       const raw = this.getDataValue('tracks');
-      return raw ? JSON.parse(raw) : [];
+      if (!raw) return [];
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        return [];
+      }
     },
     set(value) {
       this.setDataValue('tracks', JSON.stringify(value || []));
@@ -106,7 +121,12 @@ const Event = sequelize.define('Event', {
     defaultValue: '[]',
     get() {
       const raw = this.getDataValue('rounds');
-      return raw ? JSON.parse(raw) : [];
+      if (!raw) return [];
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        return [];
+      }
     },
     set(value) {
       this.setDataValue('rounds', JSON.stringify(value || []));
@@ -117,7 +137,12 @@ const Event = sequelize.define('Event', {
     defaultValue: '[]',
     get() {
       const raw = this.getDataValue('customCriteria');
-      return raw ? JSON.parse(raw) : [];
+      if (!raw) return [];
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        return [];
+      }
     },
     set(value) {
       this.setDataValue('customCriteria', JSON.stringify(value || []));
@@ -128,7 +153,12 @@ const Event = sequelize.define('Event', {
     defaultValue: '{}',
     get() {
       const raw = this.getDataValue('settings');
-      return raw ? JSON.parse(raw) : {};
+      if (!raw) return {};
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        return {};
+      }
     },
     set(value) {
       this.setDataValue('settings', JSON.stringify(value || {}));
@@ -139,7 +169,12 @@ const Event = sequelize.define('Event', {
     defaultValue: '[]',
     get() {
       const rawValue = this.getDataValue('sponsors');
-      return rawValue ? JSON.parse(rawValue) : [];
+      if (!rawValue) return [];
+      try {
+        return JSON.parse(rawValue);
+      } catch (e) {
+        return [];
+      }
     },
     set(value) {
       this.setDataValue('sponsors', JSON.stringify(value));
@@ -182,7 +217,12 @@ const Event = sequelize.define('Event', {
     defaultValue: '[]',
     get() {
       const rawValue = this.getDataValue('tags');
-      return rawValue ? JSON.parse(rawValue) : [];
+      if (!rawValue) return [];
+      try {
+        return JSON.parse(rawValue);
+      } catch (e) {
+        return [];
+      }
     },
     set(value) {
       this.setDataValue('tags', JSON.stringify(value));
