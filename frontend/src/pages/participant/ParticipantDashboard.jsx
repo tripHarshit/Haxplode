@@ -49,6 +49,7 @@ const ParticipantDashboard = () => {
     submissions: mockSubmissions
   });
   const [submissionDefaults, setSubmissionDefaults] = useState(null);
+  const [shouldOpenJoinModal, setShouldOpenJoinModal] = useState(false);
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: ChartBarIcon },
@@ -152,7 +153,8 @@ const ParticipantDashboard = () => {
         break;
       case 'join-team':
         setActiveTab('teams');
-        // Could open team join modal here
+        // Signal TeamsList to open Join Team modal
+        setShouldOpenJoinModal(true);
         break;
       case 'submit-project':
         setActiveTab('submissions');
@@ -329,7 +331,11 @@ const ParticipantDashboard = () => {
         )}
 
         {activeTab === 'teams' && (
-          <TeamsList teams={dashboardData.teams} />
+          <TeamsList 
+            teams={dashboardData.teams}
+            openJoinModal={shouldOpenJoinModal}
+            onRequestJoinModalHandled={() => setShouldOpenJoinModal(false)}
+          />
         )}
 
         {activeTab === 'submissions' && (

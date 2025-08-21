@@ -18,7 +18,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { dataService } from '../../utils/mockData';
 import { participantService } from '../../services/participantService';
 
-const TeamsList = ({ teams }) => {
+const TeamsList = ({ teams, openJoinModal = false, onRequestJoinModalHandled }) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotifications();
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -31,6 +31,16 @@ const TeamsList = ({ teams }) => {
   useEffect(() => {
     setCurrentTeams(teams);
   }, [teams]);
+
+  // Allow parent to trigger opening the Join Team modal (e.g., from QuickActions)
+  useEffect(() => {
+    if (openJoinModal) {
+      setShowJoinModal(true);
+      if (typeof onRequestJoinModalHandled === 'function') {
+        onRequestJoinModalHandled();
+      }
+    }
+  }, [openJoinModal]);
 
   const handleTeamUpdate = (newTeams) => {
     if (Array.isArray(newTeams)) {

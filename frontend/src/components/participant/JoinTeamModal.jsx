@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { XMarkIcon, UserPlusIcon, KeyIcon } from '@heroicons/react/24/outline';
+import { useNotifications } from '../../context/NotificationContext';
+import { participantService } from '../../services/participantService';
 
-const JoinTeamModal = ({ isOpen, onClose }) => {
+const JoinTeamModal = ({ isOpen, onClose, onTeamJoined }) => {
   const [invitationCode, setInvitationCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const { showSuccess, showError } = useNotifications();
 
   if (!isOpen) return null;
 
@@ -43,23 +46,24 @@ const JoinTeamModal = ({ isOpen, onClose }) => {
     
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In real app: await participantService.joinTeam(invitationCode);
-      console.log('Joining team with code:', invitationCode);
-      
-      // Reset form and close modal
+      await participantService.joinTeam(invitationCode.trim().toUpperCase());
+
+      if (typeof onTeamJoined === 'function') {
+        try {
+          const { teams } = await participantService.getParticipantTeams();
+          onTeamJoined(Array.isArray(teams) ? teams : []);
+        } catch (_) {}
+      }
+
       setInvitationCode('');
       setErrors({});
       onClose();
-      
-      // Show success message (in real app, use a toast notification)
-      alert('Successfully joined the team!');
-      
+      showSuccess('Joined team successfully');
     } catch (error) {
       console.error('Failed to join team:', error);
-      setErrors({ submit: 'Failed to join team. Please check your invitation code and try again.' });
+      const message = error?.message || 'Failed to join team. Please check your invitation code and try again.';
+      setErrors({ submit: message });
+      showError(message);
     } finally {
       setIsSubmitting(false);
     }
