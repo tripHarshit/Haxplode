@@ -200,7 +200,9 @@ const OrganizerDashboard = () => {
         id: a._id,
         title: a.title,
         content: a.message,
-        targetAudience: Array.isArray(a.targetAudience) ? a.targetAudience[0] || 'All' : (a.targetAudience || 'All'),
+        visibility: a.visibility || (Array.isArray(a.targetAudience) && a.targetAudience.includes('Judges') && a.targetAudience.includes('Participants') ? 'Both' : (Array.isArray(a.targetAudience) && a.targetAudience.includes('Judges') ? 'Judges' : 'Participants')),
+        targetAudience: a.visibility || (Array.isArray(a.targetAudience) && a.targetAudience.includes('Judges') && a.targetAudience.includes('Participants') ? 'Both' : (Array.isArray(a.targetAudience) && a.targetAudience.includes('Judges') ? 'Judges' : 'Participants')),
+        tags: Array.isArray(a.tags) ? a.tags : [],
         isUrgent: String(a.type).toLowerCase() === 'urgent' || String(a.priority).toLowerCase() === 'critical',
         isImportant: String(a.priority).toLowerCase() === 'high' || String(a.priority).toLowerCase() === 'critical',
         date: a.createdAt,
@@ -318,11 +320,14 @@ const OrganizerDashboard = () => {
 
   const handleEditAnnouncement = async (announcementId, updatedData) => {
     try {
-      await announcementService.updateAnnouncement(announcementId, {
+      const payload = {
         title: updatedData.title,
         message: updatedData.content,
+        visibility: updatedData.visibility,
+        tags: Array.isArray(updatedData.tags) ? updatedData.tags : [],
         isPinned: !!updatedData.isImportant,
-      });
+      };
+      await announcementService.updateAnnouncement(announcementId, payload);
       if (selectedEventId) await loadAnnouncements(selectedEventId);
     } catch (e) {
       console.error('Update announcement failed:', e);
