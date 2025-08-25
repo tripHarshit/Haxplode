@@ -29,6 +29,7 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete, event
       case 'All': return 'bg-slate-100 text-slate-700';
       case 'Participants': return 'bg-emerald-100 text-emerald-700';
       case 'Judges': return 'bg-emerald-100 text-emerald-700';
+      case 'Both': return 'bg-emerald-100 text-emerald-700';
       default: return 'bg-slate-100 text-slate-700';
     }
   };
@@ -75,7 +76,7 @@ const AnnouncementsList = ({ announcements, onCreateNew, onEdit, onDelete, event
                     <div className="flex items-center space-x-4 text-sm text-slate-600 dark:text-slate-300">
                       <span className="flex items-center space-x-1">
                         <BellIcon className="h-4 w-4" />
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTargetAudienceColor(announcement.targetAudience)}`}>{announcement.targetAudience}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTargetAudienceColor(announcement.visibility || announcement.targetAudience)}`}>{announcement.visibility || announcement.targetAudience}</span>
                       </span>
                       <span>{format(new Date(announcement.date), 'MMM dd, yyyy')}</span>
                       <span>By: {announcement.createdBy}</span>
@@ -144,7 +145,7 @@ const AnnouncementFormModal = ({ announcement, isOpen, onClose, onSubmit, events
   const [formData, setFormData] = useState({
     title: announcement?.title || '',
     content: announcement?.content || '',
-    visibility: (announcement?.targetAudience === 'Both' ? 'Both' : (announcement?.targetAudience || 'Participants')),
+    visibility: (announcement?.visibility || (announcement?.targetAudience === 'Both' ? 'Both' : (announcement?.targetAudience || 'Participants'))),
     tags: Array.isArray(announcement?.tags) ? announcement.tags : [],
     eventId: selectedEventId || (events[0]?.id ?? null),
   });

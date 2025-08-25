@@ -137,6 +137,33 @@ const getAnnouncementsByEvent = async (req, res) => {
       filter.status = { $in: ['Published', 'Scheduled'] };
     }
 
+    // Role-based audience filtering
+    const requesterRole = req.currentUser?.role;
+    if (requesterRole === 'Judge') {
+      // judges can see judge-only and both
+      filter.$or = [
+        { visibility: 'Judges' },
+        { visibility: 'Both' },
+        // Backward compatibility with targetAudience array
+        { targetAudience: { $in: ['Judges'] } },
+      ];
+    } else if (requesterRole === 'Participant') {
+      // participants can see participant-only and both
+      filter.$or = [
+        { visibility: 'Participants' },
+        { visibility: 'Both' },
+        { targetAudience: { $in: ['Participants', 'All'] } },
+      ];
+    } else if (!requesterRole) {
+      // unauthenticated users only see public announcements that are for participants/both/all
+      filter.isPublic = true;
+      filter.$or = [
+        { visibility: 'Participants' },
+        { visibility: 'Both' },
+        { targetAudience: { $in: ['All', 'Participants'] } },
+      ];
+    }
+
     const announcements = await Announcement.find(filter)
       .sort({ isPinned: -1, priority: -1, createdAt: -1 })
       .skip(offset)
@@ -333,7 +360,32 @@ const getPinnedAnnouncements = async (req, res) => {
   try {
     const { eventId } = req.params;
 
-    const pinnedAnnouncements = await Announcement.findPinnedByEvent(eventId);
+    const baseFilter = { eventId, isPinned: true, status: 'Published' };
+
+    // Role-based audience filtering for pinned as well
+    const requesterRole = req.currentUser?.role;
+    if (requesterRole === 'Judge') {
+      baseFilter.$or = [
+        { visibility: 'Judges' },
+        { visibility: 'Both' },
+        { targetAudience: { $in: ['Judges'] } },
+      ];
+    } else if (requesterRole === 'Participant') {
+      baseFilter.$or = [
+        { visibility: 'Participants' },
+        { visibility: 'Both' },
+        { targetAudience: { $in: ['Participants', 'All'] } },
+      ];
+    } else if (!requesterRole) {
+      baseFilter.isPublic = true;
+      baseFilter.$or = [
+        { visibility: 'Participants' },
+        { visibility: 'Both' },
+        { targetAudience: { $in: ['All', 'Participants'] } },
+      ];
+    }
+
+    const pinnedAnnouncements = await Announcement.find(baseFilter).sort({ priority: -1, createdAt: -1 });
 
     res.status(200).json({
       success: true,
