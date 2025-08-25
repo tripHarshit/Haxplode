@@ -14,6 +14,7 @@ const {
 const {
   authMiddleware,
   authorizeOrganizer,
+  optionalAuth,
 } = require('../middleware/authMiddleware');
 
 const {
@@ -21,9 +22,9 @@ const {
   announcementSchemas,
 } = require('../middleware/validateInput');
 
-// Public routes
-router.get('/event/:eventId', getAnnouncementsByEvent);
-router.get('/event/:eventId/pinned', getPinnedAnnouncements);
+// Public routes (with optional auth for role-aware filtering)
+router.get('/event/:eventId', optionalAuth, getAnnouncementsByEvent);
+router.get('/event/:eventId/pinned', optionalAuth, getPinnedAnnouncements);
 router.get('/:id', getAnnouncementById);
 
 // Protected routes
