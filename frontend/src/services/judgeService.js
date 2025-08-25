@@ -16,18 +16,53 @@ api.interceptors.request.use((config) => {
 
 export const judgeService = {
   async getProfile() {
-    const res = await api.get('/judges/profile');
-    return res.data?.data?.judge || null;
+    try {
+      const res = await api.get('/judges/profile');
+      return res.data?.data?.judge || null;
+    } catch (error) {
+      const status = error?.response?.status;
+      // If no judge profile exists yet, treat as null instead of throwing
+      if (status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   async getEvents() {
-    const res = await api.get('/judges/events');
-    return res.data?.data?.assignments || [];
+    try {
+      const res = await api.get('/judges/events');
+      return res.data?.data?.assignments || [];
+    } catch (error) {
+      const status = error?.response?.status;
+      const message = String(error?.response?.data?.message || '').toLowerCase();
+      // Treat 404 or explicit "no assignments" responses as an empty list, not an error
+      if (status === 404 || message.includes('no assignments')) {
+        return [];
+      }
+      throw error;
+    }
   },
 
   async getAnalytics() {
-    const res = await api.get('/judges/analytics');
-    return res.data || {};
+    try {
+      const res = await api.get('/judges/analytics');
+      return res.data || {};
+    } catch (error) {
+      const status = error?.response?.status;
+      // If analytics isn't available (e.g., none yet), return sensible defaults
+      if (status === 404) {
+        return {
+          totals: { reviews: 0, averageScore: 0 },
+          time: { averageMs: 0 },
+          completion: { rate: 0, reviewed: 0, assigned: 0 },
+          scoreDistribution: {},
+          monthlyStats: [],
+          recent: [],
+        };
+      }
+      throw error;
+    }
   },
 
   async submitScore({ submissionId, score, feedback, criteria }) {

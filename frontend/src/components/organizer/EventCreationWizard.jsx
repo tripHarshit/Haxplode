@@ -208,22 +208,7 @@ const EventCreationWizard = ({ isOpen, onClose, onEventCreated }) => {
           </button>
         </div>
 
-        {/* Debug Info */}
-        <div className="mb-4 p-3 bg-blue-100 dark:bg-blue-900/30 rounded text-xs text-gray-900 dark:text-gray-200">
-          <strong>Debug Info:</strong> 
-          Name: {formData.name || 'empty'} | 
-          Theme: {formData.theme || 'empty'} | 
-          Rules: {formData.rules.length} | 
-          Prizes: {formData.prizes.length} | 
-          Rounds: {formData.rounds.length}
-          <br />
-          <button 
-            onClick={() => console.log('Current form data:', formData)}
-            className="mt-2 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs"
-          >
-            Log Form Data
-          </button>
-        </div>
+        
 
         {/* Form */}
         <div className="space-y-6">
